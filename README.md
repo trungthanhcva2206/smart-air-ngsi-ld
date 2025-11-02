@@ -16,8 +16,9 @@
  * @Project smart-air-ngsi-ld
  * @Authors 
  *    - TT (trungthanhcva2206@gmail.com)
- *    - Tadz (tadzltv22082004@gmail.com)
+ *    - Tankchoi (tadzltv22082004@gmail.com)
  *    - Panh (panh812004.apn@gmail.com)
  * @Copyright (C) 2024 CHK. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
  */
+
