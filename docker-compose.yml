@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  # MongoDB for Orion-LD
+  mongo-db:
+    image: mongo:4.4
+    hostname: mongo-db
+    container_name: fiware-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - fiware
+    volumes:
+      - mongo-db:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Orion-LD Context Broker
+  orion-ld:
+    image: fiware/orion-ld:latest
+    hostname: orion-ld
+    container_name: fiware-orion-ld
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    ports:
+      - "1026:1026"
+    networks:
+      - fiware
+    command: -dbhost mongo-db -logLevel DEBUG
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1026/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  fiware:
+    driver: bridge
+
+volumes:
+  mongo-db:
