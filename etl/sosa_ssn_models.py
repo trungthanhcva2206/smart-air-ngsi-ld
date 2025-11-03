@@ -234,7 +234,9 @@ class PlatformEntity(NGSILDEntity):
             district_name: Name of the district
             location: Dictionary with 'lat' and 'lon'
         """
-        entity_id = f"urn:ngsi-ld:Platform:WeatherStation-{district_name.replace(' ', '')}"
+        safe_name = NGSILDEntity._slugify_ascii(district_name)
+        ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
+        entity_id = f"urn:ngsi-ld:Platform:WeatherStation-{safe_name}"
         
         entity = {
             "id": entity_id,
@@ -242,10 +244,10 @@ class PlatformEntity(NGSILDEntity):
             
             # Basic information
             "name": NGSILDEntity.create_property(
-                f"Weather Monitoring Platform - {district_name}"
+                f"Weather Monitoring Platform - {ascii_label}"
             ),
             "description": NGSILDEntity.create_property(
-                f"Weather monitoring platform hosting sensors in {district_name}, Hanoi"
+                f"Weather monitoring platform hosting sensors in {ascii_label}, Hanoi"
             ),
             
             # Location
@@ -254,7 +256,7 @@ class PlatformEntity(NGSILDEntity):
                 location['lon']
             ),
             "address": NGSILDEntity.create_property({
-                "addressLocality": district_name,
+                "addressLocality": ascii_label,
                 "addressRegion": "Hanoi",
                 "addressCountry": "VN",
                 "type": "PostalAddress"
@@ -264,7 +266,7 @@ class PlatformEntity(NGSILDEntity):
             "hosts": {
                 "type": "Relationship",
                 "object": [
-                    f"urn:ngsi-ld:Device:WeatherSensor-{district_name.replace(' ', '')}"
+                    f"urn:ngsi-ld:Device:WeatherSensor-{safe_name}"
                 ]
             },
             
