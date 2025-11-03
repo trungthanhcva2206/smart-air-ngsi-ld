@@ -26,7 +26,7 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
 
 4. **✅ Tạo dữ liệu mở từ nguồn thực tế**
    - Tái sử dụng OpenWeather API (nguồn dữ liệu mở)
-   - Giả lập 12 trạm cảm biến tại các quận Hà Nội
+   - Giả lập 126 trạm cảm biến tại các quận Hà Nội
    - Dữ liệu real-time cho demo sản phẩm
 
 ## 📋 Yêu cầu
@@ -519,54 +519,60 @@ Logs được ghi vào:
 
 ## 🔍 Truy vấn dữ liệu từ Orion-LD
 
-### Lấy tất cả ObservableProperties
+### 📖 Tài liệu API tham khảo
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities?type=ObservableProperty' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, quản lý và đăng ký thông báo cho entities. Dưới đây là tài liệu chính thức để tham khảo:
 
-### Lấy tất cả Platforms
+#### Tài liệu chính thức
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities?type=Platform' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+- **NGSI-LD API Specification**: [ETSI GS CIM 009 V1.8.1](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_CIM009v010801p.pdf)
+  - Đặc tả đầy đủ về NGSI-LD API v1.8.1
+  - Định nghĩa các endpoints, parameters, và response formats
+  
+- **NGSI-LD Primer**: [Understanding NGSI-LD](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
+  - Hướng dẫn cơ bản về NGSI-LD
+  - Giải thích các khái niệm và use cases
 
-### Lấy tất cả Sensors (Devices)
+- **Orion-LD Developer Guide**: [GitHub Documentation](https://github.com/FIWARE/context.Orion-LD/blob/develop/doc/manuals-ld/developer-documentation.md)
+  - Tài liệu dành cho developers
+  - Hướng dẫn chi tiết về API và implementation
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities?type=Device' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+- **FIWARE NGSI-LD Tutorials**: [Step-by-Step Guide](https://fiware-tutorials.readthedocs.io/en/latest/)
+  - Tutorial từng bước cho NGSI-LD
+  - Các ví dụ demo và best practices
 
-### Lấy Sensor của một quận cụ thể
+- **Orion-LD Operations**: [API Operations Manual](https://github.com/FIWARE/context.Orion-LD/blob/develop/doc/manuals-ld/orionld-operations.md)
+  - Hướng dẫn vận hành Orion-LD
+  - Các operations và configuration
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Device:WeatherSensor-BaDinh' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+#### Các loại API chính
 
-### Lấy tất cả WeatherObserved entities
+1. **Entity Operations** - Quản lý entities (CRUD)
+2. **Query Operations** - Truy vấn dữ liệu với filters, geo-queries, temporal queries
+3. **Subscription Management** - Đăng ký nhận thông báo real-time
+4. **Batch Operations** - Thao tác hàng loạt
+5. **Temporal Operations** - Truy vấn dữ liệu theo thời gian
+6. **Registration Operations** - Đăng ký context sources
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities?type=WeatherObserved' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+### 🎯 API sử dụng trong dự án này
 
-### Lấy dữ liệu của một quận cụ thể
+**Lưu ý**: Trên Windows CMD, sử dụng dấu ngoặc kép `"` thay vì `'` và viết lệnh trên một dòng.
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherObserved:Hanoi-BaDinh' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+<!-- TODO: Thêm các API examples cụ thể cho dự án -->
 
-### Lấy AirQualityObserved entities
+#### Các entities được sử dụng
+- `ObservableProperty` - 17 thuộc tính quan sát được
+- `Platform` - 252 nền tảng (126 Weather Stations + 126 Air Quality Stations)
+- `Device` - 252 thiết bị cảm biến
+- `WeatherObserved` - Dữ liệu thời tiết (dynamic)
+- `AirQualityObserved` - Dữ liệu chất lượng không khí (dynamic)
 
-```bash
-curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities?type=AirQualityObserved' \
-  -H 'NGSILD-Tenant: hanoi'
-```
+#### Tenant
+- **NGSILD-Tenant**: `hanoi`
+
+---
+
+*Phần này sẽ được bổ sung với các API calls cụ thể cho dự án...*
 
 ## 🏗️ Kiến trúc SOSA/SSN
 
