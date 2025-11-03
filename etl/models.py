@@ -52,6 +52,23 @@ class NGSILDEntity:
         return ''.join(w.capitalize() for w in words)
     
     @staticmethod
+    def _ascii_preserve_spaces(name: str) -> str:
+        """
+        Convert name with accents to plain ASCII but keep spaces.
+        "Đa Phúc" -> "Da Phuc"
+        """
+        if not name:
+            return ""
+        name = name.replace('Đ', 'D').replace('đ', 'd')
+        normalized = unicodedata.normalize('NFKD', name)
+        # remove combining marks
+        no_marks = ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+        # keep only alphanumerics and spaces
+        cleaned = re.sub(r'[^A-Za-z0-9\s]', '', no_marks)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned
+
+    @staticmethod
     def create_property(value: Any, observed_at: Optional[str] = None, 
                        unit_code: Optional[str] = None) -> Dict:
         """Create a NGSI-LD Property"""
@@ -103,6 +120,7 @@ class WeatherObservedEntity(NGSILDEntity):
         """
         observed_at = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
         safe_name = NGSILDEntity._slugify_ascii(district_name)
+        ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
         entity_id = f"urn:ngsi-ld:WeatherObserved:Hanoi-{safe_name}-{observed_at}"
         
         entity = {
@@ -110,11 +128,11 @@ class WeatherObservedEntity(NGSILDEntity):
             "type": "WeatherObserved",
             
             # Station information
-            "name": NGSILDEntity.create_property(f"Weather Station {district_name}"),
+            "name": NGSILDEntity.create_property(f"WeatherStation-{safe_name}"),
             "description": NGSILDEntity.create_property(
-                f"Weather observation station in {district_name}, Hanoi"
+                f"Weather observation station in {ascii_label}, Hanoi"
             ),
-            "stationName": NGSILDEntity.create_property(district_name),
+            "stationName": NGSILDEntity.create_property(safe_name),
             "stationCode": NGSILDEntity.create_property(f"HN-{safe_name.upper()}"),
             
             # Location
@@ -123,7 +141,7 @@ class WeatherObservedEntity(NGSILDEntity):
                 location['lon']
             ),
             "address": NGSILDEntity.create_property({
-                "addressLocality": district_name,
+                "addressLocality": {ascii_label},
                 "addressRegion": "Hanoi",
                 "addressCountry": "VN",
                 "type": "PostalAddress"
@@ -302,6 +320,7 @@ class AirQualityObservedEntity(NGSILDEntity):
         """
         observed_at = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
         safe_name = NGSILDEntity._slugify_ascii(district_name)
+        ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
         entity_id = f"urn:ngsi-ld:AirQualityObserved:Hanoi-{safe_name}-{observed_at}"
         
         components = air_quality_data['list'][0]['components']
@@ -312,13 +331,11 @@ class AirQualityObservedEntity(NGSILDEntity):
             "type": "AirQualityObserved",
             
             # Station information
-            "name": NGSILDEntity.create_property(
-                f"Air Quality Station {district_name}"
-            ),
+            "name": NGSILDEntity.create_property(f"AirQualityStation-{safe_name}"),
             "description": NGSILDEntity.create_property(
-                f"Air quality monitoring station in {district_name}, Hanoi"
+                f"Air quality monitoring station in {ascii_label}, Hanoi"
             ),
-            "stationName": NGSILDEntity.create_property(district_name),
+            "stationName": NGSILDEntity.create_property(safe_name),
             "stationCode": NGSILDEntity.create_property(
                 f"HN-AQ-{safe_name.upper()}"
             ),
@@ -329,7 +346,7 @@ class AirQualityObservedEntity(NGSILDEntity):
                 location['lon']
             ),
             "address": NGSILDEntity.create_property({
-                "addressLocality": district_name,
+                "addressLocality": ascii_label,
                 "addressRegion": "Hanoi",
                 "addressCountry": "VN",
                 "type": "PostalAddress"
