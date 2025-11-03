@@ -41,10 +41,13 @@ class NGSILDEntity:
         """
         if not name:
             return ""
-        # remove accents
+        name = name.replace('Đ', 'D').replace('đ', 'd')
+
+        # Normalize and remove remaining accents
         ascii_name = unicodedata.normalize('NFKD', name)
         ascii_name = ascii_name.encode('ascii', 'ignore').decode('ascii')
-        # split into words and capitalize
+
+        # Keep only alphanumerics, split into words and PascalCase them
         words = re.findall(r'[A-Za-z0-9]+', ascii_name)
         return ''.join(w.capitalize() for w in words)
     
