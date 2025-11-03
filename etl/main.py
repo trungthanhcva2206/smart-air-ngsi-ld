@@ -34,6 +34,16 @@ from etl_pipeline import ETLPipeline
 from orion_client import OrionLDClient
 from sosa_ssn_models import SensorEntity, PlatformEntity, ObservablePropertyEntity
 from config import ETL_INTERVAL_MINUTES, LOG_LEVEL, HANOI_DISTRICTS
+import sys
+try:
+    # Python 3.7+
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    # fallback
+    import io, codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer)
 
 # Configure logging
 logging.basicConfig(
