@@ -141,7 +141,7 @@ class WeatherObservedEntity(NGSILDEntity):
                 location['lon']
             ),
             "address": NGSILDEntity.create_property({
-                "addressLocality": {ascii_label},
+                "addressLocality": ascii_label,
                 "addressRegion": "Hanoi",
                 "addressCountry": "VN",
                 "type": "PostalAddress"

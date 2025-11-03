@@ -1,0 +1,61 @@
+2025-11-03 21:51:26,405 - __main__ - INFO - ======================================================================
+2025-11-03 21:51:26,405 - __main__ - INFO - Smart Air Quality Monitoring ETL Pipeline
+2025-11-03 21:51:26,405 - __main__ - INFO - Hanoi Smart City Project - NGSI-LD + SOSA/SSN
+2025-11-03 21:51:26,405 - __main__ - INFO - ======================================================================
+2025-11-03 21:51:26,405 - __main__ - INFO - Checking SOSA/SSN infrastructure...
+2025-11-03 21:51:26,411 - __main__ - INFO - [OK] SOSA/SSN infrastructure detected
+2025-11-03 21:51:26,411 - __main__ - INFO - ETL Interval: 480 minutes
+2025-11-03 21:51:26,411 - __main__ - INFO - Number of districts: 126
+2025-11-03 21:51:26,411 - __main__ - INFO - Estimated daily requests: 756
+2025-11-03 21:51:26,411 - __main__ - INFO - ======================================================================
+2025-11-03 21:51:26,411 - __main__ - INFO - 
+Running initial ETL cycle...
+2025-11-03 21:51:26,412 - __main__ - INFO - ETL job started at 2025-11-03 21:51:26.412003
+2025-11-03 21:51:26,412 - etl_pipeline - INFO - ============================================================
+2025-11-03 21:51:26,412 - etl_pipeline - INFO - Starting ETL cycle for all Hanoi districts
+2025-11-03 21:51:26,412 - etl_pipeline - INFO - ============================================================
+2025-11-03 21:51:26,711 - openweather_client - INFO - Successfully fetched weather data for (21.0319903316159, 105.85040262986408)
+2025-11-03 21:51:27,363 - openweather_client - INFO - Successfully fetched air quality data for (21.0319903316159, 105.85040262986408)
+2025-11-03 21:51:27,372 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongHoanKiem-2025-11-03T14:51:27.364Z
+2025-11-03 21:51:27,376 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongHoanKiem-2025-11-03T14:51:27.364Z
+2025-11-03 21:51:28,789 - openweather_client - INFO - Successfully fetched weather data for (21.022630634446845, 105.85075382547065)
+2025-11-03 21:51:29,706 - openweather_client - INFO - Successfully fetched air quality data for (21.022630634446845, 105.85075382547065)
+2025-11-03 21:51:29,736 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongCuaNam-2025-11-03T14:51:29.707Z
+2025-11-03 21:51:29,739 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongCuaNam-2025-11-03T14:51:29.707Z
+2025-11-03 21:51:31,032 - openweather_client - INFO - Successfully fetched weather data for (21.03856926286574, 105.83799840877793)
+2025-11-03 21:51:31,973 - openweather_client - INFO - Successfully fetched air quality data for (21.03856926286574, 105.83799840877793)
+2025-11-03 21:51:31,979 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongBaDinh-2025-11-03T14:51:31.973Z
+2025-11-03 21:51:31,982 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongBaDinh-2025-11-03T14:51:31.973Z
+2025-11-03 21:51:33,296 - openweather_client - INFO - Successfully fetched weather data for (21.038077022633587, 105.81639504279552)
+2025-11-03 21:51:37,248 - openweather_client - INFO - Successfully fetched air quality data for (21.038077022633587, 105.81639504279552)
+2025-11-03 21:51:37,253 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongNgocHa-2025-11-03T14:51:37.248Z
+2025-11-03 21:51:37,281 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongNgocHa-2025-11-03T14:51:37.248Z
+2025-11-03 21:51:38,584 - openweather_client - INFO - Successfully fetched weather data for (21.027519059886167, 105.8143005192683)
+2025-11-03 21:51:39,450 - openweather_client - INFO - Successfully fetched air quality data for (21.027519059886167, 105.8143005192683)
+2025-11-03 21:51:39,454 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongGiangVo-2025-11-03T14:51:39.450Z
+2025-11-03 21:51:39,458 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongGiangVo-2025-11-03T14:51:39.450Z
+2025-11-03 21:51:40,808 - openweather_client - INFO - Successfully fetched weather data for (21.013618180328436, 105.85189238680066)
+2025-11-03 21:51:41,675 - openweather_client - INFO - Successfully fetched air quality data for (21.013618180328436, 105.85189238680066)
+2025-11-03 21:51:41,678 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongHaiBaTrung-2025-11-03T14:51:41.675Z
+2025-11-03 21:51:41,695 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongHaiBaTrung-2025-11-03T14:51:41.675Z
+2025-11-03 21:51:42,993 - openweather_client - INFO - Successfully fetched weather data for (20.998015022811597, 105.86736004358046)
+2025-11-03 21:51:43,900 - openweather_client - INFO - Successfully fetched air quality data for (20.998015022811597, 105.86736004358046)
+2025-11-03 21:51:43,910 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongVinhTuy-2025-11-03T14:51:43.901Z
+2025-11-03 21:51:43,915 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongVinhTuy-2025-11-03T14:51:43.901Z
+2025-11-03 21:51:45,215 - openweather_client - INFO - Successfully fetched weather data for (21.002214091223472, 105.85201292387814)
+2025-11-03 21:51:46,263 - openweather_client - INFO - Successfully fetched air quality data for (21.002214091223472, 105.85201292387814)
+2025-11-03 21:51:46,269 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongBachMai-2025-11-03T14:51:46.263Z
+2025-11-03 21:51:46,288 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongBachMai-2025-11-03T14:51:46.264Z
+2025-11-03 21:51:47,594 - openweather_client - INFO - Successfully fetched weather data for (21.01193808848005, 105.82175152810697)
+2025-11-03 21:51:48,467 - openweather_client - INFO - Successfully fetched air quality data for (21.01193808848005, 105.82175152810697)
+2025-11-03 21:51:48,485 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongDongDa-2025-11-03T14:51:48.467Z
+2025-11-03 21:51:48,490 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongDongDa-2025-11-03T14:51:48.467Z
+2025-11-03 21:51:49,916 - openweather_client - INFO - Successfully fetched weather data for (21.005680138220153, 105.83237802486865)
+2025-11-03 21:51:50,784 - openweather_client - INFO - Successfully fetched air quality data for (21.005680138220153, 105.83237802486865)
+2025-11-03 21:51:50,788 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongKimLien-2025-11-03T14:51:50.785Z
+2025-11-03 21:51:50,805 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongKimLien-2025-11-03T14:51:50.785Z
+2025-11-03 21:51:52,251 - openweather_client - INFO - Successfully fetched weather data for (21.019921741812144, 105.83714549835715)
+2025-11-03 21:51:52,880 - openweather_client - INFO - Successfully fetched air quality data for (21.019921741812144, 105.83714549835715)
+2025-11-03 21:51:52,888 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:WeatherObserved:Hanoi-PhuongVanMieuQuocTuGiam-2025-11-03T14:51:52.880Z
+2025-11-03 21:51:52,905 - orion_client - INFO - Successfully created entity: urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongVanMieuQuocTuGiam-2025-11-03T14:51:52.880Z
+2025-11-03 21:51:54,267 - openweather_client - INFO - Successfully fetched weather data for (21.0210887064431, 105.80597117371754)
