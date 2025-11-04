@@ -67,15 +67,22 @@ ORION_LD_TENANT=hanoi
 ETL_INTERVAL_MINUTES=480
 
 LOG_LEVEL=INFO
+
+# Đường dẫn tới file GeoJSON chứa dữ liệu địa lý các xã/phường Hà Nội.
+# Mặc định: ./etl/ha_noi_with_latlon2.geojson
+# Bạn có thể đổi sang đường dẫn khác nếu dữ liệu nằm nơi khác.
+HANOI_GEOJSON_PATH=./etl/ha_noi_with_latlon2.geojson
 ```
 
-### 3. Khởi động Orion-LD (nếu chưa có)
+### 3. Khởi động Orion-LD
 
-Sử dụng Docker:
+Orion-LD là **FIWARE Context Broker** dùng để lưu trữ và truy vấn dữ liệu NGSI-LD.  
+Bạn có thể khởi động Orion-LD bằng **Docker Compose** để dễ quản lý.
 
 ```bash
 docker run -d --name orion-ld -p 1026:1026 fiware/orion-ld
 ```
+---
 
 ## 🏃 Chạy ETL Pipeline
 
@@ -96,27 +103,28 @@ python main.py
 
 ```json
 {
+  "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
   "id": "urn:ngsi-ld:ObservableProperty:Temperature",
   "type": "ObservableProperty",
-  "name": {
-    "type": "Property",
-    "value": "Air Temperature"
-  },
   "description": {
-    "type": "Property",
-    "value": "The temperature of the air"
+      "type": "Property",
+      "value": "The temperature of the air"
   },
-  "unit": {
-    "type": "Property",
-    "value": "Celsius (°C)"
-  },
-  "unitCode": {
-    "type": "Property",
-    "value": "CEL"
+  "https://smartdatamodels.org/name": {
+      "type": "Property",
+      "value": "Air Temperature"
   },
   "category": {
-    "type": "Property",
-    "value": "weather"
+      "type": "Property",
+      "value": "weather"
+  },
+  "unit": {
+      "type": "Property",
+      "value": "Celsius (°C)"
+  },
+  "unitCode": {
+      "type": "Property",
+      "value": "CEL"
   }
 }
 ```
@@ -125,31 +133,62 @@ python main.py
 
 ```json
 {
-  "id": "urn:ngsi-ld:Platform:WeatherStation-BaDinh",
-  "type": "Platform",
-  "name": {
-    "type": "Property",
-    "value": "Weather Monitoring Platform - Ba Dinh"
-  },
-  "location": {
-    "type": "GeoProperty",
-    "value": {
-      "type": "Point",
-      "coordinates": [105.8200, 21.0333]
-    }
-  },
-  "hosts": {
-    "type": "Relationship",
-    "object": ["urn:ngsi-ld:Device:WeatherSensor-BaDinh"]
-  },
-  "platformType": {
-    "type": "Property",
-    "value": "WeatherMonitoringStation"
-  },
-  "status": {
-    "type": "Property",
-    "value": "operational"
-  }
+ "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
+ "id": "urn:ngsi-ld:Platform:WeatherStation-PhuongBaDinh",
+ "type": "Platform",
+ "https://smartdatamodels.org/name": {
+     "type": "Property",
+     "value": "Weather Monitoring Platform - Phuong Ba Dinh"
+ },
+ "description": {
+     "type": "Property",
+     "value": "Weather monitoring platform hosting sensors in Phuong Ba Dinh, Hanoi"
+ },
+ "location": {
+     "type": "GeoProperty",
+     "value": {
+         "type": "Point",
+         "coordinates": [
+             105.837998409,
+             21.038569263
+         ]
+     }
+ },
+ "https://smartdatamodels.org/address": {
+     "type": "Property",
+     "value": {
+         "addressLocality": "Phuong Ba Dinh",
+         "addressRegion": "Hanoi",
+         "addressCountry": "VN",
+         "type": "PostalAddress"
+     }
+ },
+ "hosts": {
+     "type": "Relationship",
+     "object": [
+         "urn:ngsi-ld:Device:WeatherSensor-PhuongBaDinh"
+     ]
+ },
+ "platformType": {
+     "type": "Property",
+     "value": "WeatherMonitoringStation"
+ },
+ "status": {
+     "type": "Property",
+     "value": "operational"
+ },
+ "deploymentDate": {
+     "type": "Property",
+     "value": "2025-01-01T00:00:00Z"
+ },
+ "https://smartdatamodels.org/owner": {
+     "type": "Property",
+     "value": "Hanoi Department of Environment"
+ },
+ "operator": {
+     "type": "Property",
+     "value": "Hanoi Smart City Initiative"
+ }
 }
 ```
 
@@ -157,40 +196,109 @@ python main.py
 
 ```json
 {
-  "id": "urn:ngsi-ld:Device:WeatherSensor-BaDinh",
-  "type": "Device",
-  "name": {
-    "type": "Property",
-    "value": "Weather Sensor - Ba Dinh"
-  },
-  "deviceCategory": {
-    "type": "Property",
-    "value": ["sensor"]
-  },
-  "controlledProperty": {
-    "type": "Property",
-    "value": ["temperature", "atmosphericPressure", "relativeHumidity", ...]
-  },
-  "observes": {
-    "type": "Relationship",
-    "object": [
-      "urn:ngsi-ld:ObservableProperty:Temperature",
-      "urn:ngsi-ld:ObservableProperty:AtmosphericPressure",
-      ...
-    ]
-  },
-  "isHostedBy": {
-    "type": "Relationship",
-    "object": "urn:ngsi-ld:Platform:WeatherStation-BaDinh"
-  },
-  "sensorType": {
-    "type": "Property",
-    "value": "WeatherStation"
-  },
-  "deviceState": {
-    "type": "Property",
-    "value": "active"
-  }
+ "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
+ "id": "urn:ngsi-ld:Device:WeatherSensor-PhuongBaDinh",
+ "type": "Device",
+ "https://smartdatamodels.org/name": {
+     "type": "Property",
+     "value": "WeatherSensor-PhuongBaDinh"
+ },
+ "description": {
+     "type": "Property",
+     "value": "Multi-parameter weather sensor station in Phuong Ba Dinh, Hanoi"
+ },
+ "deviceCategory": {
+     "type": "Property",
+     "value": "sensor"
+ },
+ "controlledProperty": {
+     "type": "Property",
+     "value": [
+         "temperature",
+         "atmosphericPressure",
+         "relativeHumidity",
+         "windSpeed",
+         "windDirection",
+         "precipitation",
+         "visibility",
+         "illuminance"
+     ]
+ },
+ "location": {
+     "type": "GeoProperty",
+     "value": {
+         "type": "Point",
+         "coordinates": [
+             105.837998409,
+             21.038569263
+         ]
+     }
+ },
+ "sensorType": {
+     "type": "Property",
+     "value": "WeatherStation"
+ },
+ "observes": {
+     "type": "Relationship",
+     "object": [
+         "urn:ngsi-ld:ObservableProperty:Temperature",
+         "urn:ngsi-ld:ObservableProperty:AtmosphericPressure",
+         "urn:ngsi-ld:ObservableProperty:RelativeHumidity",
+         "urn:ngsi-ld:ObservableProperty:WindSpeed",
+         "urn:ngsi-ld:ObservableProperty:WindDirection",
+         "urn:ngsi-ld:ObservableProperty:Precipitation",
+         "urn:ngsi-ld:ObservableProperty:Visibility",
+         "urn:ngsi-ld:ObservableProperty:Illuminance"
+     ]
+ },
+ "isHostedBy": {
+     "type": "Relationship",
+     "object": "urn:ngsi-ld:Platform:WeatherStation-PhuongBaDinh"
+ },
+ "serialNumber": {
+     "type": "Property",
+     "value": "WS-HN-PHUONGBADINH-001"
+ },
+ "hardwareVersion": {
+     "type": "Property",
+     "value": "2.0"
+ },
+ "softwareVersion": {
+     "type": "Property",
+     "value": "1.5.0"
+ },
+ "firmwareVersion": {
+     "type": "Property",
+     "value": "3.2.1"
+ },
+ "https://smartdatamodels.org/dataModel.Environment/brandName": {
+     "type": "Property",
+     "value": "OpenWeather"
+ },
+ "https://smartdatamodels.org/dataModel.Environment/modelName": {
+     "type": "Property",
+     "value": "Multi-Sensor Weather Station"
+ },
+ "deviceState": {
+     "type": "Property",
+     "value": "active"
+ },
+ "dateInstalled": {
+     "type": "Property",
+     "value": "2025-01-01T00:00:00Z"
+ },
+ "dateFirstUsed": {
+     "type": "Property",
+     "value": "2025-01-01T00:00:00Z"
+ },
+ "https://smartdatamodels.org/dataProvider": {
+     "type": "Property",
+     "value": "Hanoi Smart City Initiative"
+ },
+ "https://smartdatamodels.org/owner": {
+     "type": "Property",
+     "value": "Hanoi Department of Environment"
+ }
 }
 ```
 
@@ -198,302 +306,322 @@ python main.py
 
 ```json
 {
-  "id": "urn:ngsi-ld:WeatherObserved:Hanoi-BaDinh-2025-11-03T10:30:00.123Z",
-  "type": "WeatherObserved",
-  "name": {
-    "type": "Property",
-    "value": "Weather Station Ba Dinh"
-  },
-  "stationName": {
-    "type": "Property",
-    "value": "Ba Dinh"
-  },
-  "stationCode": {
-    "type": "Property",
-    "value": "HN-BADINH"
-  },
-  "location": {
-    "type": "GeoProperty",
-    "value": {
-      "type": "Point",
-      "coordinates": [105.8200, 21.0333]
-    }
+  "@context": [
+      "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld",
+      "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
+  ],
+  "id": "urn:ngsi-ld:WeatherObserved:Hanoi-PhuongBaDinh-2025-11-04T06:38:37.505Z",
+  "type": "weatherObserved",
+  "description": {
+      "type": "Property",
+      "value": "Weather observation station in Phuong Ba Dinh, Hanoi"
   },
   "address": {
-    "type": "Property",
-    "value": {
-      "addressLocality": "Ba Dinh",
-      "addressRegion": "Hanoi",
-      "addressCountry": "VN",
-      "type": "PostalAddress"
-    }
-  },
-  "dateObserved": {
-    "type": "Property",
-    "value": {
-      "@type": "DateTime",
-      "@value": "2025-11-03T10:30:00.123Z"
-    }
-  },
-  "temperature": {
-    "type": "Property",
-    "value": 25.5,
-    "unitCode": "CEL",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "feelsLikeTemperature": {
-    "type": "Property",
-    "value": 26.0,
-    "unitCode": "CEL",
-    "observedAt": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": {
+          "addressLocality": "Phuong Ba Dinh",
+          "addressRegion": "Hanoi",
+          "addressCountry": "VN",
+          "type": "PostalAddress"
+      }
   },
   "atmosphericPressure": {
-    "type": "Property",
-    "value": 1013.0,
-    "unitCode": "HPA",
-    "observedAt": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": 1018,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "HPA"
   },
-  "relativeHumidity": {
-    "type": "Property",
-    "value": 0.75,
-    "unitCode": "C62",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "windSpeed": {
-    "type": "Property",
-    "value": 3.5,
-    "unitCode": "MTS",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "windDirection": {
-    "type": "Property",
-    "value": 180,
-    "unitCode": "DD",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "precipitation": {
-    "type": "Property",
-    "value": 0,
-    "unitCode": "MMT",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "visibility": {
-    "type": "Property",
-    "value": 10000,
-    "unitCode": "MTR",
-    "observedAt": "2025-11-03T10:30:00.123Z"
+  "feelsLikeTemperature": {
+      "type": "Property",
+      "value": 22.4,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "CEL"
   },
   "illuminance": {
-    "type": "Property",
-    "value": 100000,
-    "unitCode": "LUX",
-    "observedAt": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": 50000,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "LUX"
   },
-  "weatherType": {
-    "type": "Property",
-    "value": "Clear",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "weatherDescription": {
-    "type": "Property",
-    "value": "clear sky",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "pressureTendency": {
-    "type": "Property",
-    "value": 0,
-    "unitCode": "A97",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "source": {
-    "type": "Property",
-    "value": "https://openweathermap.org"
-  },
-  "dataProvider": {
-    "type": "Property",
-    "value": "OpenWeather"
+  "precipitation": {
+      "type": "Property",
+      "value": 0,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "MMT"
   },
   "refDevice": {
-    "type": "Relationship",
-    "object": "urn:ngsi-ld:Device:WeatherSensor-BaDinh"
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:Device:WeatherSensor-PhuongBaDinh"
   },
-  "@context": [
-    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
-    "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld"
-  ]
+  "relativeHumidity": {
+      "type": "Property",
+      "value": 0.85,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "C62"
+  },
+  "temperature": {
+      "type": "Property",
+      "value": 22,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "CEL"
+  },
+  "visibility": {
+      "type": "Property",
+      "value": 10000,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "MTR"
+  },
+  "weatherType": {
+      "type": "Property",
+      "value": "Clouds",
+      "observedAt": "2025-11-04T06:38:37.505Z"
+  },
+  "windDirection": {
+      "type": "Property",
+      "value": 331,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "DD"
+  },
+  "windSpeed": {
+      "type": "Property",
+      "value": 2.9,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "MTS"
+  },
+  "dataProvider": {
+      "type": "Property",
+      "value": "OpenWeather"
+  },
+  "dateObserved": {
+      "type": "Property",
+      "value": {
+          "@type": "DateTime",
+          "@value": "2025-11-04T06:38:37.505Z"
+      }
+  },
+  "name": {
+      "type": "Property",
+      "value": "WeatherStation-PhuongBaDinh"
+  },
+  "source": {
+      "type": "Property",
+      "value": "https://openweathermap.org"
+  },
+  "cloudiness": {
+      "type": "Property",
+      "value": 1,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "C62"
+  },
+  "pressureTendency": {
+      "type": "Property",
+      "value": 0,
+      "observedAt": "2025-11-04T06:38:37.505Z",
+      "unitCode": "A97"
+  },
+  "stationCode": {
+      "type": "Property",
+      "value": "HN-PHUONGBADINH"
+  },
+  "stationName": {
+      "type": "Property",
+      "value": "PhuongBaDinh"
+  },
+  "weatherDescription": {
+      "type": "Property",
+      "value": "overcast clouds",
+      "observedAt": "2025-11-04T06:38:37.505Z"
+  },
+  "location": {
+      "type": "GeoProperty",
+      "value": {
+          "type": "Point",
+          "coordinates": [
+              105.837998409,
+              21.038569263
+          ]
+      }
+  }
 }
 ```
 
 ### 5. Observation (Quan sát - AirQualityObserved)
 
 ```json
-{
-  "id": "urn:ngsi-ld:AirQualityObserved:Hanoi-BaDinh-2025-11-03T10:30:00.123Z",
-  "type": "AirQualityObserved",
-  "name": {
-    "type": "Property",
-    "value": "Air Quality Station Ba Dinh"
-  },
-  "stationName": {
-    "type": "Property",
-    "value": "Ba Dinh"
-  },
-  "stationCode": {
-    "type": "Property",
-    "value": "HN-AQ-BADINH"
-  },
-  "location": {
-    "type": "GeoProperty",
-    "value": {
-      "type": "Point",
-      "coordinates": [105.8200, 21.0333]
-    }
+ {
+  "@context": [
+      "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld",
+      "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
+  ],
+  "id": "urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongBaDinh-2025-11-04T06:38:37.506Z",
+  "type": "airQualityObserved",
+  "description": {
+      "type": "Property",
+      "value": "Air quality monitoring station in Phuong Ba Dinh, Hanoi"
   },
   "address": {
-    "type": "Property",
-    "value": {
-      "addressLocality": "Ba Dinh",
-      "addressRegion": "Hanoi",
-      "addressCountry": "VN",
-      "type": "PostalAddress"
-    }
-  },
-  "dateObserved": {
-    "type": "Property",
-    "value": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": {
+          "addressLocality": "Phuong Ba Dinh",
+          "addressRegion": "Hanoi",
+          "addressCountry": "VN",
+          "type": "PostalAddress"
+      }
   },
   "airQualityIndex": {
-    "type": "Property",
-    "value": 3,
-    "observedAt": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": 2,
+      "observedAt": "2025-11-04T06:38:37.506Z"
   },
   "airQualityLevel": {
-    "type": "Property",
-    "value": "moderate",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "CO": {
-    "type": "Property",
-    "value": 400.5,
-    "unitCode": "GP",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "NO": {
-    "type": "Property",
-    "value": 0.5,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "NO2": {
-    "type": "Property",
-    "value": 20.0,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "NOx": {
-    "type": "Property",
-    "value": 20.5,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "O3": {
-    "type": "Property",
-    "value": 50.0,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "SO2": {
-    "type": "Property",
-    "value": 10.0,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "pm2_5": {
-    "type": "Property",
-    "value": 35.2,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": "fair",
+      "observedAt": "2025-11-04T06:38:37.506Z"
   },
   "pm10": {
-    "type": "Property",
-    "value": 45.8,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "NH3": {
-    "type": "Property",
-    "value": 5.0,
-    "unitCode": "GQ",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "temperature": {
-    "type": "Property",
-    "value": 25.5,
-    "unitCode": "CEL",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "relativeHumidity": {
-    "type": "Property",
-    "value": 0.75,
-    "unitCode": "C62",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "windSpeed": {
-    "type": "Property",
-    "value": 3.5,
-    "unitCode": "MTS",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "windDirection": {
-    "type": "Property",
-    "value": 180,
-    "unitCode": "DD",
-    "observedAt": "2025-11-03T10:30:00.123Z"
+      "type": "Property",
+      "value": 11.64,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
   },
   "precipitation": {
-    "type": "Property",
-    "value": 0,
-    "unitCode": "MMT",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "CO_Level": {
-    "type": "Property",
-    "value": "good",
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "reliability": {
-    "type": "Property",
-    "value": 0.85,
-    "observedAt": "2025-11-03T10:30:00.123Z"
-  },
-  "source": {
-    "type": "Property",
-    "value": "https://openweathermap.org"
-  },
-  "dataProvider": {
-    "type": "Property",
-    "value": "OpenWeather"
+      "type": "Property",
+      "value": 0,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "MMT"
   },
   "refDevice": {
-    "type": "Relationship",
-    "object": "urn:ngsi-ld:Device:AirQualitySensor-BaDinh"
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:Device:AirQualitySensor-PhuongBaDinh"
   },
   "refPointOfInterest": {
-    "type": "Relationship",
-    "object": "urn:ngsi-ld:PointOfInterest:Hanoi-BaDinh"
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:PointOfInterest:Hanoi-PhuongBaDinh"
   },
-  "@context": [
-    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
-    "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld"
-  ]
+  "relativeHumidity": {
+      "type": "Property",
+      "value": 0.85,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "C62"
+  },
+  "reliability": {
+      "type": "Property",
+      "value": 0.85,
+      "observedAt": "2025-11-04T06:38:37.506Z"
+  },
+  "temperature": {
+      "type": "Property",
+      "value": 22,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "CEL"
+  },
+  "windDirection": {
+      "type": "Property",
+      "value": 331,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "DD"
+  },
+  "windSpeed": {
+      "type": "Property",
+      "value": 2.85,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "MTS"
+  },
+  "dataProvider": {
+      "type": "Property",
+      "value": "OpenWeather"
+  },
+  "dateObserved": {
+      "type": "Property",
+      "value": "2025-11-04T06:38:37.506Z"
+  },
+  "name": {
+      "type": "Property",
+      "value": "AirQualityStation-PhuongBaDinh"
+  },
+  "source": {
+      "type": "Property",
+      "value": "https://openweathermap.org"
+  },
+  "CO": {
+      "type": "Property",
+      "value": 225.48,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GP"
+  },
+  "CO_Level": {
+      "type": "Property",
+      "value": "good",
+      "observedAt": "2025-11-04T06:38:37.506Z"
+  },
+  "NH3": {
+      "type": "Property",
+      "value": 0.82,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "NO": {
+      "type": "Property",
+      "value": 0.28,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "NO2": {
+      "type": "Property",
+      "value": 3.99,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "NOx": {
+      "type": "Property",
+      "value": 4.27,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "O3": {
+      "type": "Property",
+      "value": 43.74,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "SO2": {
+      "type": "Property",
+      "value": 2.1,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "pm2_5": {
+      "type": "Property",
+      "value": 10.3,
+      "observedAt": "2025-11-04T06:38:37.506Z",
+      "unitCode": "GQ"
+  },
+  "stationCode": {
+      "type": "Property",
+      "value": "HN-AQ-PHUONGBADINH"
+  },
+  "stationName": {
+      "type": "Property",
+      "value": "PhuongBaDinh"
+  },
+  "location": {
+      "type": "GeoProperty",
+      "value": {
+          "type": "Point",
+          "coordinates": [
+              105.837998409,
+              21.038569263
+          ]
+      }
+  }
 }
 ```
 
 ## 🗺️ Các phường/xã được giám sát
 
-Pipeline giả lập 126 trạm cảm biến tại **126 phường/xã của Hà Nội** (theo cơ cấu hành chính 2025 sau khi xóa bỏ cấp quận)
+Pipeline giả lập N trạm cảm biến tại **126 phường/xã của Hà Nội** (theo cơ cấu hành chính 2025 sau khi xóa bỏ cấp quận)
 
-**Lưu ý**: Danh sách đầy đủ 126 phường/xã với tọa độ GPS và địa chỉ được cấu hình trong file `config.py`.
+**Lưu ý**: Danh sách đầy đủ 126 phường/xã với tọa độ GPS và địa chỉ các trạm được cấu hình trong file `ha_noi_with_latlon2.geojson`.
 
 ## 📈 Quản lý Request Limit
 
@@ -562,8 +690,8 @@ Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, qu�
 
 #### Các entities được sử dụng
 - `ObservableProperty` - 17 thuộc tính quan sát được
-- `Platform` - 252 nền tảng (126 Weather Stations + 126 Air Quality Stations)
-- `Device` - 252 thiết bị cảm biến
+- `Platform` - N nền tảng
+- `Device` - N thiết bị cảm biến
 - `WeatherObserved` - Dữ liệu thời tiết (dynamic)
 - `AirQualityObserved` - Dữ liệu chất lượng không khí (dynamic)
 
@@ -577,48 +705,49 @@ Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, qu�
 ## 🏗️ Kiến trúc SOSA/SSN
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    SOSA/SSN Ontology Layer                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ObservableProperty (17 entities)                           │
-│  ├─ Temperature                                             │
-│  ├─ AtmosphericPressure                                     │
-│  ├─ RelativeHumidity                                        │
-│  ├─ CO, NO, NO2, O3, SO2                                    │
-│  ├─ PM2.5, PM10                                             │
-│  └─ ...                                                     │
-│                                                             │
-│  Platform (252 entities - 126 phường/xã)     hosts          │
-│  ├─ WeatherStation-BaDinh ─────────────> WeatherSensor      │
-│  ├─ AirQualityStation-BaDinh ──────────> AQSensor           │
-│  └─ ...                                                     │
-│                         │                                   │
-│                         │ isHostedBy                        │
-│                         ▼                                   │
-│  Sensor/Device (252 entities)             observes          │
-│  ├─ WeatherSensor-BaDinh ──────────────> ObservableProperty │
-│  ├─ AirQualitySensor-BaDinh ───────────> ObservableProperty │
-│  └─ ...                                                     │
-│                         │                                   │
-│                         │ refDevice (madeBySensor)          │
-│                         ▼                                   │
-├─────────────────────────────────────────────────────────────┤
-│              Observation Layer (Dynamic)                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  WeatherObserved (tạo mới mỗi chu kỳ)                       │
-│  AirQualityObserved (tạo mới mỗi chu kỳ)                    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                  SOSA/SSN Ontology Layer                       │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ObservableProperty (17 entities)                              │
+│  ├─ Temperature                                                │
+│  ├─ AtmosphericPressure                                        │
+│  ├─ RelativeHumidity                                           │
+│  ├─ CO, NO, NO2, O3, SO2                                       │
+│  ├─ PM2.5, PM10                                                │
+│  └─ ...                                                        │
+│                                                                │
+│  Platform (N entities - 126 phường/xã)                         │
+│  ├─ WeatherStation-PhuongBaDinh ─────────────> WeatherSensor   │
+│  ├─ AirQualityStation-PhuongBaDinh ─────────> AQSensor         │
+│  └─ ...                                                        │
+│                         │                                      │
+│                         │ isHostedBy                           │
+│                         ▼                                      │
+│  Sensor/Device (N entities)                                    │
+│  ├─ WeatherSensor-PhuongBaDinh ───────────> ObservableProperty │
+│  ├─ AirQualitySensor-PhuongBaDinh ────────> ObservableProperty │
+│  └─ ...                                                        │
+│                         │                                      │
+│                         │ refDevice (madeBySensor)             │
+│                         ▼                                      │
+├─────────────────────────────────────────────────────────────── ┤
+│                Observation Layer (Dynamic)                     │
+├─────────────────────────────────────────────────────────────── ┤
+│                                                                │
+│  WeatherObserved (tạo mới mỗi chu kỳ)                          │
+│  AirQualityObserved (tạo mới mỗi chu kỳ)                       │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
                          │
                          │ ETL Pipeline
                          ▼
-         ┌──────────────────────┐
-         │   OpenWeather API    │
-         │  - Weather Data      │
-         │  - Air Quality Data  │
-         └──────────────────────┘
+          ┌─────────────────────────────┐
+          │      OpenWeather API        │
+          │  - Weather Data             │
+          │  - Air Quality Data         │
+          └─────────────────────────────┘
+
 ```
 
 ## 🔗 Mối quan hệ SOSA/SSN
