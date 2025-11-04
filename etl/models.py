@@ -125,7 +125,7 @@ class WeatherObservedEntity(NGSILDEntity):
         
         entity = {
             "id": entity_id,
-            "type": "WeatherObserved",
+            "type": "weatherObserved",
             
             # Station information
             "name": NGSILDEntity.create_property(f"WeatherStation-{safe_name}"),
@@ -328,7 +328,7 @@ class AirQualityObservedEntity(NGSILDEntity):
         
         entity = {
             "id": entity_id,
-            "type": "AirQualityObserved",
+            "type": "airQualityObserved",
             
             # Station information
             "name": NGSILDEntity.create_property(f"AirQualityStation-{safe_name}"),
