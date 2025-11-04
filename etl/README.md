@@ -26,7 +26,7 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
 
 4. **✅ Tạo dữ liệu mở từ nguồn thực tế**
    - Tái sử dụng OpenWeather API (nguồn dữ liệu mở)
-   - Giả lập 126 trạm cảm biến tại các quận Hà Nội
+   - Giả lập N trạm cảm biến tại các quận Hà Nội
    - Dữ liệu real-time cho demo sản phẩm
 
 ## 📋 Yêu cầu
@@ -92,7 +92,7 @@ python main.py
 
 **Pipeline sẽ tự động:**
 1. ✅ Kiểm tra SOSA/SSN infrastructure
-2. ✅ Tự động khởi tạo nếu chưa có (521 entities)
+2. ✅ Tự động khởi tạo nếu chưa có (N entities)
 3. ✅ Chạy ETL cycle ngay lập tức
 4. ✅ Lên lịch chạy định kỳ theo chu kỳ
 
@@ -619,25 +619,24 @@ python main.py
 
 ## 🗺️ Các phường/xã được giám sát
 
-Pipeline giả lập N trạm cảm biến tại **126 phường/xã của Hà Nội** (theo cơ cấu hành chính 2025 sau khi xóa bỏ cấp quận)
+Pipeline giả lập N trạm cảm biến tại **N phường/xã**
 
-**Lưu ý**: Danh sách đầy đủ 126 phường/xã với tọa độ GPS và địa chỉ các trạm được cấu hình trong file `ha_noi_with_latlon2.geojson`.
+**Lưu ý**: Danh sách đầy đủ 126 phường/xã (theo cơ cấu hành chính 2025 sau khi xóa bỏ cấp quận) với tọa độ GPS và địa chỉ các trạm được cấu hình trong file `ha_noi_with_latlon2.geojson`.
 
 ## 📈 Quản lý Request Limit
 
 - **Giới hạn**: 1000 requests/ngày (OpenWeather Free Tier)
-- **Sử dụng**: 2 APIs × 126 phường/xã = 252 requests/chu kỳ
-- **Chu kỳ mặc định**: 480 phút (8 giờ)
-- **Tổng requests/ngày**: ~3 chu kỳ × 252 = 756 requests/ngày ✅
+- **Sử dụng**: 2 APIs × N phường/xã = 2 × N requests/chu kỳ
+- **Chu kỳ mặc định**: S = ⌊1000 / (2 × N)⌋
+- **Tổng requests/ngày**: ~S × (2 × N) requests/ngày, với S = số chu kỳ/ngày sao cho tổng requests < giới hạn ✅
 
 ### Tùy chỉnh chu kỳ
-
 Để thay đổi tần suất cập nhật, chỉnh `ETL_INTERVAL_MINUTES` trong `.env`:
-
-- **240 phút (4 giờ)**: ~6 chu kỳ × 252 = 1512 requests/ngày (vượt giới hạn free tier)
-- **360 phút (6 giờ)**: ~4 chu kỳ × 252 = 1008 requests/ngày (vượt giới hạn free tier)
-- **480 phút (8 giờ)**: ~3 chu kỳ × 252 = 756 requests/ngày (khuyến nghị cho free tier) ✅
-- **720 phút (12 giờ)**: ~2 chu kỳ × 252 = 504 requests/ngày (an toàn)
+#### Đối với dữ liệu hiện tại
+- **240 phút (4 giờ)**:  S = ~6 chu kỳ 
+- **360 phút (6 giờ)**:  S = ~4 chu kỳ 
+- **480 phút (8 giờ)**:  S = ~3 chu kỳ
+- **720 phút (12 giờ)**: S = ~2 chu kỳ
 
 ## 📝 Logs
 
@@ -717,7 +716,7 @@ Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, qu�
 │  ├─ PM2.5, PM10                                                │
 │  └─ ...                                                        │
 │                                                                │
-│  Platform (N entities - 126 phường/xã)                         │
+│  Platform (N entities - N phường/xã)                         │
 │  ├─ WeatherStation-PhuongBaDinh ─────────────> WeatherSensor   │
 │  ├─ AirQualityStation-PhuongBaDinh ─────────> AQSensor         │
 │  └─ ...                                                        │
