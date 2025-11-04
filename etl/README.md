@@ -716,7 +716,7 @@ Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, qu�
 │  ├─ PM2.5, PM10                                                │
 │  └─ ...                                                        │
 │                                                                │
-│  Platform (N entities - N phường/xã)                         │
+│  Platform (N entities - N phường/xã)                           │
 │  ├─ WeatherStation-PhuongBaDinh ─────────────> WeatherSensor   │
 │  ├─ AirQualityStation-PhuongBaDinh ─────────> AQSensor         │
 │  └─ ...                                                        │
