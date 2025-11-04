@@ -28,11 +28,46 @@ Reference: https://smartdatamodels.org/dataModel.Environment/
 """
 from datetime import datetime
 from typing import Dict, Any, Optional
-
+import unicodedata
+import re
 
 class NGSILDEntity:
     """Base class for NGSI-LD entities"""
+    @staticmethod
+    def _slugify_ascii(name: str) -> str:
+        """
+        Convert name with accents to ASCII PascalCase string safe for URNs.
+        "Phường Cầu Giấy" -> "PhuongCauGiay"
+        """
+        if not name:
+            return ""
+        name = name.replace('Đ', 'D').replace('đ', 'd')
+
+        # Normalize and remove remaining accents
+        ascii_name = unicodedata.normalize('NFKD', name)
+        ascii_name = ascii_name.encode('ascii', 'ignore').decode('ascii')
+
+        # Keep only alphanumerics, split into words and PascalCase them
+        words = re.findall(r'[A-Za-z0-9]+', ascii_name)
+        return ''.join(w.capitalize() for w in words)
     
+    @staticmethod
+    def _ascii_preserve_spaces(name: str) -> str:
+        """
+        Convert name with accents to plain ASCII but keep spaces.
+        "Đa Phúc" -> "Da Phuc"
+        """
+        if not name:
+            return ""
+        name = name.replace('Đ', 'D').replace('đ', 'd')
+        normalized = unicodedata.normalize('NFKD', name)
+        # remove combining marks
+        no_marks = ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+        # keep only alphanumerics and spaces
+        cleaned = re.sub(r'[^A-Za-z0-9\s]', '', no_marks)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned
+
     @staticmethod
     def create_property(value: Any, observed_at: Optional[str] = None, 
                        unit_code: Optional[str] = None) -> Dict:
@@ -84,21 +119,21 @@ class WeatherObservedEntity(NGSILDEntity):
             weather_data: OpenWeather API response
         """
         observed_at = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
-        entity_id = f"urn:ngsi-ld:WeatherObserved:Hanoi-{district_name.replace(' ', '')}-{observed_at}"
+        safe_name = NGSILDEntity._slugify_ascii(district_name)
+        ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
+        entity_id = f"urn:ngsi-ld:WeatherObserved:Hanoi-{safe_name}-{observed_at}"
         
         entity = {
             "id": entity_id,
-            "type": "WeatherObserved",
+            "type": "weatherObserved",
             
             # Station information
-            "name": NGSILDEntity.create_property(f"Weather Station {district_name}"),
+            "name": NGSILDEntity.create_property(f"WeatherStation-{safe_name}"),
             "description": NGSILDEntity.create_property(
-                f"Weather observation station in {district_name}, Hanoi"
+                f"Weather observation station in {ascii_label}, Hanoi"
             ),
-            "stationName": NGSILDEntity.create_property(district_name),
-            "stationCode": NGSILDEntity.create_property(
-                f"HN-{district_name.replace(' ', '').upper()}"
-            ),
+            "stationName": NGSILDEntity.create_property(safe_name),
+            "stationCode": NGSILDEntity.create_property(f"HN-{safe_name.upper()}"),
             
             # Location
             "location": NGSILDEntity.create_geoproperty(
@@ -106,7 +141,7 @@ class WeatherObservedEntity(NGSILDEntity):
                 location['lon']
             ),
             "address": NGSILDEntity.create_property({
-                "addressLocality": district_name,
+                "addressLocality": ascii_label,
                 "addressRegion": "Hanoi",
                 "addressCountry": "VN",
                 "type": "PostalAddress"
@@ -250,7 +285,7 @@ class WeatherObservedEntity(NGSILDEntity):
         
         # SOSA/SSN: Add sensor reference
         entity["refDevice"] = NGSILDEntity.create_relationship(
-            f"urn:ngsi-ld:Device:WeatherSensor-{district_name.replace(' ', '')}"
+            f"urn:ngsi-ld:Device:WeatherSensor-{safe_name}"
         )
         
         return entity
@@ -284,25 +319,25 @@ class AirQualityObservedEntity(NGSILDEntity):
             weather_data: Optional OpenWeather weather data for additional context
         """
         observed_at = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
-        entity_id = f"urn:ngsi-ld:AirQualityObserved:Hanoi-{district_name.replace(' ', '')}-{observed_at}"
+        safe_name = NGSILDEntity._slugify_ascii(district_name)
+        ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
+        entity_id = f"urn:ngsi-ld:AirQualityObserved:Hanoi-{safe_name}-{observed_at}"
         
         components = air_quality_data['list'][0]['components']
         aqi = air_quality_data['list'][0]['main']['aqi']
         
         entity = {
             "id": entity_id,
-            "type": "AirQualityObserved",
+            "type": "airQualityObserved",
             
             # Station information
-            "name": NGSILDEntity.create_property(
-                f"Air Quality Station {district_name}"
-            ),
+            "name": NGSILDEntity.create_property(f"AirQualityStation-{safe_name}"),
             "description": NGSILDEntity.create_property(
-                f"Air quality monitoring station in {district_name}, Hanoi"
+                f"Air quality monitoring station in {ascii_label}, Hanoi"
             ),
-            "stationName": NGSILDEntity.create_property(district_name),
+            "stationName": NGSILDEntity.create_property(safe_name),
             "stationCode": NGSILDEntity.create_property(
-                f"HN-AQ-{district_name.replace(' ', '').upper()}"
+                f"HN-AQ-{safe_name.upper()}"
             ),
             
             # Location
@@ -311,7 +346,7 @@ class AirQualityObservedEntity(NGSILDEntity):
                 location['lon']
             ),
             "address": NGSILDEntity.create_property({
-                "addressLocality": district_name,
+                "addressLocality": ascii_label,
                 "addressRegion": "Hanoi",
                 "addressCountry": "VN",
                 "type": "PostalAddress"
@@ -470,14 +505,14 @@ class AirQualityObservedEntity(NGSILDEntity):
             observed_at
         )
         
-        # SOSA/SSN: Add device reference
+        # SOSA/SSN: Add device reference (use slug)
         entity["refDevice"] = NGSILDEntity.create_relationship(
-            f"urn:ngsi-ld:Device:AirQualitySensor-{district_name.replace(' ', '')}"
+            f"urn:ngsi-ld:Device:AirQualitySensor-{safe_name}"
         )
         
-        # Optional: Point of Interest reference (landmark in the district)
+        # Optional: Point of Interest reference (landmark in the district) - use slug
         entity["refPointOfInterest"] = NGSILDEntity.create_relationship(
-            f"urn:ngsi-ld:PointOfInterest:Hanoi-{district_name.replace(' ', '')}"
+            f"urn:ngsi-ld:PointOfInterest:Hanoi-{safe_name}"
         )
         
         return entity
