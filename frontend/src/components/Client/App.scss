@@ -19,28 +19,17 @@
  * @Copyright (C) 2024 CHK. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
-import {
-  Routes,
-  Route
-} from 'react-router-dom';
-import Client from './components/Client/App.jsx';
-import StationMap from './components/Client/StationMap/StationMap.jsx';
-import AirQuality from './components/Client/AirQuality/AirQuality.jsx';
-import OpenData from './components/Client/OpenData/OpenData.jsx';
-import About from './components/Client/About/About.jsx';
-
-const App = () => {
-  return (
-    <>
-      <Routes>
-        <Route path="/" element={<Client />}>
-          <Route index element={<StationMap />} />
-          <Route path="air-quality" element={<AirQuality />} />
-          <Route path="open-data" element={<OpenData />} />
-          <Route path="about" element={<About />} />
-        </Route>
-      </Routes>
-    </>
-  )
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-export default App
+
+.app-wrapper {
+    min-height: 100vh;
+    background-color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+        "Droid Sans", "Helvetica Neue", sans-serif;
+    display: flex;
+    flex-direction: column;
+}
