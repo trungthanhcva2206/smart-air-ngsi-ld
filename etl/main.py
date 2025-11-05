@@ -23,7 +23,7 @@
 """
 
 """
-Main entry point for ETL Pipeline
+Main entry point for ETL Pipeline with QuantumLeap Integration
 """
 import logging
 import schedule
@@ -32,9 +32,15 @@ import sys
 from datetime import datetime
 from etl_pipeline import ETLPipeline
 from orion_client import OrionLDClient
+from quantum_leap_client import QuantumLeapClient
+from subscription_manager import SubscriptionManager
 from sosa_ssn_models import SensorEntity, PlatformEntity, ObservablePropertyEntity
-from config import ETL_INTERVAL_MINUTES, LOG_LEVEL, HANOI_DISTRICTS
-import sys
+from config import (
+    ETL_INTERVAL_MINUTES, LOG_LEVEL, HANOI_DISTRICTS,
+    QUANTUMLEAP_ENABLED
+)
+
+# Configure UTF-8 encoding for stdout/stderr
 try:
     # Python 3.7+
     sys.stdout.reconfigure(encoding='utf-8')
@@ -50,7 +56,7 @@ logging.basicConfig(
     level=getattr(logging, LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('etl.log'),
+        logging.FileHandler('etl.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -125,7 +131,6 @@ def initialize_sosa_ssn_infrastructure(orion_client: OrionLDClient) -> bool:
             else:
                 total_error += 1
             
-           
             # Air Quality Sensor
             aq_sensor = SensorEntity.create_air_quality_sensor(district_name, location)
             if orion_client.create_or_update_entity(aq_sensor):
@@ -145,6 +150,67 @@ def initialize_sosa_ssn_infrastructure(orion_client: OrionLDClient) -> bool:
         
     except Exception as e:
         logger.error(f"Error during SOSA/SSN initialization: {e}", exc_info=True)
+        return False
+
+
+def check_quantumleap_connection() -> bool:
+    """
+    Check QuantumLeap connection and health
+    
+    Returns:
+        True if QuantumLeap is available, False otherwise
+    """
+    if not QUANTUMLEAP_ENABLED:
+        logger.info("QuantumLeap is disabled in configuration")
+        return False
+    
+    logger.info("Checking QuantumLeap connection...")
+    
+    try:
+        ql_client = QuantumLeapClient()
+        
+        # Check health
+        health = ql_client.get_health()
+        if health:
+            logger.info("[OK] QuantumLeap is healthy")
+            
+            # Get version info
+            version = ql_client.get_version()
+            if version:
+                logger.info(f"  Version: {version.get('version', 'unknown')}")
+            
+            return True
+        else:
+            logger.warning("[WARNING] QuantumLeap health check failed")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error checking QuantumLeap: {e}")
+        return False
+
+
+def setup_quantumleap_subscriptions() -> bool:
+    """
+    Set up subscriptions from Orion-LD to QuantumLeap
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    if not QUANTUMLEAP_ENABLED:
+        return True
+    
+    logger.info("\n" + "=" * 70)
+    logger.info("Setting up QuantumLeap Subscriptions")
+    logger.info("=" * 70)
+    
+    try:
+        subscription_mgr = SubscriptionManager()
+        results = subscription_mgr.setup_all_subscriptions()
+        
+        return all(results.values())
+        
+    except Exception as e:
+        logger.error(f"Error setting up QuantumLeap subscriptions: {e}", exc_info=True)
         return False
 
 
@@ -168,7 +234,7 @@ def main():
     """Main function"""
     logger.info("=" * 70)
     logger.info("Smart Air Quality Monitoring ETL Pipeline")
-    logger.info("Hanoi Smart City Project - NGSI-LD + SOSA/SSN")
+    logger.info("Hanoi Smart City Project - NGSI-LD + SOSA/SSN + QuantumLeap")
     logger.info("=" * 70)
     
     try:
@@ -183,9 +249,22 @@ def main():
                 sys.exit(1)
             logger.info("\n" + "=" * 70)
         
+        # Check QuantumLeap connection
+        if QUANTUMLEAP_ENABLED:
+            if check_quantumleap_connection():
+                # Setup subscriptions
+                if not setup_quantumleap_subscriptions():
+                    logger.warning("Failed to set up some QuantumLeap subscriptions")
+                    logger.warning("Time series data may not be persisted")
+            else:
+                logger.warning("QuantumLeap is not available")
+                logger.warning("Time series data will not be persisted")
+        
+        logger.info("\n" + "=" * 70)
         logger.info(f"ETL Interval: {ETL_INTERVAL_MINUTES} minutes")
         logger.info(f"Number of districts: {len(HANOI_DISTRICTS)}")
         logger.info(f"Estimated daily requests: {(1440 / ETL_INTERVAL_MINUTES) * len(HANOI_DISTRICTS) * 2:.0f}")
+        logger.info(f"QuantumLeap: {'Enabled' if QUANTUMLEAP_ENABLED else 'Disabled'}")
         logger.info("=" * 70)
         
         # Run immediately on startup

@@ -40,6 +40,11 @@ OPENWEATHER_AIR_POLLUTION_URL = 'http://api.openweathermap.org/data/2.5/air_poll
 ORION_LD_URL = os.getenv('ORION_LD_URL', 'http://localhost:1026')
 ORION_LD_TENANT = os.getenv('ORION_LD_TENANT', 'hanoi')
 
+# QuantumLeap Configuration
+QUANTUMLEAP_EXTERNAL_URL = os.getenv('QUANTUMLEAP_EXTERNAL_URL', 'http://localhost:8668')
+QUANTUMLEAP_INTERNAL_URL = os.getenv('QUANTUMLEAP_INTERNAL_URL', 'http://fiware-quantumleap:8668')
+QUANTUMLEAP_ENABLED = os.getenv('QUANTUMLEAP_ENABLED', 'true').lower() == 'true'
+
 # ETL Configuration
 # Với 126 phường/xã: 126 locations × 2 APIs × 3 cycles/day = 756 requests/day < 1000 limit
 # 24 hours / 3 cycles = 480 minutes (8 hours) per cycle
