@@ -65,30 +65,44 @@ class SubscriptionManager:
             ],
             "watchedAttributes": [
                 "temperature",
+                "feelsLikeTemperature",
                 "atmosphericPressure",
                 "relativeHumidity",
                 "windSpeed",
                 "windDirection",
                 "precipitation",
+                "pressureTendency",
                 "visibility",
                 "cloudiness",
-                "illuminance"
+                "illuminance",
+                "weatherType",
+                "weatherDescription"
             ],
             "notification": {
                 "attributes": [
                     "temperature",
+                    "feelsLikeTemperature",
                     "atmosphericPressure",
                     "relativeHumidity",
                     "windSpeed",
                     "windDirection",
                     "precipitation",
+                    "pressureTendency",
                     "visibility",
                     "cloudiness",
                     "illuminance",
                     "weatherType",
+                    "weatherDescription",
+                    "stationName",
+                    "stationCode",
                     "location",
                     "dateObserved",
-                    "stationName"
+                    "name",
+                    "description",
+                    "address",
+                    "source",
+                    "dataProvider",
+                    "refDevice"
                 ],
                 "format": "normalized",
                 "endpoint": {
@@ -119,6 +133,7 @@ class SubscriptionManager:
             ],
             "watchedAttributes": [
                 "airQualityIndex",
+                "airQualityLevel",
                 "CO",
                 "NO",
                 "NO2",
@@ -128,9 +143,13 @@ class SubscriptionManager:
                 "pm2_5",
                 "pm10",
                 "NH3",
+                "reliability",
                 "temperature",
                 "relativeHumidity",
-                "windSpeed"
+                "windSpeed",
+                "windDirection",
+                "precipitation",
+                "CO_Level"
             ],
             "notification": {
                 "attributes": [
@@ -145,12 +164,130 @@ class SubscriptionManager:
                     "pm2_5",
                     "pm10",
                     "NH3",
+                    "reliability",
                     "temperature",
                     "relativeHumidity",
                     "windSpeed",
+                    "windDirection",
+                    "precipitation",
+                    "CO_Level",
+                    "stationName",
+                    "stationCode",
                     "location",
                     "dateObserved",
-                    "stationName"
+                    "name",
+                    "description",
+                    "address",
+                    "source",
+                    "dataProvider",
+                    "refDevice",
+                    "refPointOfInterest"
+                ],
+                "format": "normalized",
+                "endpoint": {
+                    "uri": f"{self.quantumleap_url}/v2/notify",
+                    "accept": "application/json"
+                }
+            },
+            "@context": NGSI_LD_CONTEXT
+        }
+        
+        return self._create_subscription(subscription)
+    
+    def create_device_subscription(self) -> Optional[str]:
+        """
+        Create subscription for Device entities (Sensors)
+        
+        Returns:
+            Subscription ID or None if failed
+        """
+        subscription = {
+            "id": "urn:ngsi-ld:Subscription:Device-QuantumLeap",
+            "type": "Subscription",
+            "description": "Notify QuantumLeap of all Device (Sensor) changes",
+            "entities": [
+                {
+                    "type": "Device"
+                }
+            ],
+            "watchedAttributes": [
+                "deviceState",
+                "location",
+                "controlledProperty",
+                "deviceCategory",
+                "hardwareVersion",
+                "softwareVersion",
+                "firmwareVersion"
+            ],
+            "notification": {
+                "attributes": [
+                    "name",
+                    "description",
+                    "deviceState",
+                    "deviceCategory",
+                    "controlledProperty",
+                    "location",
+                    "sensorType",
+                    "serialNumber",
+                    "hardwareVersion",
+                    "softwareVersion",
+                    "firmwareVersion",
+                    "brandName",
+                    "modelName",
+                    "dateInstalled",
+                    "dateFirstUsed",
+                    "dataProvider",
+                    "owner",
+                    "observes",
+                    "isHostedBy"
+                ],
+                "format": "normalized",
+                "endpoint": {
+                    "uri": f"{self.quantumleap_url}/v2/notify",
+                    "accept": "application/json"
+                }
+            },
+            "@context": NGSI_LD_CONTEXT
+        }
+        
+        return self._create_subscription(subscription)
+    
+    def create_platform_subscription(self) -> Optional[str]:
+        """
+        Create subscription for Platform entities
+        
+        Returns:
+            Subscription ID or None if failed
+        """
+        subscription = {
+            "id": "urn:ngsi-ld:Subscription:Platform-QuantumLeap",
+            "type": "Subscription",
+            "description": "Notify QuantumLeap of all Platform changes",
+            "entities": [
+                {
+                    "type": "Platform"
+                }
+            ],
+            "watchedAttributes": [
+                "status",
+                "location",
+                "hosts",
+                "monitoringCategories"
+            ],
+            "notification": {
+                "attributes": [
+                    "name",
+                    "description",
+                    "location",
+                    "address",
+                    "hosts",
+                    "platformType",
+                    "monitoringCategories",
+                    "status",
+                    "deploymentDate",
+                    "owner",
+                    "operator",
+                    "purpose"
                 ],
                 "format": "normalized",
                 "endpoint": {
@@ -347,7 +484,7 @@ class SubscriptionManager:
         
         results = {}
         
-        logger.info("\n[1/2] Creating WeatherObserved subscription...")
+        logger.info("\n[1/4] Creating WeatherObserved subscription...")
         weather_sub_id = self.create_weather_subscription()
         results['weather'] = weather_sub_id
         if weather_sub_id:
@@ -355,13 +492,29 @@ class SubscriptionManager:
         else:
             logger.error("  [FAIL] Failed to create WeatherObserved subscription")
         
-        logger.info("\n[2/2] Creating AirQualityObserved subscription...")
+        logger.info("\n[2/4] Creating AirQualityObserved subscription...")
         air_quality_sub_id = self.create_air_quality_subscription()
         results['air_quality'] = air_quality_sub_id
         if air_quality_sub_id:
             logger.info(f"  [OK] AirQualityObserved subscription: {air_quality_sub_id}")
         else:
             logger.error("  [FAIL] Failed to create AirQualityObserved subscription")
+        
+        logger.info("\n[3/4] Creating Device subscription...")
+        device_sub_id = self.create_device_subscription()
+        results['device'] = device_sub_id
+        if device_sub_id:
+            logger.info(f"  [OK] Device subscription: {device_sub_id}")
+        else:
+            logger.error("  [FAIL] Failed to create Device subscription")
+        
+        logger.info("\n[4/4] Creating Platform subscription...")
+        platform_sub_id = self.create_platform_subscription()
+        results['platform'] = platform_sub_id
+        if platform_sub_id:
+            logger.info(f"  [OK] Platform subscription: {platform_sub_id}")
+        else:
+            logger.error("  [FAIL] Failed to create Platform subscription")
         
         logger.info("\n" + "=" * 70)
         if all(results.values()):
