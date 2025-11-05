@@ -75,7 +75,7 @@ services:
 
   # TimescaleDB for Time Series Storage
   timescale-db:
-    image: timescale/timescaledb:latest-pg15
+    image: timescale/timescaledb-ha:pg15-latest
     hostname: timescale-db
     container_name: db-timescale
     ports:
@@ -86,6 +86,7 @@ services:
       - POSTGRES_DB=quantumleap
     volumes:
       - timescale-db-data:/var/lib/postgresql/data
+      - ./init-postgis.sh:/docker-entrypoint-initdb.d/01-init-postgis.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quantumleap"]
       interval: 30s

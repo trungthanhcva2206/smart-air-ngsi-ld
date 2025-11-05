@@ -69,6 +69,15 @@ class NGSILDEntity:
         return cleaned
 
     @staticmethod
+    def _to_int_safe(value: float) -> int:
+        """
+        Convert float to int safely for QuantumLeap.
+        Multiply by 10 to preserve 1 decimal place precision.
+        Example: 21.1 → 211, 1.65 → 17 (rounded)
+        """
+        return int(round(value * 10))
+    
+    @staticmethod
     def create_property(value: Any, observed_at: Optional[str] = None, 
                        unit_code: Optional[str] = None) -> Dict:
         """Create a NGSI-LD Property"""
@@ -156,30 +165,31 @@ class WeatherObservedEntity(NGSILDEntity):
                 }
             },
             
-            # Temperature (Celsius)
+            # Temperature (Celsius) - Convert to int*10 to avoid QuantumLeap bigint issue
+            # 21.1°C → 211 (divide by 10 when querying)
             "temperature": NGSILDEntity.create_property(
-                round(weather_data['main']['temp'], 1),
+                NGSILDEntity._to_int_safe(weather_data['main']['temp']),
                 observed_at,
                 "CEL"
             ),
             "feelsLikeTemperature": NGSILDEntity.create_property(
-                round(weather_data['main']['feels_like'], 1),
+                NGSILDEntity._to_int_safe(weather_data['main']['feels_like']),
                 observed_at,
                 "CEL"
             ),
             
-            # Pressure (hPa)
+            # Pressure (hPa) - Keep as int (no decimals needed)
             "atmosphericPressure": NGSILDEntity.create_property(
-                round(weather_data['main']['pressure'], 1),
+                int(round(weather_data['main']['pressure'])),
                 observed_at,
                 "HPA"
             ),
             
-            # Humidity (0-1 range)
+            # Humidity (0-100 range, converted to int percentage)
             "relativeHumidity": NGSILDEntity.create_property(
-                round(weather_data['main']['humidity'] / 100, 2),
+                weather_data['main']['humidity'],
                 observed_at,
-                "C62"  # Dimensionless (0-1)
+                "C62"  # Store as integer 0-100
             ),
             
             # Weather conditions
@@ -192,9 +202,9 @@ class WeatherObservedEntity(NGSILDEntity):
                 observed_at
             ),
             
-            # Wind
+            # Wind - Convert to int*10
             "windSpeed": NGSILDEntity.create_property(
-                round(weather_data['wind']['speed'], 1),
+                NGSILDEntity._to_int_safe(weather_data['wind']['speed']),
                 observed_at,
                 "MTS"
             ),
@@ -220,25 +230,25 @@ class WeatherObservedEntity(NGSILDEntity):
                 "MTR"
             )
         
-        # Optional: Cloudiness (0-1 range)
+        # Optional: Cloudiness (0-100 as integer percentage)
         if 'clouds' in weather_data:
             entity["cloudiness"] = NGSILDEntity.create_property(
-                round(weather_data['clouds']['all'] / 100, 2),
+                weather_data['clouds']['all'],
                 observed_at,
                 "C62"
             )
         
-        # Optional: Precipitation (mm) - rain in last 1h
+        # Optional: Precipitation (mm*10 to keep 1 decimal)
         if 'rain' in weather_data and '1h' in weather_data['rain']:
             entity["precipitation"] = NGSILDEntity.create_property(
-                weather_data['rain']['1h'],
+                NGSILDEntity._to_int_safe(weather_data['rain']['1h']),
                 observed_at,
                 "MMT"  # Millimeter
             )
         elif 'rain' in weather_data and '3h' in weather_data['rain']:
             # Convert 3h to 1h average
             entity["precipitation"] = NGSILDEntity.create_property(
-                round(weather_data['rain']['3h'] / 3, 2),
+                NGSILDEntity._to_int_safe(weather_data['rain']['3h'] / 3),
                 observed_at,
                 "MMT"
             )
@@ -439,23 +449,23 @@ class AirQualityObservedEntity(NGSILDEntity):
         
         # Add weather context if available
         if weather_data:
-            # Temperature
+            # Temperature - Convert to int*10
             entity["temperature"] = NGSILDEntity.create_property(
-                round(weather_data['main']['temp'], 1),
+                NGSILDEntity._to_int_safe(weather_data['main']['temp']),
                 observed_at,
                 "CEL"
             )
             
-            # Relative Humidity (0-1 range)
+            # Relative Humidity (0-100 as integer percentage)
             entity["relativeHumidity"] = NGSILDEntity.create_property(
-                round(weather_data['main']['humidity'] / 100, 2),
+                weather_data['main']['humidity'],
                 observed_at,
                 "C62"
             )
             
-            # Wind Speed
+            # Wind Speed - Convert to int*10
             entity["windSpeed"] = NGSILDEntity.create_property(
-                round(weather_data['wind']['speed'], 2),
+                NGSILDEntity._to_int_safe(weather_data['wind']['speed']),
                 observed_at,
                 "MTS"
             )
@@ -468,16 +478,16 @@ class AirQualityObservedEntity(NGSILDEntity):
                     "DD"
                 )
             
-            # Precipitation
+            # Precipitation - Convert to int*10
             if 'rain' in weather_data and '1h' in weather_data['rain']:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    round(weather_data['rain']['1h'], 2),
+                    NGSILDEntity._to_int_safe(weather_data['rain']['1h']),
                     observed_at,
                     "MMT"
                 )
             elif 'rain' in weather_data and '3h' in weather_data['rain']:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    round(weather_data['rain']['3h'] / 3, 2),
+                    NGSILDEntity._to_int_safe(weather_data['rain']['3h'] / 3),
                     observed_at,
                     "MMT"
                 )
