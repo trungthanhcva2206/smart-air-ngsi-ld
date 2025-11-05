@@ -111,9 +111,9 @@ def initialize_sosa_ssn_infrastructure(orion_client: OrionLDClient) -> bool:
         logger.info("\n[STEP 2/2] Creating Platforms and Sensors...")
         
         for district_name, location in HANOI_DISTRICTS.items():
-            # Weather Platform
-            weather_platform = PlatformEntity.create_weather_platform(district_name, location)
-            if orion_client.create_or_update_entity(weather_platform):
+            # Unified Environment Platform (hosts both sensors)
+            env_platform = PlatformEntity.create_environment_platform(district_name, location)
+            if orion_client.create_or_update_entity(env_platform):
                 total_success += 1
             else:
                 total_error += 1
@@ -125,13 +125,7 @@ def initialize_sosa_ssn_infrastructure(orion_client: OrionLDClient) -> bool:
             else:
                 total_error += 1
             
-            # Air Quality Platform
-            aq_platform = PlatformEntity.create_air_quality_platform(district_name, location)
-            if orion_client.create_or_update_entity(aq_platform):
-                total_success += 1
-            else:
-                total_error += 1
-            
+           
             # Air Quality Sensor
             aq_sensor = SensorEntity.create_air_quality_sensor(district_name, location)
             if orion_client.create_or_update_entity(aq_sensor):

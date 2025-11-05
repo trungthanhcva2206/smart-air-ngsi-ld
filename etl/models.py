@@ -128,7 +128,7 @@ class WeatherObservedEntity(NGSILDEntity):
             "type": "weatherObserved",
             
             # Station information
-            "name": NGSILDEntity.create_property(f"WeatherStation-{safe_name}"),
+            "name": NGSILDEntity.create_property(f"Weather-{safe_name}"),
             "description": NGSILDEntity.create_property(
                 f"Weather observation station in {ascii_label}, Hanoi"
             ),
@@ -331,7 +331,7 @@ class AirQualityObservedEntity(NGSILDEntity):
             "type": "airQualityObserved",
             
             # Station information
-            "name": NGSILDEntity.create_property(f"AirQualityStation-{safe_name}"),
+            "name": NGSILDEntity.create_property(f"AirQuality-{safe_name}"),
             "description": NGSILDEntity.create_property(
                 f"Air quality monitoring station in {ascii_label}, Hanoi"
             ),
