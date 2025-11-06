@@ -5,41 +5,145 @@ services:
   mongo-db:
     image: mongo:4.4
     hostname: mongo-db
-    container_name: fiware-mongo
+    container_name: db-mongo
     ports:
       - "27017:27017"
-    networks:
-      - fiware
     volumes:
-      - mongo-db:/data/db
+      - mongo-db-data:/data/db
+      - mongo-db-config:/data/configdb
+    environment:
+      - MONGO_INITDB_DATABASE=orion
+    command: --nojournal
     healthcheck:
       test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
 
   # Orion-LD Context Broker
-  orion-ld:
+  orion:
     image: fiware/orion-ld:latest
-    hostname: orion-ld
-    container_name: fiware-orion-ld
+    hostname: orion
+    container_name: fiware-orion
     depends_on:
-      mongo-db:
-        condition: service_healthy
+      - mongo-db
     ports:
       - "1026:1026"
-    networks:
-      - fiware
-    command: -dbhost mongo-db -logLevel DEBUG
+    environment:
+      - ORIONLD_MONGO_HOST=mongo-db
+      - ORIONLD_MONGO_DB=orion
+      - ORIONLD_PORT=1026
+      - ORIONLD_MULTI_SERVICE=TRUE
+      - ORIONLD_DISABLE_FILE_LOG=TRUE
+      - ORIONLD_LOG_LEVEL=INFO
+    command: -dbhost mongo-db -logLevel INFO -forwarding
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:1026/version"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: curl --fail -s http://localhost:1026/version || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-networks:
-  fiware:
-    driver: bridge
+  # QuantumLeap Time Series Data API
+  quantumleap:
+    image: orchestracities/quantumleap:1.0.0
+    hostname: quantumleap
+    container_name: fiware-quantumleap
+    depends_on:
+      - timescale-db
+      - redis-cache
+    ports:
+      - "8668:8668"
+    environment:
+      - QL_DEFAULT_DB=timescale
+      - POSTGRES_HOST=timescale-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=quantumleap
+      - POSTGRES_DB_USER=quantumleap
+      - POSTGRES_DB_PASS=quantumleap
+      - POSTGRES_USE_SSL=False
+      - USE_GEOCODING=False
+      - CACHE_QUERIES=True
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - LOGLEVEL=INFO
+    healthcheck:
+      test: curl --fail -s http://localhost:8668/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # TimescaleDB for Time Series Storage
+  timescale-db:
+    image: timescale/timescaledb-ha:pg15-latest
+    hostname: timescale-db
+    container_name: db-timescale
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=quantumleap
+      - POSTGRES_PASSWORD=quantumleap
+      - POSTGRES_DB=quantumleap
+    volumes:
+      - timescale-db-data:/var/lib/postgresql/data
+      - ./init-postgis.sh:/docker-entrypoint-initdb.d/01-init-postgis.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantumleap"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache for QuantumLeap
+  redis-cache:
+    image: redis:7-alpine
+    hostname: redis-cache
+    container_name: cache-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-cache-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana for Data Visualization
+  grafana:
+    image: grafana/grafana:10.2.2
+    hostname: grafana
+    container_name: grafana
+    depends_on:
+      - timescale-db
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  mongo-db:
+  mongo-db-data:
+    driver: local
+  mongo-db-config:
+    driver: local
+  timescale-db-data:
+    driver: local
+  redis-cache-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  default:
+    name: fiware-network
+    driver: bridge
