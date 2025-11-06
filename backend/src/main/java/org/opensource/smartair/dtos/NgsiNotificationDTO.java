@@ -19,16 +19,21 @@
 * @Copyright (C) 2024 CHK. All rights reserved
 * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
-package org.opensource.smartair;
+package org.opensource.smartair.dtos;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.Data;
+import java.util.List;
+import java.util.Map;
 
-@SpringBootApplication
-public class SmartairApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(SmartairApplication.class, args);
-	}
-
+/**
+ * DTO for NGSI-LD Notification payload
+ * Format: normalized
+ */
+@Data
+public class NgsiNotificationDTO {
+    private String id; // Subscription ID
+    private String type; // "Notification"
+    private String subscriptionId;
+    private String notifiedAt;
+    private List<Map<String, Object>> data; // Array of entities
 }

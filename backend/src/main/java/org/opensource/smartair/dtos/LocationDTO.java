@@ -19,16 +19,22 @@
 * @Copyright (C) 2024 CHK. All rights reserved
 * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
-package org.opensource.smartair;
+package org.opensource.smartair.dtos;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@SpringBootApplication
-public class SmartairApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(SmartairApplication.class, args);
-	}
-
+/**
+ * DTO for Geographic Location (lat, lon)
+ * Transformed from NGSI-LD GeoProperty format
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class LocationDTO {
+    private Double lat;
+    private Double lon;
 }
