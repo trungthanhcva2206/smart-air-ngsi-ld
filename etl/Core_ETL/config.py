@@ -28,8 +28,10 @@ Configuration module for ETL pipeline
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+ENV_PATH = os.path.join(ROOT_DIR, '.env')
+
+load_dotenv(dotenv_path=ENV_PATH)
 
 # OpenWeather API Configuration
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
@@ -57,7 +59,7 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 # Tọa độ cacs tram quan trắc sẽ được load từ file GeoJSON
 try:
     # try local import (same folder)
-    from districts_loader import HANOI_DISTRICTS
+    from ..Data.districts_loader import HANOI_DISTRICTS
 except Exception:
     # fallback to empty dict if loader not available
     HANOI_DISTRICTS = {}
