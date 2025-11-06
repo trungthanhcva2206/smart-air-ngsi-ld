@@ -29,7 +29,7 @@ import requests
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
-from config import QUANTUMLEAP_EXTERNAL_URL, ORION_LD_TENANT
+from .config import QUANTUMLEAP_EXTERNAL_URL, ORION_LD_TENANT
 
 logger = logging.getLogger(__name__)
 

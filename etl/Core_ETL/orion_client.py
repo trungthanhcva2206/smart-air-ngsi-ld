@@ -28,7 +28,7 @@ Orion-LD Context Broker Client
 import requests
 import logging
 from typing import Dict, Optional
-from config import ORION_LD_URL, ORION_LD_TENANT, NGSI_LD_CONTEXT
+from .config import ORION_LD_URL, ORION_LD_TENANT, NGSI_LD_CONTEXT
 
 logger = logging.getLogger(__name__)
 

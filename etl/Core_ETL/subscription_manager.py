@@ -29,7 +29,7 @@ Automatically creates subscriptions to forward data to QuantumLeap
 import requests
 import logging
 from typing import Dict, List, Optional
-from config import ORION_LD_URL, ORION_LD_TENANT, QUANTUMLEAP_INTERNAL_URL, NGSI_LD_CONTEXT
+from .config import ORION_LD_URL, ORION_LD_TENANT, QUANTUMLEAP_INTERNAL_URL, NGSI_LD_CONTEXT
 
 logger = logging.getLogger(__name__)
 
