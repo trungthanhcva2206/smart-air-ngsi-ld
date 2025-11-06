@@ -28,7 +28,7 @@ OpenWeather API Client
 import requests
 import logging
 from typing import Dict, Optional
-from config import (
+from .config import (
     OPENWEATHER_API_KEY,
     OPENWEATHER_WEATHER_URL,
     OPENWEATHER_AIR_POLLUTION_URL

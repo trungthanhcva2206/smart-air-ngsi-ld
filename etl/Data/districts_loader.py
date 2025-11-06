@@ -71,5 +71,5 @@ def load_hanoi_districts_from_geojson(path: str) -> Dict[str, Dict]:
 
 
 # Default path can be overridden with env var HANOI_GEOJSON_PATH
-DEFAULT_GEOJSON = os.getenv('HANOI_GEOJSON_PATH', r'd:\smart-air-ngsi-ld\etl\ha_noi_with_latlon2.geojson')
+DEFAULT_GEOJSON = os.getenv('HANOI_GEOJSON_PATH', 'etl/Data/ha_noi_with_latlon2.geojson')
 HANOI_DISTRICTS = load_hanoi_districts_from_geojson(DEFAULT_GEOJSON)

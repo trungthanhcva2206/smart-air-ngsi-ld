@@ -33,7 +33,7 @@ SOSA (Sensor, Observation, Sample, and Actuator) ontology provides:
 - Observation: Act of carrying out an observation (our WeatherObserved/AirQualityObserved)
 """
 from typing import Dict, List
-from models import NGSILDEntity
+from .models import NGSILDEntity
 
 
 class SensorEntity(NGSILDEntity):
@@ -100,7 +100,9 @@ class SensorEntity(NGSILDEntity):
             },
             
             # Hosted by Platform
-            "isHostedBy": NGSILDEntity.create_relationship(f"urn:ngsi-ld:Platform:WeatherStation-{safe_name}"),
+            "isHostedBy": NGSILDEntity.create_relationship(
+                f"urn:ngsi-ld:Platform:EnvironmentStation-{safe_name}"
+            ),
             
             # Technical specifications
             "serialNumber": NGSILDEntity.create_property(
@@ -191,7 +193,7 @@ class SensorEntity(NGSILDEntity):
             
             # Hosted by Platform
             "isHostedBy": NGSILDEntity.create_relationship(
-                f"urn:ngsi-ld:Platform:AirQualityStation-{safe_name}"
+                f"urn:ngsi-ld:Platform:EnvironmentStation-{safe_name}"
             ),
             
             # Technical specifications
@@ -226,9 +228,10 @@ class PlatformEntity(NGSILDEntity):
     """
     
     @staticmethod
-    def create_weather_platform(district_name: str, location: Dict) -> Dict:
+    def create_environment_platform(district_name: str, location: Dict) -> Dict:
         """
-        Create Weather Station Platform entity
+        Create unified Environment Monitoring Platform entity that hosts both
+        weather and air quality sensors
         
         Args:
             district_name: Name of the district
@@ -236,7 +239,7 @@ class PlatformEntity(NGSILDEntity):
         """
         safe_name = NGSILDEntity._slugify_ascii(district_name)
         ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
-        entity_id = f"urn:ngsi-ld:Platform:WeatherStation-{safe_name}"
+        entity_id = f"urn:ngsi-ld:Platform:EnvironmentStation-{safe_name}"
         
         entity = {
             "id": entity_id,
@@ -244,10 +247,10 @@ class PlatformEntity(NGSILDEntity):
             
             # Basic information
             "name": NGSILDEntity.create_property(
-                f"Weather Monitoring Platform - {ascii_label}"
+                f"Environment Monitoring Platform - {ascii_label}"
             ),
             "description": NGSILDEntity.create_property(
-                f"Weather monitoring platform hosting sensors in {ascii_label}, Hanoi"
+                f"Integrated environment monitoring platform hosting weather and air quality sensors in {ascii_label}, Hanoi"
             ),
             
             # Location
@@ -262,16 +265,23 @@ class PlatformEntity(NGSILDEntity):
                 "type": "PostalAddress"
             }),
             
-            # SOSA/SSN: Hosts sensors
+            # SOSA/SSN: Hosts both weather and air quality sensors
             "hosts": {
                 "type": "Relationship",
                 "object": [
-                    f"urn:ngsi-ld:Device:WeatherSensor-{safe_name}"
+                    f"urn:ngsi-ld:Device:WeatherSensor-{safe_name}",
+                    f"urn:ngsi-ld:Device:AirQualitySensor-{safe_name}"
                 ]
             },
             
-            # Platform type
-            "platformType": NGSILDEntity.create_property("WeatherMonitoringStation"),
+            # Platform type - unified environment monitoring
+            "platformType": NGSILDEntity.create_property("EnvironmentMonitoringStation"),
+            
+            # Categories of monitoring
+            "monitoringCategories": NGSILDEntity.create_property([
+                "weather",
+                "airQuality"
+            ]),
             
             # Status
             "status": NGSILDEntity.create_property("operational"),
@@ -279,62 +289,12 @@ class PlatformEntity(NGSILDEntity):
             
             # Owner
             "owner": NGSILDEntity.create_property("Hanoi Department of Environment"),
-            "operator": NGSILDEntity.create_property("Hanoi Smart City Initiative")
-        }
-        
-        return entity
-    
-    @staticmethod
-    def create_air_quality_platform(district_name: str, location: Dict) -> Dict:
-        """
-        Create Air Quality Station Platform entity
-        
-        Args:
-            district_name: Name of the district
-            location: Dictionary with 'lat' and 'lon'
-        """
-        safe_name = NGSILDEntity._slugify_ascii(district_name)
-        ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
-        entity_id = f"urn:ngsi-ld:Platform:AirQualityStation-{safe_name}"
-        
-        entity = {
-            "id": entity_id,
-            "type": "Platform",
+            "operator": NGSILDEntity.create_property("Hanoi Smart City Initiative"),
             
-            # Basic information
-            "name": NGSILDEntity.create_property(f"AirQualityPlatform-{safe_name}"),
-            "description": NGSILDEntity.create_property(
-                f"Air quality monitoring platform hosting sensors in {ascii_label}, Hanoi"
-            ),
-            
-            # Location
-            "location": NGSILDEntity.create_geoproperty(
-                location['lat'], 
-                location['lon']
-            ),
-            "address": NGSILDEntity.create_property({
-                "addressLocality": ascii_label,
-                "addressRegion": "Hanoi",
-                "addressCountry": "VN",
-                "type": "PostalAddress"
-            }),
-            
-            # SOSA/SSN: Hosts sensors
-            "hosts": {
-                "type": "Relationship",
-                "object": [f"urn:ngsi-ld:Device:AirQualitySensor-{safe_name}"]
-            },
-            
-            # Platform type
-            "platformType": NGSILDEntity.create_property("AirQualityMonitoringStation"),
-            
-            # Status
-            "status": NGSILDEntity.create_property("operational"),
-            "deploymentDate": NGSILDEntity.create_property("2025-01-01T00:00:00Z"),
-            
-            # Owner
-            "owner": NGSILDEntity.create_property("Hanoi Department of Environment"),
-            "operator": NGSILDEntity.create_property("Hanoi Smart City Initiative")
+            # Additional metadata
+            "purpose": NGSILDEntity.create_property(
+                "Comprehensive environmental monitoring including meteorological parameters and air quality indicators"
+            )
         }
         
         return entity

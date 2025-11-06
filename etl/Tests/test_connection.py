@@ -27,9 +27,9 @@ Script để test kết nối với OpenWeather API và Orion-LD
 """
 import sys
 from dotenv import load_dotenv
-from openweather_client import OpenWeatherClient
-from orion_client import OrionLDClient
-from models import WeatherObservedEntity, AirQualityObservedEntity
+from etl.Core_ETL.openweather_client import OpenWeatherClient
+from etl.Core_ETL.orion_client import OrionLDClient
+from etl.Core_ETL.models import WeatherObservedEntity, AirQualityObservedEntity
 
 # Load environment
 load_dotenv()
