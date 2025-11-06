@@ -29,10 +29,10 @@ import sys
 import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from quantum_leap_client import QuantumLeapClient
-from subscription_manager import SubscriptionManager
-from openweather_client import OpenWeatherClient
-from models import WeatherObservedEntity, AirQualityObservedEntity
+from etl.Core_ETL.quantum_leap_client import QuantumLeapClient
+from etl.Core_ETL.subscription_manager import SubscriptionManager
+from etl.Core_ETL.openweather_client import OpenWeatherClient
+from etl.Core_ETL.models import WeatherObservedEntity, AirQualityObservedEntity
 
 # Load environment
 load_dotenv()

@@ -33,7 +33,7 @@ SOSA (Sensor, Observation, Sample, and Actuator) ontology provides:
 - Observation: Act of carrying out an observation (our WeatherObserved/AirQualityObserved)
 """
 from typing import Dict, List
-from models import NGSILDEntity
+from .models import NGSILDEntity
 
 
 class SensorEntity(NGSILDEntity):
