@@ -30,12 +30,12 @@ import schedule
 import time
 import sys
 from datetime import datetime
-from etl_pipeline import ETLPipeline
-from orion_client import OrionLDClient
-from quantum_leap_client import QuantumLeapClient
-from subscription_manager import SubscriptionManager
-from sosa_ssn_models import SensorEntity, PlatformEntity, ObservablePropertyEntity
-from config import (
+from .etl_pipeline import ETLPipeline
+from .orion_client import OrionLDClient
+from .quantum_leap_client import QuantumLeapClient
+from .subscription_manager import SubscriptionManager
+from .sosa_ssn_models import SensorEntity, PlatformEntity, ObservablePropertyEntity
+from .config import (
     ETL_INTERVAL_MINUTES, LOG_LEVEL, HANOI_DISTRICTS,
     QUANTUMLEAP_ENABLED
 )

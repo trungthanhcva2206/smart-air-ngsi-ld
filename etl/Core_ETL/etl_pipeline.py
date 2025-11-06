@@ -28,10 +28,10 @@ ETL Pipeline for OpenWeather to Orion-LD
 import logging
 import time
 from typing import Dict
-from openweather_client import OpenWeatherClient
-from orion_client import OrionLDClient
-from models import WeatherObservedEntity, AirQualityObservedEntity
-from config import HANOI_DISTRICTS
+from .openweather_client import OpenWeatherClient
+from .orion_client import OrionLDClient
+from .models import WeatherObservedEntity, AirQualityObservedEntity
+from .config import HANOI_DISTRICTS
 
 logger = logging.getLogger(__name__)
 
