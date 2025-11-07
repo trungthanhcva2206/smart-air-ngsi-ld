@@ -1,0 +1,196 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @Project smart-air-ngsi-ld
+ * @Authors 
+ *    - TT (trungthanhcva2206@gmail.com)
+ *    - Tankchoi (tadzltv22082004@gmail.com)
+ *    - Panh (panh812004.apn@gmail.com)
+ * @Copyright (C) 2024 CHK. All rights reserved
+ * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
+ */
+package org.opensource.smartair.controllers;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.opensource.smartair.dtos.*;
+import org.opensource.smartair.services.SseService;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+
+import java.time.Duration;
+import java.util.Map;
+
+/**
+ * Controller for SSE (Server-Sent Events) streaming
+ * Frontend subscribes to these endpoints to receive real-time updates
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/sse")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*") // Allow CORS for frontend
+public class SseController {
+
+    private final SseService sseService;
+
+    /**
+     * SSE endpoint for weather updates
+     * URL: GET /api/sse/weather/{district}
+     * Example: /api/sse/weather/PhuongHoanKiem
+     */
+    @GetMapping(value = "/weather/{district}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<SseEventDTO<WeatherDataDTO>>> streamWeather(
+            @PathVariable String district) {
+
+        log.info("Client connecting to weather SSE stream for district: {}", district);
+
+        return sseService.subscribeWeather(district)
+                .map(event -> ServerSentEvent.<SseEventDTO<WeatherDataDTO>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("weather.update")
+                        .data(event)
+                        .build())
+                .concatWith(keepAlive());
+    }
+
+    /**
+     * SSE endpoint for air quality updates
+     * URL: GET /api/sse/airquality/{district}
+     * Example: /api/sse/airquality/PhuongHoanKiem
+     */
+    @GetMapping(value = "/airquality/{district}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<SseEventDTO<AirQualityDataDTO>>> streamAirQuality(
+            @PathVariable String district) {
+
+        log.info("Client connecting to air quality SSE stream for district: {}", district);
+
+        return sseService.subscribeAirQuality(district)
+                .map(event -> ServerSentEvent.<SseEventDTO<AirQualityDataDTO>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("airquality.update")
+                        .data(event)
+                        .build())
+                .concatWith(keepAlive());
+    }
+
+    /**
+     * SSE endpoint for platform updates
+     * URL: GET /api/sse/platform/{platformId}
+     * Example:
+     * /api/sse/platform/urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoanKiem
+     */
+    @GetMapping(value = "/platform/{platformId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<SseEventDTO<PlatformDataDTO>>> streamPlatform(
+            @PathVariable String platformId) {
+
+        log.info("Client connecting to platform SSE stream: {}", platformId);
+
+        return sseService.subscribePlatform(platformId)
+                .map(event -> ServerSentEvent.<SseEventDTO<PlatformDataDTO>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("platform.update")
+                        .data(event)
+                        .build())
+                .concatWith(keepAlive());
+    }
+
+    /**
+     * SSE endpoint for device updates
+     * URL: GET /api/sse/device/{deviceId}
+     * Example: /api/sse/device/urn:ngsi-ld:Device:WeatherSensor-PhuongHoanKiem
+     */
+    @GetMapping(value = "/device/{deviceId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<SseEventDTO<DeviceDataDTO>>> streamDevice(
+            @PathVariable String deviceId) {
+
+        log.info("Client connecting to device SSE stream: {}", deviceId);
+
+        return sseService.subscribeDevice(deviceId)
+                .map(event -> ServerSentEvent.<SseEventDTO<DeviceDataDTO>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("device.update")
+                        .data(event)
+                        .build())
+                .concatWith(keepAlive());
+    }
+
+    /**
+     * Combined SSE endpoint for district (weather + air quality)
+     * URL: GET /api/sse/district/{district}
+     * Returns both weather and air quality updates for a district
+     */
+    @GetMapping(value = "/district/{district}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<Map<String, Object>>> streamDistrict(
+            @PathVariable String district) {
+
+        log.info("Client connecting to combined district SSE stream: {}", district);
+
+        Flux<ServerSentEvent<Map<String, Object>>> weatherStream = sseService.subscribeWeather(district)
+                .map(event -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("weather.update")
+                        .data(Map.of("type", "weather", "data", event))
+                        .build());
+
+        Flux<ServerSentEvent<Map<String, Object>>> airQualityStream = sseService.subscribeAirQuality(district)
+                .map(event -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("airquality.update")
+                        .data(Map.of("type", "airquality", "data", event))
+                        .build());
+
+        return Flux.merge(weatherStream, airQualityStream)
+                .concatWith(keepAlive());
+    }
+
+    /**
+     * Monitoring endpoint - get active subscriber counts
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Integer>> getStats() {
+        return ResponseEntity.ok(sseService.getSubscriberCounts());
+    }
+
+    /**
+     * SSE endpoint for ALL platform updates
+     * URL: GET /api/sse/platforms
+     * Use this to receive real-time updates for all platforms on the map
+     */
+    @GetMapping(value = "/platforms", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<SseEventDTO<PlatformDataDTO>>> streamAllPlatforms() {
+        log.info("Client connecting to all-platforms SSE stream");
+
+        return sseService.subscribeAllPlatforms()
+                .map(event -> ServerSentEvent.<SseEventDTO<PlatformDataDTO>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("platform.update")
+                        .data(event)
+                        .build())
+                .concatWith(keepAlive());
+    }
+
+    /**
+     * Keep-alive mechanism to prevent connection timeout
+     * Sends a comment every 30 seconds
+     */
+    private <T> Flux<ServerSentEvent<T>> keepAlive() {
+        return Flux.interval(Duration.ofSeconds(30))
+                .map(seq -> ServerSentEvent.<T>builder()
+                        .comment("keep-alive")
+                        .build());
+    }
+}
