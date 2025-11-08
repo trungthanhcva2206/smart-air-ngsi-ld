@@ -20,13 +20,15 @@
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
 
-import { useState, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl, useMap } from 'react-leaflet';
+import { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, ZoomControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './StationMap.scss';
 import { BsSearch } from 'react-icons/bs';
 import StationInfo from '../StationInfo/StationInfo';
-import { stations, weatherObservations, airQualityObservations } from '../../../mockdata';
+import { usePlatformsSSE } from '../../../hooks/usePlatformSSE';
+import { useDistrictSSE } from '../../../hooks/useDistrictSSE';
+
 
 // Component to handle map fly to selected station
 const MapController = ({ selectedStation }) => {
@@ -46,31 +48,67 @@ const MapController = ({ selectedStation }) => {
 const StationMap = () => {
     const [selectedStation, setSelectedStation] = useState(null);
 
-    // Get observations for selected station
-    const getStationObservations = (station) => {
-        if (!station) return { weather: null, airQuality: null };
+    // Stream all platforms via SSE
+    const { platforms, loading: platformsLoading, error: platformsError } = usePlatformsSSE();
 
-        // Find weather and air quality devices
-        const weatherDevice = station.devices?.find(d =>
-            d.id === 'urn:ngsi-ld:Device:WeatherSensor-BaDinh'
+    // Get district name from selected station
+    const selectedDistrict = selectedStation?.platform?.address?.addressLocality
+        ? selectedStation.platform.address.addressLocality.replace(/\s+/g, '')
+        : null;
+
+    // Stream weather + air quality for selected district
+    const {
+        weatherData,
+        airQualityData,
+        loading: districtLoading,
+        error: districtError
+    } = useDistrictSSE(selectedDistrict);
+
+    // Transform platforms to stations format for map markers
+    const stations = platforms.map(platform => ({
+        id: platform.entityId,
+        lat: platform.location.lat,
+        lng: platform.location.lon,
+        platform: platform,
+    }));
+    const [uiLoading, setUiLoading] = useState(true);
+
+    useEffect(() => {
+        if (!districtLoading) {
+            const timer = setTimeout(() => setUiLoading(false), 1000);
+            return () => clearTimeout(timer);
+        } else {
+            setUiLoading(true);
+        }
+    }, [districtLoading]);
+
+    // Show loading state
+    if (platformsLoading) {
+        return (
+            <div className="map-page flex-fill d-flex align-items-center justify-content-center">
+                <div className="text-center">
+                    <div className="spinner-border text-primary mb-3" role="status">
+                        <span className="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p className="text-muted">Đang tải dữ liệu trạm quan trắc...</p>
+                </div>
+            </div>
         );
-        const airQualityDevice = station.devices?.find(d =>
-            d.id === 'urn:ngsi-ld:Device:AirQualitySensor-BaDinh'
+    }
+
+    // Show error state
+    if (platformsError) {
+        return (
+            <div className="map-page flex-fill d-flex align-items-center justify-content-center">
+                <div className="alert alert-danger" role="alert">
+                    <h5 className="alert-heading">Lỗi kết nối</h5>
+                    <p>{platformsError}</p>
+                    <hr />
+                    <p className="mb-0">Vui lòng kiểm tra kết nối server và thử lại.</p>
+                </div>
+            </div>
         );
-
-        // Get observations for each device
-        const weather = weatherDevice ? weatherObservations.find(
-            obs => obs.refDevice?.object === weatherDevice.id
-        ) : null;
-
-        const airQuality = airQualityDevice ? airQualityObservations.find(
-            obs => obs.refDevice?.object === airQualityDevice.id
-        ) : null;
-
-        return { weather, airQuality };
-    };
-
-    const observations = getStationObservations(selectedStation);
+    }
 
     return (
         <div className="map-page flex-fill position-relative">
@@ -89,9 +127,11 @@ const StationMap = () => {
             >
                 <StationInfo
                     platform={selectedStation?.platform}
-                    devices={selectedStation?.devices}
-                    weatherData={observations.weather}
-                    airQualityData={observations.airQuality}
+                    weatherData={weatherData}
+                    airQualityData={airQualityData}
+                    loading={uiLoading}
+                    error={districtError}
+                    onClose={() => setSelectedStation(null)}
                 />
             </div>
 
@@ -102,12 +142,8 @@ const StationMap = () => {
                 zoom={12}
                 zoomControl={false}
                 scrollWheelZoom
-                maxBounds={[
-                    [20.9, 105.65],  // Southwest coordinates (bottom-left)
-                    [21.15, 105.95]  // Northeast coordinates (top-right)
-                ]}
                 maxBoundsViscosity={1.0}
-                minZoom={11}
+                minZoom={10}
             >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

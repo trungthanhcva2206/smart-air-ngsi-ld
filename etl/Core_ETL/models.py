@@ -130,7 +130,8 @@ class WeatherObservedEntity(NGSILDEntity):
         observed_at = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
         safe_name = NGSILDEntity._slugify_ascii(district_name)
         ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
-        entity_id = f"urn:ngsi-ld:WeatherObserved:Hanoi-{safe_name}-{observed_at}"
+        # Fixed ID per district for SSE real-time updates (no timestamp)
+        entity_id = f"urn:ngsi-ld:WeatherObserved:Hanoi-{safe_name}"
         
         entity = {
             "id": entity_id,
@@ -331,7 +332,8 @@ class AirQualityObservedEntity(NGSILDEntity):
         observed_at = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
         safe_name = NGSILDEntity._slugify_ascii(district_name)
         ascii_label = NGSILDEntity._ascii_preserve_spaces(district_name)
-        entity_id = f"urn:ngsi-ld:AirQualityObserved:Hanoi-{safe_name}-{observed_at}"
+        # Fixed ID per district for SSE real-time updates (no timestamp)
+        entity_id = f"urn:ngsi-ld:AirQualityObserved:Hanoi-{safe_name}"
         
         components = air_quality_data['list'][0]['components']
         aqi = air_quality_data['list'][0]['main']['aqi']

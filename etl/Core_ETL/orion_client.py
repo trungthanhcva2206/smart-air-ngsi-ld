@@ -48,8 +48,8 @@ class OrionLDClient:
     
     def create_or_update_entity(self, entity: Dict) -> bool:
         """
-        Create an entity in Orion-LD
-        Since entity IDs now include timestamps, we always create new entities
+        Upsert entity in Orion-LD (create if not exists, update if exists)
+        This ensures notifications always reference the same entity ID for SSE real-time
         
         Args:
             entity: NGSI-LD entity dictionary
@@ -64,6 +64,7 @@ class OrionLDClient:
         entity_with_context['@context'] = NGSI_LD_CONTEXT
         
         try:
+            # Try POST first (create new entity)
             url = f"{self.base_url}/ngsi-ld/v1/entities"
             response = requests.post(
                 url,
@@ -75,6 +76,10 @@ class OrionLDClient:
             if response.status_code == 201:
                 logger.info(f"Successfully created entity: {entity_id}")
                 return True
+            elif response.status_code == 409:
+                # Entity already exists, update it with PATCH
+                logger.debug(f"Entity {entity_id} exists, updating attributes...")
+                return self._update_entity(entity)
             else:
                 logger.error(
                     f"Error creating entity {entity_id}: "
