@@ -38,6 +38,10 @@ import re
 import threading
 import time
 import requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 warnings.filterwarnings("ignore", category=UserWarning, module="osmnx")
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -48,10 +52,14 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-GRAPH_FILE = "hanoi_road_network.graphml"
-GEOJSON_FILE = "ha_noi_with_latlon2.geojson"
-SPRING_BOOT_URL = "http://localhost:8123/api/v1/environment-data"
-REFRESH_INTERVAL_SECONDS = 3600
+# Load configuration from environment variables
+GRAPH_FILE = os.getenv("GRAPH_FILE", "hanoi_road_network.graphml")
+GEOJSON_FILE = os.getenv("GEOJSON_FILE", "ha_noi_with_latlon2.geojson")
+SPRING_BOOT_URL = os.getenv("SPRING_BOOT_URL", "http://localhost:8081/api/v1/environment-data")
+REFRESH_INTERVAL_SECONDS = int(os.getenv("REFRESH_INTERVAL_SECONDS", "3600"))
+FLASK_HOST = os.getenv("FLASK_HOST", "127.0.0.1")
+FLASK_PORT = int(os.getenv("FLASK_PORT", "5000"))
+FLASK_DEBUG = os.getenv("FLASK_DEBUG", "False").lower() == "true"
 
 G_base = None
 G_main = None
@@ -428,5 +436,5 @@ def find_route_api():
 
 if __name__ == "__main__":
     load_all_data()
-    logger.info(f"✅ Máy chủ Backend đã sẵn sàng. http://127.0.0.1:5000")
-    app.run(debug=False, port=5000)
+    logger.info(f"✅ Máy chủ Backend đã sẵn sàng. http://{FLASK_HOST}:{FLASK_PORT}")
+    app.run(debug=FLASK_DEBUG, host=FLASK_HOST, port=FLASK_PORT)
