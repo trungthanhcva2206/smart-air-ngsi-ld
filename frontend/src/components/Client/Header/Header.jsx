@@ -45,6 +45,7 @@ const Header = () => {
                         <NavLink to="/" className="nav-link">Bản đồ</NavLink>
                         <NavLink to="/stations" className="nav-link">Bản đồ trạm</NavLink>
                         <NavLink to="/air-quality" className="nav-link">Chất lượng không khí</NavLink>
+                        <NavLink to="/analysis" className="nav-link">Thống kê</NavLink>
                         <NavLink to="/open-data" className="nav-link">Dữ liệu mở</NavLink>
                         <NavLink to="/about" className="nav-link">Về chúng tôi</NavLink>
                     </nav>
