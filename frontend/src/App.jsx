@@ -28,13 +28,16 @@ import StationMap from './components/Client/StationMap/StationMap.jsx';
 import AirQuality from './components/Client/AirQuality/AirQuality.jsx';
 import OpenData from './components/Client/OpenData/OpenData.jsx';
 import About from './components/Client/About/About.jsx';
+import Map from './components/Client/Map/Map.jsx';
 
 const App = () => {
   return (
     <>
       <Routes>
         <Route path="/" element={<Client />}>
-          <Route index element={<StationMap />} />
+          <Route index element={<Map />} />
+          <Route path="map" element={<StationMap />} />
+          <Route path="stations" element={<StationMap />} />
           <Route path="air-quality" element={<AirQuality />} />
           <Route path="open-data" element={<OpenData />} />
           <Route path="about" element={<About />} />
