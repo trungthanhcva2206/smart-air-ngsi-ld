@@ -29,6 +29,7 @@ import AirQuality from './components/Client/AirQuality/AirQuality.jsx';
 import OpenData from './components/Client/OpenData/OpenData.jsx';
 import About from './components/Client/About/About.jsx';
 import Map from './components/Client/Map/Map.jsx';
+import Analysis from './components/Client/Analysis/Analysis.jsx';
 
 const App = () => {
   return (
@@ -41,6 +42,7 @@ const App = () => {
           <Route path="air-quality" element={<AirQuality />} />
           <Route path="open-data" element={<OpenData />} />
           <Route path="about" element={<About />} />
+          <Route path="analysis" element={<Analysis />} />
         </Route>
       </Routes>
     </>
