@@ -19,11 +19,11 @@
  * @Copyright (C) 2024 CHK. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
-import { BsGeoAlt, BsCloudRain, BsWind, BsActivity, BsInfoCircle, BsArrowRight } from 'react-icons/bs';
+import { BsGeoAlt, BsCloudRain, BsWind, BsInfoCircle, BsArrowRight, BsX } from 'react-icons/bs';
 import './StationInfo.scss';
 
-const StationInfo = ({ platform, devices, weatherData, airQualityData }) => {
-    if (!platform || !devices || devices.length === 0) {
+const StationInfo = ({ platform, weatherData, airQualityData, loading, error, onClose }) => {
+    if (!platform) {
         return (
             <div className="station-info card shadow">
                 <div className="card-body text-center text-muted">
@@ -34,11 +34,9 @@ const StationInfo = ({ platform, devices, weatherData, airQualityData }) => {
         );
     }
 
-    const getPropertyValue = (obj, key) => {
-        return obj[key]?.value || obj[key] || 'N/A';
-    };
-
-    const platformAddress = platform['https://smartdatamodels.org/address']?.value;
+    // API returns flat keyValues format, not NGSI-LD normalized
+    // Access properties directly without .value wrapper
+    const platformAddress = platform.address;
     const addressText = platformAddress
         ? `${platformAddress.addressLocality}, ${platformAddress.addressRegion}, ${platformAddress.addressCountry}`
         : 'N/A';
@@ -49,247 +47,276 @@ const StationInfo = ({ platform, devices, weatherData, airQualityData }) => {
 
     return (
         <div className="station-info card shadow">
-            {/* Header with Address */}
+            {/* Header with Address and Close Button */}
             <div className="card-header">
                 <div className="d-flex align-items-start gap-2">
                     <BsGeoAlt className="text-primary mt-1" />
                     <div className="flex-grow-1">
                         <div className="fw-semibold">{addressText}</div>
-                        <div className="small text-muted">{getPropertyValue(platform, 'https://smartdatamodels.org/name')}</div>
+                        <div className="small text-muted">{platform.name || 'N/A'}</div>
                     </div>
+                    {/* Close Button */}
+                    <button
+                        className="btn btn-sm btn-link text-muted p-0 ms-2"
+                        onClick={onClose}
+                        aria-label="Đóng"
+                        title="Đóng"
+                    >
+                        <BsX size={28} />
+                    </button>
                 </div>
             </div>
 
             <div className="card-body p-0">
-                <div className="sensors-grid">
-                    {/* Weather Sensor Section */}
-                    {hasWeatherData && (
-                        <div className="sensor-section weather-section">
-                            <div className="sensor-header">
-                                <BsCloudRain className="me-2" />
-                                <span className="fw-semibold">Thời Tiết</span>
-                            </div>
-                            <div className="sensor-content">
-                                <div className="info-item">
-                                    <label>Nguồn dữ liệu:</label>
-                                    <span>{getPropertyValue(weatherData, 'dataProvider')}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Cập nhật lần cuối:</label>
-                                    <span className="small">
-                                        {weatherData.dateObserved?.value?.['@value']
-                                            ? new Date(weatherData.dateObserved.value['@value']).toLocaleString('vi-VN')
-                                            : 'N/A'}
-                                    </span>
-                                </div>
-
-                                <div className="measurements mt-3">
-                                    <h6 className="small fw-semibold mb-2">Đo đạc:</h6>
-                                    <div className="measurement-grid">
-                                        {weatherData.temperature && (
-                                            <div className="measurement-item">
-                                                <span className="label">Nhiệt độ</span>
-                                                <span className="value">{weatherData.temperature.value}°C</span>
-                                            </div>
-                                        )}
-                                        {weatherData.feelsLikeTemperature && (
-                                            <div className="measurement-item">
-                                                <span className="label">Cảm giác như</span>
-                                                <span className="value">{weatherData.feelsLikeTemperature.value}°C</span>
-                                            </div>
-                                        )}
-                                        {weatherData.relativeHumidity && (
-                                            <div className="measurement-item">
-                                                <span className="label">Độ ẩm</span>
-                                                <span className="value">{(weatherData.relativeHumidity.value * 100).toFixed(0)}%</span>
-                                            </div>
-                                        )}
-                                        {weatherData.atmosphericPressure && (
-                                            <div className="measurement-item">
-                                                <span className="label">Áp suất</span>
-                                                <span className="value">{weatherData.atmosphericPressure.value} hPa</span>
-                                            </div>
-                                        )}
-                                        {weatherData.windSpeed && (
-                                            <div className="measurement-item">
-                                                <span className="label">Tốc độ gió</span>
-                                                <span className="value">{weatherData.windSpeed.value} m/s</span>
-                                            </div>
-                                        )}
-                                        {weatherData.windDirection && (
-                                            <div className="measurement-item">
-                                                <span className="label">Hướng gió</span>
-                                                <span className="value">{weatherData.windDirection.value}°</span>
-                                            </div>
-                                        )}
-                                        {weatherData.precipitation && (
-                                            <div className="measurement-item">
-                                                <span className="label">Lượng mưa</span>
-                                                <span className="value">{weatherData.precipitation.value} mm</span>
-                                            </div>
-                                        )}
-                                        {weatherData.visibility && (
-                                            <div className="measurement-item">
-                                                <span className="label">Tầm nhìn</span>
-                                                <span className="value">{weatherData.visibility.value} m</span>
-                                            </div>
-                                        )}
-                                        {weatherData.cloudiness && (
-                                            <div className="measurement-item">
-                                                <span className="label">Mây che phủ</span>
-                                                <span className="value">{(weatherData.cloudiness.value * 100).toFixed(0)}%</span>
-                                            </div>
-                                        )}
-                                        {weatherData.illuminance && (
-                                            <div className="measurement-item">
-                                                <span className="label">Độ sáng</span>
-                                                <span className="value">{weatherData.illuminance.value} lux</span>
-                                            </div>
-                                        )}
-                                        {weatherData.weatherType && (
-                                            <div className="measurement-item">
-                                                <span className="label">Loại thời tiết</span>
-                                                <span className="value">{weatherData.weatherType.value}</span>
-                                            </div>
-                                        )}
-                                        {weatherData.pressureTendency && (
-                                            <div className="measurement-item">
-                                                <span className="label">Xu hướng áp suất</span>
-                                                <span className="value">{weatherData.pressureTendency.value}</span>
-                                            </div>
-                                        )}
-                                        {weatherData.weatherDescription && (
-                                            <div className="measurement-item full-width">
-                                                <span className="label">Mô tả</span>
-                                                <span className="value">{weatherData.weatherDescription.value}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                {/* Loading State */}
+                {loading && (
+                    <div className="text-center py-4">
+                        <div className="spinner-border spinner-border-sm text-primary" role="status">
+                            <span className="visually-hidden">Đang tải...</span>
                         </div>
-                    )}
+                        <p className="text-muted small mt-2">Đang tải dữ liệu quan trắc...</p>
+                    </div>
+                )}
 
-                    {/* Air Quality Sensor Section */}
-                    {hasAirQualityData && (
-                        <div className="sensor-section air-quality-section">
-                            <div className="sensor-header">
-                                <BsWind className="me-2" />
-                                <span className="fw-semibold">Chất Lượng Không Khí</span>
-                            </div>
-                            <div className="sensor-content">
-                                <div className="info-item">
-                                    <label>Nguồn dữ liệu:</label>
-                                    <span>{getPropertyValue(airQualityData, 'dataProvider')}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Cập nhật lần cuối:</label>
-                                    <span className="small">
-                                        {airQualityData.dateObserved?.value
-                                            ? new Date(airQualityData.dateObserved.value).toLocaleString('vi-VN')
-                                            : 'N/A'}
-                                    </span>
-                                </div>
+                {/* Error State */}
+                {error && (
+                    <div className="alert alert-warning m-3" role="alert">
+                        <small>{error}</small>
+                    </div>
+                )}
 
-                                {/* AQI Badge */}
-                                {airQualityData.airQualityIndex && (
-                                    <div className="aqi-badge mt-2">
-                                        <span className="badge bg-info">
-                                            AQI: {airQualityData.airQualityIndex.value} - {
-                                                airQualityData.airQualityLevel?.value === 'good' ? 'Tốt' :
-                                                    airQualityData.airQualityLevel?.value === 'fair' ? 'Trung bình' :
-                                                        airQualityData.airQualityLevel?.value === 'moderate' ? 'Khá' :
-                                                            airQualityData.airQualityLevel?.value === 'poor' ? 'Kém' :
-                                                                airQualityData.airQualityLevel?.value === 'very poor' ? 'Rất kém' :
-                                                                    airQualityData.airQualityLevel?.value || 'N/A'
-                                            }
+                {/* Data Grid */}
+                {!loading && !error && (
+                    <div className="sensors-grid">
+                        {/* Weather Sensor Section */}
+                        {hasWeatherData && (
+                            <div className="sensor-section weather-section">
+                                <div className="sensor-header">
+                                    <BsCloudRain className="me-2" />
+                                    <span className="fw-semibold">Thời Tiết</span>
+                                </div>
+                                <div className="sensor-content">
+                                    <div className="info-item">
+                                        <label>Nguồn dữ liệu:</label>
+                                        <span>{platform.owner || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-item">
+                                        <label>Cập nhật lần cuối:</label>
+                                        <span className="small">
+                                            {weatherData.observedAt
+                                                ? new Date(weatherData.observedAt).toLocaleString('vi-VN')
+                                                : 'N/A'}
                                         </span>
                                     </div>
-                                )}
 
-                                {/* Reliability */}
-                                {airQualityData.reliability && (
-                                    <div className="info-item mt-2">
-                                        <label>Độ tin cậy:</label>
-                                        <span>{(airQualityData.reliability.value * 100).toFixed(0)}%</span>
-                                    </div>
-                                )}
-
-                                <div className="measurements mt-3">
-                                    <h6 className="small fw-semibold mb-2">Chất gây ô nhiễm:</h6>
-                                    <div className="measurement-grid">
-                                        {airQualityData.CO && (
-                                            <div className="measurement-item">
-                                                <span className="label">CO</span>
-                                                <span className="value">{airQualityData.CO.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.CO_Level && (
-                                            <div className="measurement-item">
-                                                <span className="label">Mức CO</span>
-                                                <span className="value">{
-                                                    airQualityData.CO_Level.value === 'good' ? 'Tốt' :
-                                                        airQualityData.CO_Level.value === 'fair' ? 'Trung bình' :
-                                                            airQualityData.CO_Level.value === 'moderate' ? 'Khá' :
-                                                                airQualityData.CO_Level.value === 'poor' ? 'Kém' :
-                                                                    airQualityData.CO_Level.value
-                                                }</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.NO && (
-                                            <div className="measurement-item">
-                                                <span className="label">NO</span>
-                                                <span className="value">{airQualityData.NO.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.NO2 && (
-                                            <div className="measurement-item">
-                                                <span className="label">NO₂</span>
-                                                <span className="value">{airQualityData.NO2.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.NOx && (
-                                            <div className="measurement-item">
-                                                <span className="label">NOₓ</span>
-                                                <span className="value">{airQualityData.NOx.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.O3 && (
-                                            <div className="measurement-item">
-                                                <span className="label">O₃</span>
-                                                <span className="value">{airQualityData.O3.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.SO2 && (
-                                            <div className="measurement-item">
-                                                <span className="label">SO₂</span>
-                                                <span className="value">{airQualityData.SO2.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.pm2_5 && (
-                                            <div className="measurement-item">
-                                                <span className="label">PM2.5</span>
-                                                <span className="value">{airQualityData.pm2_5.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.pm10 && (
-                                            <div className="measurement-item">
-                                                <span className="label">PM10</span>
-                                                <span className="value">{airQualityData.pm10.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
-                                        {airQualityData.NH3 && (
-                                            <div className="measurement-item">
-                                                <span className="label">NH₃</span>
-                                                <span className="value">{airQualityData.NH3.value.toFixed(2)} μg/m³</span>
-                                            </div>
-                                        )}
+                                    <div className="measurements mt-3">
+                                        <h6 className="small fw-semibold mb-2">Đo đạc:</h6>
+                                        <div className="measurement-grid">
+                                            {weatherData.temperature !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Nhiệt độ</span>
+                                                    <span className="value">{weatherData.temperature}°C</span>
+                                                </div>
+                                            )}
+                                            {weatherData.feelsLikeTemperature !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Cảm giác như</span>
+                                                    <span className="value">{weatherData.feelsLikeTemperature}°C</span>
+                                                </div>
+                                            )}
+                                            {weatherData.relativeHumidity !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Độ ẩm</span>
+                                                    <span className="value">{(weatherData.relativeHumidity * 100).toFixed(0)}%</span>
+                                                </div>
+                                            )}
+                                            {weatherData.atmosphericPressure !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Áp suất</span>
+                                                    <span className="value">{weatherData.atmosphericPressure} hPa</span>
+                                                </div>
+                                            )}
+                                            {weatherData.windSpeed !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Tốc độ gió</span>
+                                                    <span className="value">{weatherData.windSpeed} m/s</span>
+                                                </div>
+                                            )}
+                                            {weatherData.windDirection !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Hướng gió</span>
+                                                    <span className="value">{weatherData.windDirection}°</span>
+                                                </div>
+                                            )}
+                                            {weatherData.precipitation !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Lượng mưa</span>
+                                                    <span className="value">{weatherData.precipitation} mm</span>
+                                                </div>
+                                            )}
+                                            {weatherData.visibility !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Tầm nhìn</span>
+                                                    <span className="value">{weatherData.visibility} m</span>
+                                                </div>
+                                            )}
+                                            {weatherData.cloudiness !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Mây che phủ</span>
+                                                    <span className="value">{weatherData.cloudiness}%</span>
+                                                </div>
+                                            )}
+                                            {weatherData.illuminance !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Độ sáng</span>
+                                                    <span className="value">{weatherData.illuminance} lux</span>
+                                                </div>
+                                            )}
+                                            {weatherData.weatherType && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Loại thời tiết</span>
+                                                    <span className="value">{weatherData.weatherType}</span>
+                                                </div>
+                                            )}
+                                            {weatherData.pressureTendency !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Xu hướng áp suất</span>
+                                                    <span className="value">{weatherData.pressureTendency}</span>
+                                                </div>
+                                            )}
+                                            {weatherData.weatherDescription && (
+                                                <div className="measurement-item full-width">
+                                                    <span className="label">Mô tả</span>
+                                                    <span className="value">{weatherData.weatherDescription}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+
+                        {/* Air Quality Sensor Section */}
+                        {hasAirQualityData && (
+                            <div className="sensor-section air-quality-section">
+                                <div className="sensor-header">
+                                    <BsWind className="me-2" />
+                                    <span className="fw-semibold">Chất Lượng Không Khí</span>
+                                </div>
+                                <div className="sensor-content">
+                                    <div className="info-item">
+                                        <label>Nguồn dữ liệu:</label>
+                                        <span>{platform.owner || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-item">
+                                        <label>Cập nhật lần cuối:</label>
+                                        <span className="small">
+                                            {airQualityData.observedAt
+                                                ? new Date(airQualityData.observedAt).toLocaleString('vi-VN')
+                                                : 'N/A'}
+                                        </span>
+                                    </div>
+
+                                    {/* AQI Badge */}
+                                    {airQualityData.airQualityIndex !== undefined && (
+                                        <div className="aqi-badge mt-2">
+                                            <span className="badge bg-info">
+                                                AQI: {airQualityData.airQualityIndex} - {
+                                                    airQualityData.airQualityLevel === 'good' ? 'Tốt' :
+                                                        airQualityData.airQualityLevel === 'fair' ? 'Trung bình' :
+                                                            airQualityData.airQualityLevel === 'moderate' ? 'Khá' :
+                                                                airQualityData.airQualityLevel === 'poor' ? 'Kém' :
+                                                                    airQualityData.airQualityLevel === 'very poor' ? 'Rất kém' :
+                                                                        airQualityData.airQualityLevel || 'N/A'
+                                                }
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Reliability */}
+                                    {airQualityData.reliability !== undefined && (
+                                        <div className="info-item mt-2">
+                                            <label>Độ tin cậy:</label>
+                                            <span>{(airQualityData.reliability * 100).toFixed(0)}%</span>
+                                        </div>
+                                    )}
+
+                                    <div className="measurements mt-3">
+                                        <h6 className="small fw-semibold mb-2">Chất gây ô nhiễm:</h6>
+                                        <div className="measurement-grid">
+                                            {airQualityData.co !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">CO</span>
+                                                    <span className="value">{airQualityData.co.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.coLevel && (
+                                                <div className="measurement-item">
+                                                    <span className="label">Mức CO</span>
+                                                    <span className="value">{
+                                                        airQualityData.coLevel === 'good' ? 'Tốt' :
+                                                            airQualityData.coLevel === 'fair' ? 'Trung bình' :
+                                                                airQualityData.coLevel === 'moderate' ? 'Khá' :
+                                                                    airQualityData.coLevel === 'poor' ? 'Kém' :
+                                                                        airQualityData.coLevel
+                                                    }</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.no !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">NO</span>
+                                                    <span className="value">{airQualityData.no.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.no2 !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">NO₂</span>
+                                                    <span className="value">{airQualityData.no2.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.nox !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">NOₓ</span>
+                                                    <span className="value">{airQualityData.nox.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.o3 !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">O₃</span>
+                                                    <span className="value">{airQualityData.o3.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.so2 !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">SO₂</span>
+                                                    <span className="value">{airQualityData.so2.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.pm2_5 !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">PM2.5</span>
+                                                    <span className="value">{airQualityData.pm2_5.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.pm10 !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">PM10</span>
+                                                    <span className="value">{airQualityData.pm10.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                            {airQualityData.nh3 !== undefined && (
+                                                <div className="measurement-item">
+                                                    <span className="label">NH₃</span>
+                                                    <span className="value">{airQualityData.nh3.toFixed(2)} μg/m³</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* View Details Button */}
