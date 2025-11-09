@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 
 import java.util.List;
 import java.util.Map;
@@ -61,10 +62,19 @@ public class OrionLdClient {
 
         log.info("Initializing OrionLdClient with URL: {}, Tenant: {}", orionUrl, tenant);
 
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .maxInMemorySize(10 * 1024 * 1024)) // 10MB
+                .build();
+
+        log.info("WebClient buffer size configured to: 10MB");
+
         // WebClient with Link header for queries by type (weather, airquality, platform
         // list)
         this.webClient = WebClient.builder()
                 .baseUrl(orionUrl)
+                .exchangeStrategies(strategies)
                 .defaultHeader("Fiware-Service", tenant)
                 .defaultHeader("Fiware-ServicePath", "/")
                 .defaultHeader("Link",
@@ -75,6 +85,7 @@ public class OrionLdClient {
         // WebClient without Link header for direct entity queries by ID
         this.webClientNoContext = WebClient.builder()
                 .baseUrl(orionUrl)
+                .exchangeStrategies(strategies)
                 .defaultHeader("Fiware-Service", tenant)
                 .defaultHeader("Fiware-ServicePath", "/")
                 .defaultHeader("NGSILD-Tenant", tenant)
@@ -166,7 +177,6 @@ public class OrionLdClient {
                     return Mono.empty();
                 });
     }
-
     /**
      * Get platform entity by ID
      * Uses webClientNoContext (no Link header needed for direct entity fetch)
@@ -217,6 +227,29 @@ public class OrionLdClient {
                 });
     }
 
+    public Mono<List<AirQualityDataDTO>> getAllAirQualityData() {
+        log.info("Client: Đang lấy TẤT CẢ AirQualityObserved entities...");
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", "airQualityObserved") // Lấy loại entity AirQualityObserved
+                        .queryParam("limit", "1000") // Lấy tối đa 1000 bản ghi
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class) // Lấy về 1 danh sách
+                .map(entities -> {
+                    // Biến đổi (transform) từng entity trong danh sách
+                    List<AirQualityDataDTO> airData = ((List<Map<String, Object>>) entities).stream()
+                            .map(transformerService::transformAirQualityObserved) // Dùng hàm biến đổi AirQuality
+                            .toList();
+                    log.info("Client: Lấy và biến đổi {} airQualityObserved entities.", airData.size());
+                    return airData;
+                })
+                .onErrorResume(error -> {
+                    log.error("Client: Lỗi khi lấy AirQualityObserved", error);
+                    return Mono.just(List.of()); // Trả về danh sách rỗng nếu lỗi
+                });
+    }
     /**
      * Get all platforms
      */
