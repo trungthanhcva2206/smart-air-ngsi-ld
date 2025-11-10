@@ -30,6 +30,8 @@ import {
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8123';
 
+// ...existing code...
+
 const useWeatherHistory = (district) => {
   const [historyData, setHistoryData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,15 +53,27 @@ const useWeatherHistory = (district) => {
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
+    // ✅ INITIAL data (khi vừa connect)
     eventSource.addEventListener('weather.history', (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('📊 Received weather history:', data);
+        console.log('📊 Received weather history INITIAL:', data);
         setHistoryData(data);
         setLoading(false);
       } catch (err) {
         console.error('❌ Error parsing weather history:', err);
         setError('Lỗi khi xử lý dữ liệu lịch sử thời tiết');
+      }
+    });
+
+    // ✅ THÊM: Listen UPDATE event (khi có notification mới)
+    eventSource.addEventListener('weather.history.update', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🔄 Received weather history UPDATE:', data);
+        setHistoryData(data); // ← CẬP NHẬT → Chart tự động re-render
+      } catch (err) {
+        console.error('❌ Error parsing weather history update:', err);
       }
     });
 
@@ -104,15 +118,27 @@ const useAirQualityHistory = (district) => {
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
+    // ✅ INITIAL data
     eventSource.addEventListener('airquality.history', (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('📊 Received air quality history:', data);
+        console.log('📊 Received air quality history INITIAL:', data);
         setHistoryData(data);
         setLoading(false);
       } catch (err) {
         console.error('❌ Error parsing air quality history:', err);
         setError('Lỗi khi xử lý dữ liệu lịch sử chất lượng không khí');
+      }
+    });
+
+    // ✅ THÊM: Listen UPDATE event
+    eventSource.addEventListener('airquality.history.update', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🔄 Received air quality history UPDATE:', data);
+        setHistoryData(data); // ← CẬP NHẬT → Chart tự động re-render
+      } catch (err) {
+        console.error('❌ Error parsing air quality history update:', err);
       }
     });
 
@@ -135,6 +161,7 @@ const useAirQualityHistory = (district) => {
 
   return { historyData, loading, error };
 };
+
 
 // ========== DATA TRANSFORMATION ==========
 

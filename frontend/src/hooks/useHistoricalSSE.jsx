@@ -20,9 +20,15 @@
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
 
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * ...existing license...
+ */
+
 import { useState, useEffect, useRef } from 'react';
 
-const BASE_URL = process.env.REACT_APP_SSE_URL || 'http://localhost:8081';
+// ✅ ĐÚNG PORT 8123
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8123';
 
 /**
  * Hook to stream weather historical data (30 days)
@@ -44,47 +50,48 @@ export const useWeatherHistory = (district) => {
         setError(null);
 
         const url = `${BASE_URL}/api/sse/weather/${district}/history`;
-        console.log('Connecting to weather history SSE:', url);
+        console.log('🔌 [useWeatherHistory] Connecting to:', url);
 
         const eventSource = new EventSource(url);
         eventSourceRef.current = eventSource;
 
-        // Listen for weather.history events
+        // ✅ Listen for INITIAL data
         eventSource.addEventListener('weather.history', (event) => {
             try {
                 const data = JSON.parse(event.data);
-                console.log('Received weather history:', data);
-                
-                // QuantumLeap response structure:
-                // {
-                //   "attributes": [
-                //     { "attrName": "temperature", "values": [28.5, 29.0, ...] },
-                //     { "attrName": "humidity", "values": [0.65, 0.70, ...] }
-                //   ],
-                //   "index": ["2024-11-01T00:00:00Z", "2024-11-01T01:00:00Z", ...]
-                // }
-                
+                console.log('📊 [useWeatherHistory] Received INITIAL data:', data);
                 setHistoryData(data);
                 setLoading(false);
             } catch (err) {
-                console.error('Error parsing weather history:', err);
+                console.error('❌ [useWeatherHistory] Error parsing initial data:', err);
                 setError('Lỗi khi xử lý dữ liệu lịch sử thời tiết');
             }
         });
 
+        // ✅ Listen for LIVE UPDATES (khi Orion notify → Backend query QL → Broadcast)
+        eventSource.addEventListener('weather.history.update', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('🔄 [useWeatherHistory] Received UPDATE:', data);
+                setHistoryData(data); // ← CẬP NHẬT STATE → RE-RENDER CHART
+            } catch (err) {
+                console.error('❌ [useWeatherHistory] Error parsing update:', err);
+            }
+        });
+
         eventSource.onerror = (err) => {
-            console.error('Weather history SSE error:', err);
+            console.error('❌ [useWeatherHistory] SSE error:', err);
             setError('Không thể kết nối đến server lịch sử');
             setLoading(false);
         };
 
         eventSource.onopen = () => {
-            console.log('Connected to weather history SSE');
+            console.log('✅ [useWeatherHistory] Connected');
             setError(null);
         };
 
         return () => {
-            console.log('Closing weather history SSE connection');
+            console.log('🔌 [useWeatherHistory] Closing connection');
             eventSource.close();
         };
     }, [district]);
@@ -112,47 +119,48 @@ export const useAirQualityHistory = (district) => {
         setError(null);
 
         const url = `${BASE_URL}/api/sse/airquality/${district}/history`;
-        console.log('Connecting to air quality history SSE:', url);
+        console.log('🔌 [useAirQualityHistory] Connecting to:', url);
 
         const eventSource = new EventSource(url);
         eventSourceRef.current = eventSource;
 
+        // ✅ Listen for INITIAL data
         eventSource.addEventListener('airquality.history', (event) => {
             try {
                 const data = JSON.parse(event.data);
-                console.log('Received air quality history:', data);
-                
-                // Example structure:
-                // {
-                //   "attributes": [
-                //     { "attrName": "PM2_5", "values": [25.0, 30.0, ...] },
-                //     { "attrName": "PM10", "values": [40.0, 45.0, ...] },
-                //     { "attrName": "airQualityIndex", "values": [3, 3, 2, ...] }
-                //   ],
-                //   "index": ["2024-11-01T00:00:00Z", ...]
-                // }
-                
+                console.log('📊 [useAirQualityHistory] Received INITIAL data:', data);
                 setHistoryData(data);
                 setLoading(false);
             } catch (err) {
-                console.error('Error parsing air quality history:', err);
+                console.error('❌ [useAirQualityHistory] Error parsing initial data:', err);
                 setError('Lỗi khi xử lý dữ liệu lịch sử chất lượng không khí');
             }
         });
 
+        // ✅ Listen for LIVE UPDATES
+        eventSource.addEventListener('airquality.history.update', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('🔄 [useAirQualityHistory] Received UPDATE:', data);
+                setHistoryData(data); // ← CẬP NHẬT STATE → RE-RENDER CHART
+            } catch (err) {
+                console.error('❌ [useAirQualityHistory] Error parsing update:', err);
+            }
+        });
+
         eventSource.onerror = (err) => {
-            console.error('Air quality history SSE error:', err);
+            console.error('❌ [useAirQualityHistory] SSE error:', err);
             setError('Không thể kết nối đến server lịch sử');
             setLoading(false);
         };
 
         eventSource.onopen = () => {
-            console.log('Connected to air quality history SSE');
+            console.log('✅ [useAirQualityHistory] Connected');
             setError(null);
         };
 
         return () => {
-            console.log('Closing air quality history SSE connection');
+            console.log('🔌 [useAirQualityHistory] Closing connection');
             eventSource.close();
         };
     }, [district]);

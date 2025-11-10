@@ -27,111 +27,151 @@
  */
 package org.opensource.smartair.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
+import reactor.util.retry.Retry;
 
-import java.util.List;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 public class QuantumLeapClient {
 
     private final WebClient webClient;
-    private final ObjectMapper objectMapper;
+    private final String fiwareService;
 
-    @Value("${quantumleap.url:http://localhost:8668}")
-    private String quantumLeapUrl;
-
-    @Value("${orion.tenant:hanoi}")
-    private String tenant;
+    @Value("${quantumleap.query.lastN:720}")
+    private int lastN;
 
     public QuantumLeapClient(
-            @Value("${quantumleap.url:http://localhost:8668}") String quantumLeapUrl,
-            @Value("${orion.tenant:hanoi}") String tenant) {
-        this.quantumLeapUrl = quantumLeapUrl;
-        this.tenant = tenant;
-        this.objectMapper = new ObjectMapper();
+            @Value("${quantumleap.url}") String quantumLeapUrl,
+            @Value("${quantumleap.fiware-service:hanoi}") String fiwareService) {
+        
+        this.fiwareService = fiwareService;
 
-        log.info("Initializing QuantumLeapClient with URL: {}, Tenant: {}", quantumLeapUrl, tenant);
-
-        ExchangeStrategies strategies = ExchangeStrategies.builder()
-                .codecs(configurer -> configurer
-                        .defaultCodecs()
-                        .maxInMemorySize(10 * 1024 * 1024)) // 10MB
+        // ✅ Cấu hình Connection Pool
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("quantumleap-pool")
+                .maxConnections(50)
+                .maxIdleTime(Duration.ofSeconds(20))
+                .maxLifeTime(Duration.ofSeconds(60))
+                .pendingAcquireTimeout(Duration.ofSeconds(45))
+                .evictInBackground(Duration.ofSeconds(120))
                 .build();
 
+        // ✅ Cấu hình HttpClient với timeouts
+        HttpClient httpClient = HttpClient.create(connectionProvider)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .responseTimeout(Duration.ofSeconds(30))
+                .doOnConnected(conn -> conn
+                        .addHandlerLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS))
+                        .addHandlerLast(new WriteTimeoutHandler(30, TimeUnit.SECONDS)));
+
+        // ✅ Tạo WebClient với custom HttpClient
         this.webClient = WebClient.builder()
                 .baseUrl(quantumLeapUrl)
-                .exchangeStrategies(strategies)
-                .defaultHeader("Fiware-Service", tenant)
-                .defaultHeader("Fiware-ServicePath", "/")
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
+
+        log.info("✅ QuantumLeap WebClient initialized: {}", quantumLeapUrl);
     }
 
-    /**
-     * Get historical data for an entity (last 30 days)
-     * @param entityId - Full URN (e.g., urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongBaDinh)
-     */
-    public Mono<Map<String, Object>> getHistoricalData(String entityId) {
-        log.info("Querying QuantumLeap for entity: {}", entityId);
+    // ============ Weather History ============
 
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/v2/entities/{entityId}")
-                        .queryParam("lastN", "720") // 30 days * 24 hours = 720 data points (if hourly)
-                        .build(entityId))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                .doOnSuccess(data -> log.info("Successfully fetched historical data for: {}", entityId))
-                .doOnError(error -> log.error("Error fetching historical data from QuantumLeap for: {}", entityId, error))
-                .onErrorResume(error -> {
-                    log.warn("QuantumLeap query failed, returning empty data");
-                    return Mono.just(Map.of());
-                });
-    }
-
-    /**
-     * Get historical weather data for a district
-     */
     public Mono<Map<String, Object>> getWeatherHistory(String district) {
-        String entityId = String.format("urn:ngsi-ld:WeatherObserved:Hanoi-%s", district);
-        return getHistoricalData(entityId);
-    }
-
-    /**
-     * Get historical air quality data for a district
-     */
-    public Mono<Map<String, Object>> getAirQualityHistory(String district) {
-        String entityId = String.format("urn:ngsi-ld:AirQualityObserved:Hanoi-%s", district);
-        return getHistoricalData(entityId);
-    }
-
-    /**
-     * Query with custom time range
-     * @param entityId - Full URN
-     * @param fromDate - ISO 8601 format (e.g., "2024-01-01T00:00:00Z")
-     * @param toDate - ISO 8601 format
-     */
-    public Mono<Map<String, Object>> getHistoricalDataRange(String entityId, String fromDate, String toDate) {
-        log.info("Querying QuantumLeap for entity: {} from {} to {}", entityId, fromDate, toDate);
-
+        String entityId = buildWeatherEntityId(district);
+        
+        log.info("Querying QuantumLeap for entity: {}", entityId);
+        
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/v2/entities/{entityId}")
-                        .queryParam("fromDate", fromDate)
-                        .queryParam("toDate", toDate)
+                        .queryParam("lastN", lastN)
+                        .queryParam("type", "WeatherObserved")
                         .build(entityId))
+                .header("Fiware-Service", fiwareService)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                .doOnSuccess(data -> log.info("Successfully fetched historical data range for: {}", entityId))
-                .doOnError(error -> log.error("Error fetching historical data range from QuantumLeap", error))
-                .onErrorResume(error -> Mono.just(Map.of()));
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}) // ✅ FIX: Use ParameterizedTypeReference
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                        .filter(throwable -> throwable instanceof org.springframework.web.reactive.function.client.WebClientRequestException)
+                        .doBeforeRetry(retrySignal -> log.warn("🔄 Retrying QuantumLeap request for {} (attempt {})", 
+                                entityId, retrySignal.totalRetries() + 1)))
+                .doOnSuccess(data -> log.info("✅ Successfully fetched historical data for: {}", entityId))
+                .onErrorResume(WebClientResponseException.NotFound.class, e -> {
+                    log.warn("⚠️ No historical data found in QuantumLeap for: {}", entityId);
+                    return Mono.just(Map.of());
+                })
+                .onErrorResume(WebClientResponseException.class, e -> {
+                    log.error("❌ HTTP error fetching data from QuantumLeap for {}: {} - {}", 
+                            entityId, e.getStatusCode(), e.getMessage());
+                    return Mono.just(Map.of());
+                })
+                .onErrorResume(Exception.class, e -> {
+                    log.error("❌ Error fetching historical data from QuantumLeap for: {}", entityId, e);
+                    return Mono.just(Map.of());
+                })
+                .doOnTerminate(() -> log.debug("✅ QuantumLeap request completed for: {}", entityId))
+                .defaultIfEmpty(Map.of());
+    }
+
+    // ============ Air Quality History ============
+
+    public Mono<Map<String, Object>> getAirQualityHistory(String district) {
+        String entityId = buildAirQualityEntityId(district);
+        
+        log.info("Querying QuantumLeap for entity: {}", entityId);
+        
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/v2/entities/{entityId}")
+                        .queryParam("lastN", lastN)
+                        .queryParam("type", "AirQualityObserved")
+                        .build(entityId))
+                .header("Fiware-Service", fiwareService)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}) // ✅ FIX: Use ParameterizedTypeReference
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                        .filter(throwable -> throwable instanceof org.springframework.web.reactive.function.client.WebClientRequestException)
+                        .doBeforeRetry(retrySignal -> log.warn("🔄 Retrying QuantumLeap request for {} (attempt {})", 
+                                entityId, retrySignal.totalRetries() + 1)))
+                .doOnSuccess(data -> log.info("✅ Successfully fetched historical data for: {}", entityId))
+                .onErrorResume(WebClientResponseException.NotFound.class, e -> {
+                    log.warn("⚠️ No historical data found in QuantumLeap for: {}", entityId);
+                    return Mono.just(Map.of());
+                })
+                .onErrorResume(WebClientResponseException.class, e -> {
+                    log.error("❌ HTTP error fetching data from QuantumLeap for {}: {} - {}", 
+                            entityId, e.getStatusCode(), e.getMessage());
+                    return Mono.just(Map.of());
+                })
+                .onErrorResume(Exception.class, e -> {
+                    log.error("❌ Error fetching historical data from QuantumLeap for: {}", entityId, e);
+                    return Mono.just(Map.of());
+                })
+                .doOnTerminate(() -> log.debug("✅ QuantumLeap request completed for: {}", entityId))
+                .defaultIfEmpty(Map.of());
+    }
+
+    // ============ Helper Methods ============
+
+    private String buildWeatherEntityId(String district) {
+        return String.format("urn:ngsi-ld:WeatherObserved:Hanoi-%s", district);
+    }
+
+    private String buildAirQualityEntityId(String district) {
+        return String.format("urn:ngsi-ld:AirQualityObserved:Hanoi-%s", district);
     }
 }

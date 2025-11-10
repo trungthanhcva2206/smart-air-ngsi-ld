@@ -164,42 +164,64 @@ public class SseController {
  * URL: GET /api/sse/weather/{district}/history
  */
 @GetMapping(value = "/weather/{district}/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-public Flux<ServerSentEvent<Map<String, Object>>> streamWeatherHistory(
-        @PathVariable String district) {
-    
-    log.info("Client connecting to weather history SSE stream for district: {}", district);
-    
-    // Fetch historical data from QuantumLeap
-    return quantumLeapClient.getWeatherHistory(district)
-            .map(historyData -> ServerSentEvent.<Map<String, Object>>builder()
-                    .id(String.valueOf(System.currentTimeMillis()))
-                    .event("weather.history")
-                    .data(historyData)
-                    .build())
-            .flux()
-            .concatWith(keepAlive());
-}
+    public Flux<ServerSentEvent<Map<String, Object>>> streamWeatherHistory(
+            @PathVariable String district) {
+        
+        log.info("Client connecting to weather history SSE stream for district: {}", district);
+        
+        // Fetch initial data from QuantumLeap
+        Flux<ServerSentEvent<Map<String, Object>>> initialData = quantumLeapClient.getWeatherHistory(district)
+                .map(historyData -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("weather.history")
+                        .data(historyData)
+                        .build())
+                .flux()
+                .doOnNext(event -> log.info("Sending initial weather history for district: {}", district));
+        
+        // Subscribe to live updates
+        Flux<ServerSentEvent<Map<String, Object>>> liveUpdates = sseService.subscribeWeatherHistory(district)
+                .map(historyData -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("weather.history.update")
+                        .data(historyData)
+                        .build());
+        
+        return Flux.concat(initialData, liveUpdates)
+                .concatWith(keepAlive());
+    }
 
 /**
  * SSE endpoint for air quality historical data (30 days)
  * URL: GET /api/sse/airquality/{district}/history
  */
 @GetMapping(value = "/airquality/{district}/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-public Flux<ServerSentEvent<Map<String, Object>>> streamAirQualityHistory(
-        @PathVariable String district) {
-    
-    log.info("Client connecting to air quality history SSE stream for district: {}", district);
-    
-    // Fetch historical data from QuantumLeap
-    return quantumLeapClient.getAirQualityHistory(district)
-            .map(historyData -> ServerSentEvent.<Map<String, Object>>builder()
-                    .id(String.valueOf(System.currentTimeMillis()))
-                    .event("airquality.history")
-                    .data(historyData)
-                    .build())
-            .flux()
-            .concatWith(keepAlive());
-}
+    public Flux<ServerSentEvent<Map<String, Object>>> streamAirQualityHistory(
+            @PathVariable String district) {
+        
+        log.info("Client connecting to air quality history SSE stream for district: {}", district);
+        
+        // Fetch initial data from QuantumLeap
+        Flux<ServerSentEvent<Map<String, Object>>> initialData = quantumLeapClient.getAirQualityHistory(district)
+                .map(historyData -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("airquality.history")
+                        .data(historyData)
+                        .build())
+                .flux()
+                .doOnNext(event -> log.info("Sending initial air quality history for district: {}", district));
+        
+        // Subscribe to live updates
+        Flux<ServerSentEvent<Map<String, Object>>> liveUpdates = sseService.subscribeAirQualityHistory(district)
+                .map(historyData -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("airquality.history.update")
+                        .data(historyData)
+                        .build());
+        
+        return Flux.concat(initialData, liveUpdates)
+                .concatWith(keepAlive());
+    }
 
 
     /**
