@@ -49,6 +49,8 @@ public class SseService {
     private final Map<String, Sinks.Many<SseEventDTO<AirQualityDataDTO>>> airQualitySinks = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<SseEventDTO<PlatformDataDTO>>> platformSinks = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<SseEventDTO<DeviceDataDTO>>> deviceSinks = new ConcurrentHashMap<>();
+    private final Map<String, Sinks.Many<Map<String, Object>>> weatherHistorySinks = new ConcurrentHashMap<>();
+    private final Map<String, Sinks.Many<Map<String, Object>>> airQualityHistorySinks = new ConcurrentHashMap<>();
 
     // Global sink for broadcasting ALL platform updates to map view
     private final Sinks.Many<SseEventDTO<PlatformDataDTO>> allPlatformsSink = Sinks.many().multicast()
@@ -97,6 +99,91 @@ public class SseService {
                         }));
     }
 
+    public Flux<Map<String, Object>> subscribeWeatherHistory(String district) {
+        String key = "weather-history:" + district;
+
+        Sinks.Many<Map<String, Object>> sink = weatherHistorySinks.computeIfAbsent(key,
+                k -> Sinks.many().multicast().onBackpressureBuffer());
+
+        log.info("Client subscribed to weather history stream for district: {}", district);
+
+        return sink.asFlux()
+                .doOnCancel(() -> {
+                    log.info("Client unsubscribed from weather history stream for district: {}", district);
+                    if (sink.currentSubscriberCount() == 0) {
+                        weatherHistorySinks.remove(key);
+                    }
+                })
+                .timeout(Duration.ofHours(24))
+                .onErrorResume(e -> {
+                    log.error("Error in weather history stream for district {}: {}", district, e.getMessage());
+                    return Flux.empty();
+                });
+    }
+
+    public void broadcastWeatherHistory(String district, Map<String, Object> historyData) {
+        if (district == null || historyData == null || historyData.isEmpty()) {
+            log.warn("Invalid weather history data for district: {}", district);
+            return;
+        }
+
+        String key = "weather-history:" + district;
+        Sinks.Many<Map<String, Object>> sink = weatherHistorySinks.get(key);
+
+        if (sink != null) {
+            Sinks.EmitResult result = sink.tryEmitNext(historyData);
+            if (result.isSuccess()) {
+                log.debug("Broadcasted weather history update for district: {}", district);
+            } else {
+                log.warn("Failed to broadcast weather history for district {}: {}", district, result);
+            }
+        } else {
+            log.debug("No subscribers for weather history in district: {}", district);
+        }
+    }
+
+    public Flux<Map<String, Object>> subscribeAirQualityHistory(String district) {
+        String key = "airquality-history:" + district;
+
+        Sinks.Many<Map<String, Object>> sink = airQualityHistorySinks.computeIfAbsent(key,
+                k -> Sinks.many().multicast().onBackpressureBuffer());
+
+        log.info("Client subscribed to air quality history stream for district: {}", district);
+
+        return sink.asFlux()
+                .doOnCancel(() -> {
+                    log.info("Client unsubscribed from air quality history stream for district: {}", district);
+                    if (sink.currentSubscriberCount() == 0) {
+                        airQualityHistorySinks.remove(key);
+                    }
+                })
+                .timeout(Duration.ofHours(24))
+                .onErrorResume(e -> {
+                    log.error("Error in air quality history stream for district {}: {}", district, e.getMessage());
+                    return Flux.empty();
+                });
+    }
+
+    public void broadcastAirQualityHistory(String district, Map<String, Object> historyData) {
+        if (district == null || historyData == null || historyData.isEmpty()) {
+            log.warn("Invalid air quality history data for district: {}", district);
+            return;
+        }
+
+        String key = "airquality-history:" + district;
+        Sinks.Many<Map<String, Object>> sink = airQualityHistorySinks.get(key);
+
+        if (sink != null) {
+            Sinks.EmitResult result = sink.tryEmitNext(historyData);
+            if (result.isSuccess()) {
+                log.debug("Broadcasted air quality history update for district: {}", district);
+            } else {
+                log.warn("Failed to broadcast air quality history for district {}: {}", district, result);
+            }
+        } else {
+            log.debug("No subscribers for air quality history in district: {}", district);
+        }
+    }
     /**
      * Broadcast weather data to subscribed clients
      */
@@ -396,6 +483,8 @@ public class SseService {
         counts.put("airQuality", airQualitySinks.size());
         counts.put("platform", platformSinks.size());
         counts.put("device", deviceSinks.size());
+        counts.put("weatherHistory", weatherHistorySinks.size());
+        counts.put("airQualityHistory", airQualityHistorySinks.size());
         return counts;
     }
 }

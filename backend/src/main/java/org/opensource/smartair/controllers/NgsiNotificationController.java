@@ -25,10 +25,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.*;
 import org.opensource.smartair.services.NgsiTransformerService;
+import org.opensource.smartair.services.QuantumLeapClient;
 import org.opensource.smartair.services.SseService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +48,10 @@ public class NgsiNotificationController {
 
     private final NgsiTransformerService transformerService;
     private final SseService sseService;
+    private final QuantumLeapClient quantumLeapClient;
+
+    @Value("${quantumleap.query.delay.seconds:2}")
+    private int quantumLeapDelaySeconds;
 
     /**
      * Receive NGSI-LD notification and broadcast via SSE
@@ -107,23 +115,68 @@ public class NgsiNotificationController {
     private void handleWeatherObserved(Map<String, Object> entity) {
         try {
             WeatherDataDTO data = transformerService.transformWeatherObserved(entity);
+            String district = data.getDistrict();
+            
             log.info("Transformed weather data for district: {} (temp: {}°C)",
-                    data.getDistrict(), data.getTemperature());
+                    district, data.getTemperature());
+            
+            // 1. Broadcast live update immediately
             sseService.broadcastWeather(data);
+            
+            // 2. Query QuantumLeap for historical data (with delay)
+            queryAndBroadcastWeatherHistory(district);
+            
         } catch (Exception e) {
             log.error("Error handling WeatherObserved entity", e);
         }
     }
 
+    private void queryAndBroadcastWeatherHistory(String district) {
+        Mono.delay(Duration.ofSeconds(quantumLeapDelaySeconds))
+                .flatMap(tick -> quantumLeapClient.getWeatherHistory(district))
+                .subscribe(
+                        historyData -> {
+                            log.info("Queried QuantumLeap weather history for district: {}", district);
+                            sseService.broadcastWeatherHistory(district, historyData);
+                        },
+                        error -> log.error("Error querying QuantumLeap weather history for district: {}", 
+                                district, error)
+                );
+    }
+
+    /**
+     * Query QuantumLeap for air quality history and broadcast via SSE
+     * Uses delay to wait for QuantumLeap to persist data
+     */
+    private void queryAndBroadcastAirQualityHistory(String district) {
+        Mono.delay(Duration.ofSeconds(quantumLeapDelaySeconds))
+                .flatMap(tick -> quantumLeapClient.getAirQualityHistory(district))
+                .subscribe(
+                        historyData -> {
+                            log.info("Queried QuantumLeap air quality history for district: {}", district);
+                            sseService.broadcastAirQualityHistory(district, historyData);
+                        },
+                        error -> log.error("Error querying QuantumLeap air quality history for district: {}", 
+                                district, error)
+                );
+    }
     /**
      * Handle AirQualityObserved entity
      */
     private void handleAirQualityObserved(Map<String, Object> entity) {
         try {
             AirQualityDataDTO data = transformerService.transformAirQualityObserved(entity);
+            String district = data.getDistrict();
+            
             log.info("Transformed air quality data for district: {} (AQI: {})",
-                    data.getDistrict(), data.getAirQualityIndex());
+                    district, data.getAirQualityIndex());
+            
+            // 1. Broadcast live update immediately
             sseService.broadcastAirQuality(data);
+            
+            // 2. Query QuantumLeap for historical data (with delay)
+            queryAndBroadcastAirQualityHistory(district);
+            
         } catch (Exception e) {
             log.error("Error handling AirQualityObserved entity", e);
         }
