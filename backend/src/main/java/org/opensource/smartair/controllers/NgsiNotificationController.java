@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.*;
 import org.opensource.smartair.services.NgsiTransformerService;
+import org.opensource.smartair.services.OrionLdClient;
 import org.opensource.smartair.services.QuantumLeapClient;
 import org.opensource.smartair.services.SseService;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +51,7 @@ public class NgsiNotificationController {
     private final NgsiTransformerService transformerService;
     private final SseService sseService;
     private final QuantumLeapClient quantumLeapClient;
+    private final OrionLdClient orionLdClient;
 
     @Value("${quantumleap.query.delay.seconds:2}")
     private int quantumLeapDelaySeconds;
@@ -167,20 +170,41 @@ public class NgsiNotificationController {
         try {
             AirQualityDataDTO data = transformerService.transformAirQualityObserved(entity);
             String district = data.getDistrict();
-            
+
             log.info("Transformed air quality data for district: {} (AQI: {})",
                     district, data.getAirQualityIndex());
-            
+
             // 1. Broadcast live update immediately
             sseService.broadcastAirQuality(data);
-            
+
             // 2. Query QuantumLeap for historical data (with delay)
             queryAndBroadcastAirQualityHistory(district);
-            
+
+            // 3. Broadcast ALL environment data to Python service
+            broadcastAllEnvironmentDataToPython();
+
         } catch (Exception e) {
             log.error("Error handling AirQualityObserved entity", e);
         }
     }
+
+    private void broadcastAllEnvironmentDataToPython() {
+        orionLdClient.getAllAirQualityData()
+                .subscribe(
+                        airQualityList -> {
+                            Map<String, AirQualityDataDTO> dataMap = new HashMap<>();
+                            for (AirQualityDataDTO dto : airQualityList) {
+                                if (dto.getStationName() != null) {
+                                    dataMap.put(dto.getStationName(), dto);
+                                }
+                            }
+                            sseService.broadcastAllEnvironmentData(dataMap);
+                            log.info("Broadcasted environment data to Python service ({} stations)",
+                                    dataMap.size());
+                        },
+                        error -> log.error("Error fetching air quality data for Python broadcast", error)
+                );
+        }
 
     /**
      * Handle Device entity
