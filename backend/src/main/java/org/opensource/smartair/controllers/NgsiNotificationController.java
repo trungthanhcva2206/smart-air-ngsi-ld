@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.*;
 import org.opensource.smartair.services.NgsiTransformerService;
+import org.opensource.smartair.services.NotificationService;
 import org.opensource.smartair.services.OrionLdClient;
 import org.opensource.smartair.services.QuantumLeapClient;
 import org.opensource.smartair.services.SseService;
@@ -52,6 +53,7 @@ public class NgsiNotificationController {
     private final SseService sseService;
     private final QuantumLeapClient quantumLeapClient;
     private final OrionLdClient orionLdClient;
+    private final NotificationService notificationService;
 
     @Value("${quantumleap.query.delay.seconds:2}")
     private int quantumLeapDelaySeconds;
@@ -119,16 +121,16 @@ public class NgsiNotificationController {
         try {
             WeatherDataDTO data = transformerService.transformWeatherObserved(entity);
             String district = data.getDistrict();
-            
+
             log.info("Transformed weather data for district: {} (temp: {}°C)",
                     district, data.getTemperature());
-            
+
             // 1. Broadcast live update immediately
             sseService.broadcastWeather(data);
-            
+
             // 2. Query QuantumLeap for historical data (with delay)
             queryAndBroadcastWeatherHistory(district);
-            
+
         } catch (Exception e) {
             log.error("Error handling WeatherObserved entity", e);
         }
@@ -142,9 +144,8 @@ public class NgsiNotificationController {
                             log.info("Queried QuantumLeap weather history for district: {}", district);
                             sseService.broadcastWeatherHistory(district, historyData);
                         },
-                        error -> log.error("Error querying QuantumLeap weather history for district: {}", 
-                                district, error)
-                );
+                        error -> log.error("Error querying QuantumLeap weather history for district: {}",
+                                district, error));
     }
 
     /**
@@ -159,10 +160,10 @@ public class NgsiNotificationController {
                             log.info("Queried QuantumLeap air quality history for district: {}", district);
                             sseService.broadcastAirQualityHistory(district, historyData);
                         },
-                        error -> log.error("Error querying QuantumLeap air quality history for district: {}", 
-                                district, error)
-                );
+                        error -> log.error("Error querying QuantumLeap air quality history for district: {}",
+                                district, error));
     }
+
     /**
      * Handle AirQualityObserved entity
      */
@@ -183,6 +184,9 @@ public class NgsiNotificationController {
             // 3. Broadcast ALL environment data to Python service
             broadcastAllEnvironmentDataToPython();
 
+            // 4. Auto-trigger email notifications if air quality is poor/very poor
+            notificationService.sendAirQualityAlert(data);
+
         } catch (Exception e) {
             log.error("Error handling AirQualityObserved entity", e);
         }
@@ -202,9 +206,8 @@ public class NgsiNotificationController {
                             log.info("Broadcasted environment data to Python service ({} stations)",
                                     dataMap.size());
                         },
-                        error -> log.error("Error fetching air quality data for Python broadcast", error)
-                );
-        }
+                        error -> log.error("Error fetching air quality data for Python broadcast", error));
+    }
 
     /**
      * Handle Device entity
