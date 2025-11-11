@@ -24,6 +24,7 @@ package org.opensource.smartair.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.*;
+import org.opensource.smartair.services.OrionLdClient;
 import org.opensource.smartair.services.SseService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -48,6 +50,7 @@ public class SseController {
 
     private final SseService sseService;
     private final QuantumLeapClient quantumLeapClient;
+    private final OrionLdClient orionLdClient;
 
     /**
      * SSE endpoint for weather updates
@@ -223,6 +226,46 @@ public class SseController {
                 .concatWith(keepAlive());
     }
 
+/**
+ * SSE endpoint for Python route-finding service
+ * Streams ALL air quality data updates
+ * URL: GET /api/sse/environment-data
+ */
+@GetMapping(value = "/environment-data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public Flux<ServerSentEvent<Map<String, AirQualityDataDTO>>> streamEnvironmentData() {
+    log.info("Python service connecting to environment-data SSE stream");
+
+    // Fetch initial data from Orion-LD
+    Flux<ServerSentEvent<Map<String, AirQualityDataDTO>>> initialData = 
+        orionLdClient.getAllAirQualityData()
+            .map(airQualityList -> {
+                Map<String, AirQualityDataDTO> dataMap = new HashMap<>();
+                for (AirQualityDataDTO dto : airQualityList) {
+                    if (dto.getStationName() != null) {
+                        dataMap.put(dto.getStationName(), dto);
+                    }
+                }
+                return ServerSentEvent.<Map<String, AirQualityDataDTO>>builder()
+                    .id(String.valueOf(System.currentTimeMillis()))
+                    .event("environment.initial")
+                    .data(dataMap)
+                    .build();
+            })
+            .flux()
+            .doOnNext(event -> log.info("Sending initial environment data to Python service"));
+
+    // Subscribe to live updates for ALL districts
+    Flux<ServerSentEvent<Map<String, AirQualityDataDTO>>> liveUpdates = 
+        sseService.subscribeAllEnvironmentData()
+            .map(dataMap -> ServerSentEvent.<Map<String, AirQualityDataDTO>>builder()
+                .id(String.valueOf(System.currentTimeMillis()))
+                .event("environment.update")
+                .data(dataMap)
+                .build());
+
+    return Flux.concat(initialData, liveUpdates)
+        .concatWith(keepAlive());
+}
 
     /**
      * Monitoring endpoint - get active subscriber counts

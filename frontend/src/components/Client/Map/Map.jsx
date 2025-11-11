@@ -1,27 +1,7 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * @Project smart-air-ngsi-ld
- * @Authors 
- *    - TT (trungthanhcva2206@gmail.com)
- *    - Tankchoi (tadzltv22082004@gmail.com)
- *    - Panh (panh812004.apn@gmail.com)
- * @Copyright (C) 2024 CHK. All rights reserved
- * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
-*/
 import { Map as MapGL, Source, Layer, Marker } from '@vis.gl/react-maplibre';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import hanoiGeoJSONUrl from '../../../assets/ha_noi_with_latlon2.geojson?url';
 
 const hanoiCenter = [105.84, 21.035];
 const API_URL = 'http://127.0.0.1:5000';
@@ -32,6 +12,14 @@ const Map = () => {
   
   const [startAddress, setStartAddress] = useState('');
   const [endAddress, setEndAddress] = useState('');
+  
+  // State cho autocomplete
+  const [startSuggestions, setStartSuggestions] = useState([]);
+  const [endSuggestions, setEndSuggestions] = useState([]);
+  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
+  const [showEndSuggestions, setShowEndSuggestions] = useState(false);
+  const [isSearchingStart, setIsSearchingStart] = useState(false);
+  const [isSearchingEnd, setIsSearchingEnd] = useState(false);
   
   const [startPoint, setStartPoint] = useState(null);
   const [endPoint, setEndPoint] = useState(null);
@@ -46,10 +34,14 @@ const Map = () => {
 
   const [is3D, setIs3D] = useState(false);
   const mapRef = useRef(null);
+  
+  // Refs for debouncing
+  const startDebounceRef = useRef(null);
+  const endDebounceRef = useRef(null);
 
   // Tải GeoJSON và dữ liệu môi trường
   useEffect(() => {
-    const p1 = fetch('/ha_noi_with_latlon2.geojson').then((res) => res.json());
+    const p1 = fetch(hanoiGeoJSONUrl).then((res) => res.json());
     const p2 = fetch(`${API_URL}/api/get-env`).then((res) => res.json());
 
     Promise.all([p1, p2])
@@ -58,7 +50,7 @@ const Map = () => {
           ...geoData,
           features: geoData.features.map((f) => {
             const props = envData[f.properties['Tên đơn vị']] || { 
-              NO: 0, O3: 0, NO2: 0, NOx: 0, SO2: 0, pm2_5: 0 
+              NO: 0, O3: 0, NO2: 0, NOx: 0, SO2: 0, pm2_5: 0, pm10: 0, nh3: 0, windSpeed: 0
             };
             return {
               ...f,
@@ -70,6 +62,9 @@ const Map = () => {
                 NOx: props.NOx || 0,
                 SO2: props.SO2 || 0,
                 pm2_5: props.pm2_5 || 0,
+                pm10: props.pm10 || 0,
+                nh3: props.nh3 || 0,
+                windSpeed: props.windSpeed || 0,
               },
             };
           }),
@@ -79,12 +74,147 @@ const Map = () => {
       .catch((err) => console.error('Lỗi tải dữ liệu:', err));
   }, []);
 
+  // Hàm tìm kiếm gợi ý địa điểm với useCallback
+  const searchAddressSuggestions = useCallback(async (query, setSuggestions, setShow, setSearching) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      setShow(false);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    const searchQuery = encodeURIComponent(`${query}, Hanoi, Vietnam`);
+    const url = `https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=5&addressdetails=1`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'SmartAirNGSI-LD/1.0'
+        }
+      });
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setSuggestions(data);
+        setShow(true);
+      } else {
+        setSuggestions([]);
+        setShow(false);
+      }
+    } catch (err) {
+      console.error('Lỗi tìm kiếm địa điểm:', err);
+      setSuggestions([]);
+      setShow(false);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  // Xử lý thay đổi input điểm đi với debouncing
+  const handleStartAddressChange = (value) => {
+    setStartAddress(value);
+    
+    // Xóa điểm và route nếu input trống
+    if (value.trim() === '') {
+      setStartPoint(null);
+      setCleanRoute(null);
+      setDirections(null);
+    } else {
+      setStartPoint(null);
+    }
+    
+    if (startDebounceRef.current) {
+      clearTimeout(startDebounceRef.current);
+    }
+
+    if (value.length >= 3) {
+      setIsSearchingStart(true);
+      startDebounceRef.current = setTimeout(() => {
+        searchAddressSuggestions(
+          value, 
+          setStartSuggestions, 
+          setShowStartSuggestions,
+          setIsSearchingStart
+        );
+      }, 300);
+    } else {
+      setStartSuggestions([]);
+      setShowStartSuggestions(false);
+      setIsSearchingStart(false);
+    }
+  };
+
+  // Xử lý thay đổi input điểm đến với debouncing
+  const handleEndAddressChange = (value) => {
+    setEndAddress(value);
+    
+    // Xóa điểm và route nếu input trống
+    if (value.trim() === '') {
+      setEndPoint(null);
+      setCleanRoute(null);
+      setDirections(null);
+    } else {
+      setEndPoint(null);
+    }
+    
+    if (endDebounceRef.current) {
+      clearTimeout(endDebounceRef.current);
+    }
+
+    if (value.length >= 3) {
+      setIsSearchingEnd(true);
+      endDebounceRef.current = setTimeout(() => {
+        searchAddressSuggestions(
+          value, 
+          setEndSuggestions, 
+          setShowEndSuggestions,
+          setIsSearchingEnd
+        );
+      }, 300);
+    } else {
+      setEndSuggestions([]);
+      setShowEndSuggestions(false);
+      setIsSearchingEnd(false);
+    }
+  };
+
+  // Cleanup debounce timers
+  useEffect(() => {
+    return () => {
+      if (startDebounceRef.current) clearTimeout(startDebounceRef.current);
+      if (endDebounceRef.current) clearTimeout(endDebounceRef.current);
+    };
+  }, []);
+
+  // Xử lý chọn gợi ý
+  const handleSelectSuggestion = (suggestion, isStart) => {
+    const displayName = suggestion.display_name;
+    if (isStart) {
+      setStartAddress(displayName);
+      setStartPoint({ lng: parseFloat(suggestion.lon), lat: parseFloat(suggestion.lat) });
+      setShowStartSuggestions(false);
+      setStartSuggestions([]);
+      setIsSearchingStart(false);
+    } else {
+      setEndAddress(displayName);
+      setEndPoint({ lng: parseFloat(suggestion.lon), lat: parseFloat(suggestion.lat) });
+      setShowEndSuggestions(false);
+      setEndSuggestions([]);
+      setIsSearchingEnd(false);
+    }
+  };
+
   const geocodeAddress = async (address) => {
     const query = encodeURIComponent(`${address}, Hanoi, Vietnam`);
     const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'SmartAirNGSI-LD/1.0'
+        }
+      });
       const data = await response.json();
       if (data && data.length > 0) {
         return { lng: parseFloat(data[0].lon), lat: parseFloat(data[0].lat) };
@@ -106,24 +236,29 @@ const Map = () => {
     setError('');
     setCleanRoute(null);
     setDirections(null);
-    setStartPoint(null);
-    setEndPoint(null);
 
-    const startCoords = await geocodeAddress(startAddress);
+    let startCoords = startPoint;
+    let endCoords = endPoint;
+
     if (!startCoords) {
-      setError(`Không tìm thấy địa chỉ: ${startAddress}`);
-      setIsLoading(false);
-      return;
+      startCoords = await geocodeAddress(startAddress);
+      if (!startCoords) {
+        setError(`Không tìm thấy địa chỉ: ${startAddress}`);
+        setIsLoading(false);
+        return;
+      }
+      setStartPoint(startCoords);
     }
-    setStartPoint(startCoords);
 
-    const endCoords = await geocodeAddress(endAddress);
     if (!endCoords) {
-      setError(`Không tìm thấy địa chỉ: ${endAddress}`);
-      setIsLoading(false);
-      return;
+      endCoords = await geocodeAddress(endAddress);
+      if (!endCoords) {
+        setError(`Không tìm thấy địa chỉ: ${endAddress}`);
+        setIsLoading(false);
+        return;
+      }
+      setEndPoint(endCoords);
     }
-    setEndPoint(endCoords);
 
     try {
       const response = await fetch(`${API_URL}/api/find-route`, {
@@ -169,6 +304,21 @@ const Map = () => {
       stops: [0, 12, 25, 35, 50, 75],
       colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
       label: 'PM2.5 (Bụi mịn)'
+    },
+    'pm10': {
+      stops: [0, 25, 50, 75, 100, 150],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'PM10 (Bụi thô)'
+    },
+    'nh3': {
+      stops: [0, 50, 100, 150, 200, 300],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'NH3 (Amoniac)'
+    },
+    'windSpeed': {
+      stops: [0, 2, 4, 6, 8, 10],
+      colors: ['#d32f2f', '#ff5722', '#ff9800', '#ffeb3b', '#76ff03', '#00e676'],
+      label: 'Tốc độ gió (m/s)'
     },
     'NO2': {
       stops: [0, 40, 80, 120, 160, 200],
@@ -237,44 +387,226 @@ const Map = () => {
           🗺️ Tìm đường ít ô nhiễm - Hà Nội
         </h3>
         
-        <div style={{ marginBottom: '12px' }}>
+        {/* Input điểm đi với autocomplete */}
+        <div style={{ marginBottom: '12px', position: 'relative' }}>
           <label style={{display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px'}}>
             📍 Điểm đi:
           </label>
-          <input
-            type="text"
-            placeholder="Ví dụ: Trường ĐH Bách Khoa HN"
-            value={startAddress}
-            onChange={(e) => setStartAddress(e.target.value)}
-            style={{ 
-              width: '100%', 
-              boxSizing: 'border-box',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Nhập địa điểm xuất phát (tối thiểu 3 ký tự)..."
+              value={startAddress}
+              onChange={(e) => handleStartAddressChange(e.target.value)}
+              onFocus={() => {
+                if (startSuggestions.length > 0) {
+                  setShowStartSuggestions(true);
+                }
+              }}
+              style={{ 
+                width: '100%', 
+                boxSizing: 'border-box',
+                padding: '10px 36px 10px 10px',
+                border: showStartSuggestions ? '2px solid #0A79DF' : '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '14px',
+                transition: 'border 0.2s'
+              }}
+            />
+            {isSearchingStart && (
+              <div style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                animation: 'spin 1s linear infinite'
+              }}>
+                <span style={{ fontSize: '16px' }}>⏳</span>
+              </div>
+            )}
+            {!isSearchingStart && startPoint && (
+              <span style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '16px',
+                color: '#4caf50'
+              }}>✓</span>
+            )}
+          </div>
+          
+          {/* Danh sách gợi ý điểm đi */}
+          {showStartSuggestions && startSuggestions.length > 0 && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #0A79DF',
+                borderRadius: '6px',
+                maxHeight: '240px',
+                overflowY: 'auto',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
+                zIndex: 100
+              }}
+              onMouseLeave={() => setShowStartSuggestions(false)}
+            >
+              {startSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleSelectSuggestion(suggestion, true)}
+                  style={{
+                    padding: '12px 14px',
+                    cursor: 'pointer',
+                    borderBottom: index < startSuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                    fontSize: '13px',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#e3f2fd';
+                    e.target.style.paddingLeft = '18px';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'white';
+                    e.target.style.paddingLeft = '14px';
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>📍</span>
+                  <span style={{ flex: 1, lineHeight: '1.4' }}>{suggestion.display_name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {!isSearchingStart && startAddress.length >= 3 && startSuggestions.length === 0 && !startPoint && (
+            <div style={{
+              fontSize: '12px',
+              color: '#ff9800',
+              marginTop: '4px',
+              padding: '6px',
+              backgroundColor: '#fff3e0',
+              borderRadius: '4px'
+            }}>
+              ⚠️ Không tìm thấy kết quả phù hợp
+            </div>
+          )}
         </div>
         
-        <div style={{ marginBottom: '12px' }}>
+        {/* Input điểm đến với autocomplete */}
+        <div style={{ marginBottom: '12px', position: 'relative' }}>
           <label style={{display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px'}}>
             🎯 Điểm đến:
           </label>
-          <input
-            type="text"
-            placeholder="Ví dụ: Hồ Gươm"
-            value={endAddress}
-            onChange={(e) => setEndAddress(e.target.value)}
-            style={{ 
-              width: '100%', 
-              boxSizing: 'border-box',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Nhập điểm đến (tối thiểu 3 ký tự)..."
+              value={endAddress}
+              onChange={(e) => handleEndAddressChange(e.target.value)}
+              onFocus={() => {
+                if (endSuggestions.length > 0) {
+                  setShowEndSuggestions(true);
+                }
+              }}
+              style={{ 
+                width: '100%', 
+                boxSizing: 'border-box',
+                padding: '10px 36px 10px 10px',
+                border: showEndSuggestions ? '2px solid #0A79DF' : '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '14px',
+                transition: 'border 0.2s'
+              }}
+            />
+            {isSearchingEnd && (
+              <div style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                animation: 'spin 1s linear infinite'
+              }}>
+                <span style={{ fontSize: '16px' }}>⏳</span>
+              </div>
+            )}
+            {!isSearchingEnd && endPoint && (
+              <span style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '16px',
+                color: '#4caf50'
+              }}>✓</span>
+            )}
+          </div>
+          
+          {/* Danh sách gợi ý điểm đến */}
+          {showEndSuggestions && endSuggestions.length > 0 && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #0A79DF',
+                borderRadius: '6px',
+                maxHeight: '240px',
+                overflowY: 'auto',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
+                zIndex: 100
+              }}
+              onMouseLeave={() => setShowEndSuggestions(false)}
+            >
+              {endSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleSelectSuggestion(suggestion, false)}
+                  style={{
+                    padding: '12px 14px',
+                    cursor: 'pointer',
+                    borderBottom: index < endSuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                    fontSize: '13px',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#e3f2fd';
+                    e.target.style.paddingLeft = '18px';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'white';
+                    e.target.style.paddingLeft = '14px';
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>🎯</span>
+                  <span style={{ flex: 1, lineHeight: '1.4' }}>{suggestion.display_name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {!isSearchingEnd && endAddress.length >= 3 && endSuggestions.length === 0 && !endPoint && (
+            <div style={{
+              fontSize: '12px',
+              color: '#ff9800',
+              marginTop: '4px',
+              padding: '6px',
+              backgroundColor: '#fff3e0',
+              borderRadius: '4px'
+            }}>
+              ⚠️ Không tìm thấy kết quả phù hợp
+            </div>
+          )}
         </div>
         
         <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
@@ -430,6 +762,14 @@ const Map = () => {
         {endPoint && <Marker longitude={endPoint.lng} latitude={endPoint.lat} color="red" />}
 
       </MapGL>
+
+      {/* CSS Animation cho spinner */}
+      <style>{`
+        @keyframes spin {
+          from { transform: translateY(-50%) rotate(0deg); }
+          to { transform: translateY(-50%) rotate(360deg); }
+        }
+      `}</style>
 
       {/* Bộ chọn chế độ tô màu */}
       <div style={{
@@ -590,6 +930,15 @@ const Map = () => {
               </div>
               <div style={{padding: '6px', backgroundColor: '#ffebee', borderRadius: '4px'}}>
                 <strong>PM2.5:</strong> {hoveredFeature.properties.pm2_5?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#ede7f6', borderRadius: '4px'}}>
+                <strong>PM10:</strong> {hoveredFeature.properties.pm10?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#e0f2f1', borderRadius: '4px'}}>
+                <strong>NH3:</strong> {hoveredFeature.properties.nh3?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#e8eaf6', borderRadius: '4px'}}>
+                <strong>🌬️ Gió:</strong> {hoveredFeature.properties.windSpeed?.toFixed(2) ?? 'N/A'} m/s
               </div>
             </div>
           </div>
