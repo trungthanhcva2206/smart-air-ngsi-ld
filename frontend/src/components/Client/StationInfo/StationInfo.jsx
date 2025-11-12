@@ -21,8 +21,10 @@
 */
 import { BsGeoAlt, BsCloudRain, BsWind, BsInfoCircle, BsArrowRight, BsX } from 'react-icons/bs';
 import './StationInfo.scss';
+import { useNavigate } from 'react-router-dom';
 
 const StationInfo = ({ platform, weatherData, airQualityData, loading, error, onClose }) => {
+    const navigate = useNavigate();
     if (!platform) {
         return (
             <div className="station-info card shadow">
@@ -321,7 +323,7 @@ const StationInfo = ({ platform, weatherData, airQualityData, loading, error, on
 
             {/* View Details Button */}
             <div className="card-footer bg-white border-top">
-                <button className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                <button className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" onClick={() => navigate(`/${platform.entityId}`)}>
                     <span>Xem chi tiết</span>
                     <BsArrowRight />
                 </button>
