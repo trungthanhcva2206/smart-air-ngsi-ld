@@ -32,6 +32,15 @@
         z-index: 1;
     }
 
+    // Search bar container
+    .search-bar-container {
+        left: 1.5rem !important;
+
+        @media (max-width: 768px) {
+            left: 1rem !important;
+        }
+    }
+
     // Search bar styling
     .input-group {
         max-width: 320px;
@@ -67,8 +76,12 @@
 // Leaflet zoom control placement
 .leaflet-bottom.leaflet-left {
     margin-bottom: 16px;
-    margin-left: 12px;
+    margin-left: 2rem;
     z-index: 999;
+
+    @media (max-width: 768px) {
+        margin-left: 1rem;
+    }
 }
 
 // Custom marker styles

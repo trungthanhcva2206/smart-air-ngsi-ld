@@ -113,7 +113,7 @@ const StationMap = () => {
     return (
         <div className="map-page flex-fill position-relative">
             {/* Search bar - top left */}
-            <div className="position-absolute top-0 start-0 p-3" style={{ zIndex: 1000 }}>
+            <div className="position-absolute top-0 start-0 p-3 search-bar-container" style={{ zIndex: 1000 }}>
                 <div className="input-group shadow-sm">
                     <span className="input-group-text bg-white border-end-0"><BsSearch /></span>
                     <input className="form-control border-start-0" placeholder="Tìm kiếm trạm..." />

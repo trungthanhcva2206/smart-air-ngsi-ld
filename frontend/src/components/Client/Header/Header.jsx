@@ -42,8 +42,8 @@ const Header = () => {
                 </button>
                 <div className="collapse navbar-collapse" id="navbarNav">
                     <nav className="navbar-nav ms-auto align-items-lg-center gap-2 gap-lg-3">
-                        <NavLink to="/" className="nav-link">Bản đồ</NavLink>
-                        <NavLink to="/stations" className="nav-link">Bản đồ trạm</NavLink>
+                        <NavLink to="/" className={({ isActive }) => isActive || window.location.pathname.startsWith('/urn:') ? 'nav-link active' : 'nav-link'}>Bản đồ trạm</NavLink>
+                        <NavLink to="/map" className="nav-link">Đường đi</NavLink>
                         <NavLink to="/air-quality" className="nav-link">Chất lượng không khí</NavLink>
                         <NavLink to="/analysis" className="nav-link">Thống kê</NavLink>
                         <NavLink to="/history" className="nav-link">Lịch sử</NavLink>
