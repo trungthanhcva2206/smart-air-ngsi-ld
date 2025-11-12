@@ -2,13 +2,13 @@
 
 ## Tổng quan dự án
 
-ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Smart City:
+ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Smart City với kiến trúc FIWARE hoàn chỉnh:
 
 ### 🎯 Các tiêu chí đạt được
 
 1. **✅ Mô hình hóa dữ liệu theo SOSA/SSN Ontology (W3C)**
    - **Sensor**: Các thiết bị cảm biến (Weather Sensor, Air Quality Sensor)
-   - **Platform**: Nền tảng chứa sensors (Weather Station, Air Quality Station)
+   - **Platform**: Nền tảng chứa sensors (Environment Monitoring Station)
    - **ObservableProperty**: Các thuộc tính có thể quan sát (Temperature, CO, PM2.5, ...)
    - **Observation**: Các quan sát thực tế (WeatherObserved, AirQualityObserved)
    - Relationships: `observes`, `isHostedBy`, `hosts`, `refDevice`
@@ -24,11 +24,106 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
    - `AirQualityObserved`: https://github.com/smart-data-models/dataModel.Environment/tree/master/AirQualityObserved
    - Tuân thủ schema và attributes từ smartdatamodels.org
 
-4. **✅ Tạo dữ liệu mở từ nguồn thực tế**
-   - Tái sử dụng OpenWeather API (nguồn dữ liệu mở)
-   - Giả lập N trạm cảm biến tại các quận Hà Nội
-   - Dữ liệu real-time cho demo sản phẩm
+4. **✅ Time Series Data Storage với QuantumLeap**
+   - Lưu trữ dữ liệu lịch sử tự động qua subscriptions
+   - Hỗ trợ truy vấn dữ liệu theo thời gian
+   - Tích hợp với CrateDB để lưu trữ hiệu quả
 
+5. **✅ Real-time Notifications**
+   - Subscriptions tự động từ Orion-LD đến QuantumLeap
+   - Cập nhật entity theo fixed ID (không timestamp trong ID)
+   - Hỗ trợ SSE real-time updates cho frontend
+
+6. **✅ Tạo dữ liệu mở từ nguồn thực tế**
+   - Tái sử dụng OpenWeather API (nguồn dữ liệu mở)
+   - Giả lập 126 trạm cảm biến tại các phường/xã Hà Nội
+   - Dữ liệu real-time cho demo sản phẩm
+## 🏗️ Kiến trúc hệ thống
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    FIWARE Platform                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐      ┌──────────────┐     ┌──────────────┐ │
+│  │   Orion-LD  │      │ QuantumLeap  │     │   CrateDB    │ │
+│  │   (1026)    │◄────►│   (8668)     │────►│   (4200)     │ │
+│  │  Context    │      │  Time Series │     │   Storage    │ │
+│  │   Broker    │      │   Service    │     │              │ │
+│  └──────┬──────┘      └──────────────┘     └──────────────┘ │
+│         │                    ▲                              │
+│         │ subscription       │ notify                       │
+│         └────────────────────┘                              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+         ▲                    
+         │ HTTP POST/PATCH (upsert entities)
+         │
+┌────────┴─────────┐
+│   ETL Pipeline   │
+│    (Python)      │
+│                  │
+│  - Extract       │──┐
+│  - Transform     │  │ Transform to
+│  - Load          │  │ NGSI-LD
+│  - Schedule      │  │
+└────────┬─────────┘  │
+         │            │
+         │ Extract    ▼
+         │      ┌──────────────────┐
+         └─────►│  NGSI-LD Models  │
+                │  - Weather       │
+                │  - AirQuality    │
+                │  - SOSA/SSN      │
+                └──────────────────┘
+                         ▲
+                         │ HTTP GET
+                         │
+                ┌────────┴─────────┐
+                │  OpenWeather API │
+                │  - Weather Data  │
+                │  - Air Quality   │
+                └──────────────────┘
+```
+## 📊 Luồng dữ liệu
+
+### 1. ETL Process (Định kỳ theo chu kỳ)
+
+```
+OpenWeather API
+      │
+      │ 1. Extract (HTTP GET)
+      ▼
+ETL Pipeline (Python)
+      │
+      │ 2. Transform to NGSI-LD
+      ▼
+NGSI-LD Entities
+  - WeatherObserved
+  - AirQualityObserved
+      │
+      │ 3. Upsert (POST/PATCH)
+      ▼
+Orion-LD Context Broker
+```
+
+### 2. Subscription Flow (Real-time)
+
+```
+Orion-LD
+      │
+      │ Entity Update Event
+      ▼
+Subscription Manager
+      │
+      │ Notify
+      ▼
+QuantumLeap
+      │
+      │ Store
+      ▼
+CrateDB (Time Series)
+```
 ## 📋 Yêu cầu
 
 - Python 3.8+
@@ -37,14 +132,42 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
 
 ## 🚀 Cài đặt
 
-### 1. Clone và cài đặt dependencies
+### 1. Clone repository
 
 ```bash
-cd smart-air-ngsi-ld\etl
-pip install -r requirements.txt
+cd smart-air-ngsi-ld
 ```
 
-### 2. Cấu hình environment
+### 2. Khởi động FIWARE Platform
+
+```bash
+docker-compose up -d
+```
+
+Services được khởi động:
+- **Orion-LD**: `localhost:1026` - Context Broker
+- **QuantumLeap**: `localhost:8668` - Time Series Service
+- **CrateDB**: `localhost:5432` - Time Series Database
+- **CrateDB Admin UI**: `localhost:5432` - Database Admin Interface
+
+Kiểm tra services:
+
+```bash
+# Orion-LD
+curl http://localhost:1026/version
+
+# QuantumLeap
+curl http://localhost:8668/version
+
+# CrateDB
+curl http://localhost:5432
+```
+
+### 3. Cấu hình ETL Pipeline
+
+```bash
+pip install -r requirements.txt
+```
 
 Tạo file `.env` từ `.env.example`:
 
@@ -55,568 +178,163 @@ copy .env.example .env
 Chỉnh sửa `.env`:
 
 ```env
-# Đăng ký API key miễn phí tại: https://openweathermap.org/api
+# OpenWeather API
 OPENWEATHER_API_KEY=your_api_key_here
 
-# URL của Orion-LD broker
+# Orion-LD
 ORION_LD_URL=http://localhost:1026
 ORION_LD_TENANT=hanoi
 
-# Chu kỳ ETL (phút)
-# 480 phút (8 giờ): ~3 chu kỳ/ngày × 252 requests/chu kỳ = 756 requests/ngày (< 1000)
+# QuantumLeap
+QUANTUMLEAP_EXTERNAL_URL=http://localhost:8668
+QUANTUMLEAP_INTERNAL_URL=http://fiware-quantumleap:8668
+QUANTUMLEAP_ENABLED=true
+
+# ETL Schedule
 ETL_INTERVAL_MINUTES=480
 
-LOG_LEVEL=INFO
-
+# Data Source
 # Đường dẫn tới file GeoJSON chứa dữ liệu địa lý các xã/phường Hà Nội.
 # Mặc định: ./etl/ha_noi_with_latlon2.geojson
 # Bạn có thể đổi sang đường dẫn khác nếu dữ liệu nằm nơi khác.
 HANOI_GEOJSON_PATH=./etl/ha_noi_with_latlon2.geojson
 ```
 
-### 3. Khởi động Orion-LD
-
-Orion-LD là **FIWARE Context Broker** dùng để lưu trữ và truy vấn dữ liệu NGSI-LD.  
-Bạn có thể khởi động Orion-LD bằng **Docker Compose** để dễ quản lý.
+### 4. Chạy ETL Pipeline
 
 ```bash
-docker run -d --name orion-ld -p 1026:1026 fiware/orion-ld
+python -m etl.Core_ETL.main
 ```
----
-
-## 🏃 Chạy ETL Pipeline
-
-```bash
-python main.py
-```
-
 **Pipeline sẽ tự động:**
-1. ✅ Kiểm tra SOSA/SSN infrastructure
-2. ✅ Tự động khởi tạo nếu chưa có (N entities)
-3. ✅ Chạy ETL cycle ngay lập tức
-4. ✅ Lên lịch chạy định kỳ theo chu kỳ
+1. ✅ Khởi tạo SOSA/SSN infrastructure (ObservableProperty, Platform, Device)
+2. ✅ Tạo subscriptions từ Orion-LD đến QuantumLeap
+3. ✅ Chạy ETL cycle đầu tiên ngay lập tức
+4. ✅ Lên lịch chạy định kỳ theo chu kỳ cấu hình
 
+## 🔧 Subscription Manager
 
-## 📊 Cấu trúc dữ liệu SOSA/SSN
+Pipeline tự động tạo các subscriptions sau:
 
-### 1. ObservableProperty (Thuộc tính quan sát được)
+### 1. WeatherObserved → QuantumLeap
 
 ```json
 {
-  "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
-  "id": "urn:ngsi-ld:ObservableProperty:Temperature",
-  "type": "ObservableProperty",
-  "description": {
-      "type": "Property",
-      "value": "The temperature of the air"
-  },
-  "https://smartdatamodels.org/name": {
-      "type": "Property",
-      "value": "Air Temperature"
-  },
-  "category": {
-      "type": "Property",
-      "value": "weather"
-  },
-  "unit": {
-      "type": "Property",
-      "value": "Celsius (°C)"
-  },
-  "unitCode": {
-      "type": "Property",
-      "value": "CEL"
+  "id": "urn:ngsi-ld:Subscription:WeatherObserved-QuantumLeap",
+  "type": "Subscription",
+  "entities": [{"type": "weatherObserved"}],
+  "notification": {
+    "endpoint": {
+      "uri": "http://fiware-quantumleap:8668/v2/notify"
+    }
   }
 }
 ```
 
-### 2. Platform (Nền tảng chứa sensor)
+### 2. AirQualityObserved → QuantumLeap
 
 ```json
 {
- "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
- "id": "urn:ngsi-ld:Platform:WeatherStation-PhuongBaDinh",
- "type": "Platform",
- "https://smartdatamodels.org/name": {
-     "type": "Property",
-     "value": "Weather Monitoring Platform - Phuong Ba Dinh"
- },
- "description": {
-     "type": "Property",
-     "value": "Weather monitoring platform hosting sensors in Phuong Ba Dinh, Hanoi"
- },
- "location": {
-     "type": "GeoProperty",
-     "value": {
-         "type": "Point",
-         "coordinates": [
-             105.837998409,
-             21.038569263
-         ]
-     }
- },
- "https://smartdatamodels.org/address": {
-     "type": "Property",
-     "value": {
-         "addressLocality": "Phuong Ba Dinh",
-         "addressRegion": "Hanoi",
-         "addressCountry": "VN",
-         "type": "PostalAddress"
-     }
- },
- "hosts": {
-     "type": "Relationship",
-     "object": [
-         "urn:ngsi-ld:Device:WeatherSensor-PhuongBaDinh"
-     ]
- },
- "platformType": {
-     "type": "Property",
-     "value": "WeatherMonitoringStation"
- },
- "status": {
-     "type": "Property",
-     "value": "operational"
- },
- "deploymentDate": {
-     "type": "Property",
-     "value": "2025-01-01T00:00:00Z"
- },
- "https://smartdatamodels.org/owner": {
-     "type": "Property",
-     "value": "Hanoi Department of Environment"
- },
- "operator": {
-     "type": "Property",
-     "value": "Hanoi Smart City Initiative"
- }
-}
-```
-
-### 3. Sensor (Thiết bị cảm biến)
-
-```json
-{
- "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
- "id": "urn:ngsi-ld:Device:WeatherSensor-PhuongBaDinh",
- "type": "Device",
- "https://smartdatamodels.org/name": {
-     "type": "Property",
-     "value": "WeatherSensor-PhuongBaDinh"
- },
- "description": {
-     "type": "Property",
-     "value": "Multi-parameter weather sensor station in Phuong Ba Dinh, Hanoi"
- },
- "deviceCategory": {
-     "type": "Property",
-     "value": "sensor"
- },
- "controlledProperty": {
-     "type": "Property",
-     "value": [
-         "temperature",
-         "atmosphericPressure",
-         "relativeHumidity",
-         "windSpeed",
-         "windDirection",
-         "precipitation",
-         "visibility",
-         "illuminance"
-     ]
- },
- "location": {
-     "type": "GeoProperty",
-     "value": {
-         "type": "Point",
-         "coordinates": [
-             105.837998409,
-             21.038569263
-         ]
-     }
- },
- "sensorType": {
-     "type": "Property",
-     "value": "WeatherStation"
- },
- "observes": {
-     "type": "Relationship",
-     "object": [
-         "urn:ngsi-ld:ObservableProperty:Temperature",
-         "urn:ngsi-ld:ObservableProperty:AtmosphericPressure",
-         "urn:ngsi-ld:ObservableProperty:RelativeHumidity",
-         "urn:ngsi-ld:ObservableProperty:WindSpeed",
-         "urn:ngsi-ld:ObservableProperty:WindDirection",
-         "urn:ngsi-ld:ObservableProperty:Precipitation",
-         "urn:ngsi-ld:ObservableProperty:Visibility",
-         "urn:ngsi-ld:ObservableProperty:Illuminance"
-     ]
- },
- "isHostedBy": {
-     "type": "Relationship",
-     "object": "urn:ngsi-ld:Platform:WeatherStation-PhuongBaDinh"
- },
- "serialNumber": {
-     "type": "Property",
-     "value": "WS-HN-PHUONGBADINH-001"
- },
- "hardwareVersion": {
-     "type": "Property",
-     "value": "2.0"
- },
- "softwareVersion": {
-     "type": "Property",
-     "value": "1.5.0"
- },
- "firmwareVersion": {
-     "type": "Property",
-     "value": "3.2.1"
- },
- "https://smartdatamodels.org/dataModel.Environment/brandName": {
-     "type": "Property",
-     "value": "OpenWeather"
- },
- "https://smartdatamodels.org/dataModel.Environment/modelName": {
-     "type": "Property",
-     "value": "Multi-Sensor Weather Station"
- },
- "deviceState": {
-     "type": "Property",
-     "value": "active"
- },
- "dateInstalled": {
-     "type": "Property",
-     "value": "2025-01-01T00:00:00Z"
- },
- "dateFirstUsed": {
-     "type": "Property",
-     "value": "2025-01-01T00:00:00Z"
- },
- "https://smartdatamodels.org/dataProvider": {
-     "type": "Property",
-     "value": "Hanoi Smart City Initiative"
- },
- "https://smartdatamodels.org/owner": {
-     "type": "Property",
-     "value": "Hanoi Department of Environment"
- }
-}
-```
-
-### 4. Observation (Quan sát - WeatherObserved)
-
-```json
-{
-  "@context": [
-      "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld",
-      "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
-  ],
-  "id": "urn:ngsi-ld:WeatherObserved:Hanoi-PhuongBaDinh-2025-11-04T06:38:37.505Z",
-  "type": "weatherObserved",
-  "description": {
-      "type": "Property",
-      "value": "Weather observation station in Phuong Ba Dinh, Hanoi"
-  },
-  "address": {
-      "type": "Property",
-      "value": {
-          "addressLocality": "Phuong Ba Dinh",
-          "addressRegion": "Hanoi",
-          "addressCountry": "VN",
-          "type": "PostalAddress"
-      }
-  },
-  "atmosphericPressure": {
-      "type": "Property",
-      "value": 1018,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "HPA"
-  },
-  "feelsLikeTemperature": {
-      "type": "Property",
-      "value": 22.4,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "CEL"
-  },
-  "illuminance": {
-      "type": "Property",
-      "value": 50000,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "LUX"
-  },
-  "precipitation": {
-      "type": "Property",
-      "value": 0,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "MMT"
-  },
-  "refDevice": {
-      "type": "Relationship",
-      "object": "urn:ngsi-ld:Device:WeatherSensor-PhuongBaDinh"
-  },
-  "relativeHumidity": {
-      "type": "Property",
-      "value": 0.85,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "C62"
-  },
-  "temperature": {
-      "type": "Property",
-      "value": 22,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "CEL"
-  },
-  "visibility": {
-      "type": "Property",
-      "value": 10000,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "MTR"
-  },
-  "weatherType": {
-      "type": "Property",
-      "value": "Clouds",
-      "observedAt": "2025-11-04T06:38:37.505Z"
-  },
-  "windDirection": {
-      "type": "Property",
-      "value": 331,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "DD"
-  },
-  "windSpeed": {
-      "type": "Property",
-      "value": 2.9,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "MTS"
-  },
-  "dataProvider": {
-      "type": "Property",
-      "value": "OpenWeather"
-  },
-  "dateObserved": {
-      "type": "Property",
-      "value": {
-          "@type": "DateTime",
-          "@value": "2025-11-04T06:38:37.505Z"
-      }
-  },
-  "name": {
-      "type": "Property",
-      "value": "WeatherStation-PhuongBaDinh"
-  },
-  "source": {
-      "type": "Property",
-      "value": "https://openweathermap.org"
-  },
-  "cloudiness": {
-      "type": "Property",
-      "value": 1,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "C62"
-  },
-  "pressureTendency": {
-      "type": "Property",
-      "value": 0,
-      "observedAt": "2025-11-04T06:38:37.505Z",
-      "unitCode": "A97"
-  },
-  "stationCode": {
-      "type": "Property",
-      "value": "HN-PHUONGBADINH"
-  },
-  "stationName": {
-      "type": "Property",
-      "value": "PhuongBaDinh"
-  },
-  "weatherDescription": {
-      "type": "Property",
-      "value": "overcast clouds",
-      "observedAt": "2025-11-04T06:38:37.505Z"
-  },
-  "location": {
-      "type": "GeoProperty",
-      "value": {
-          "type": "Point",
-          "coordinates": [
-              105.837998409,
-              21.038569263
-          ]
-      }
+  "id": "urn:ngsi-ld:Subscription:AirQualityObserved-QuantumLeap",
+  "type": "Subscription",
+  "entities": [{"type": "airQualityObserved"}],
+  "notification": {
+    "endpoint": {
+      "uri": "http://fiware-quantumleap:8668/v2/notify"
+    }
   }
 }
 ```
 
-### 5. Observation (Quan sát - AirQualityObserved)
+### 3. Device → QuantumLeap
 
 ```json
- {
-  "@context": [
-      "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld",
-      "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
-  ],
-  "id": "urn:ngsi-ld:AirQualityObserved:Hanoi-PhuongBaDinh-2025-11-04T06:38:37.506Z",
-  "type": "airQualityObserved",
-  "description": {
-      "type": "Property",
-      "value": "Air quality monitoring station in Phuong Ba Dinh, Hanoi"
-  },
-  "address": {
-      "type": "Property",
-      "value": {
-          "addressLocality": "Phuong Ba Dinh",
-          "addressRegion": "Hanoi",
-          "addressCountry": "VN",
-          "type": "PostalAddress"
-      }
-  },
-  "airQualityIndex": {
-      "type": "Property",
-      "value": 2,
-      "observedAt": "2025-11-04T06:38:37.506Z"
-  },
-  "airQualityLevel": {
-      "type": "Property",
-      "value": "fair",
-      "observedAt": "2025-11-04T06:38:37.506Z"
-  },
-  "pm10": {
-      "type": "Property",
-      "value": 11.64,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "precipitation": {
-      "type": "Property",
-      "value": 0,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "MMT"
-  },
-  "refDevice": {
-      "type": "Relationship",
-      "object": "urn:ngsi-ld:Device:AirQualitySensor-PhuongBaDinh"
-  },
-  "refPointOfInterest": {
-      "type": "Relationship",
-      "object": "urn:ngsi-ld:PointOfInterest:Hanoi-PhuongBaDinh"
-  },
-  "relativeHumidity": {
-      "type": "Property",
-      "value": 0.85,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "C62"
-  },
-  "reliability": {
-      "type": "Property",
-      "value": 0.85,
-      "observedAt": "2025-11-04T06:38:37.506Z"
-  },
-  "temperature": {
-      "type": "Property",
-      "value": 22,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "CEL"
-  },
-  "windDirection": {
-      "type": "Property",
-      "value": 331,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "DD"
-  },
-  "windSpeed": {
-      "type": "Property",
-      "value": 2.85,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "MTS"
-  },
-  "dataProvider": {
-      "type": "Property",
-      "value": "OpenWeather"
-  },
-  "dateObserved": {
-      "type": "Property",
-      "value": "2025-11-04T06:38:37.506Z"
-  },
-  "name": {
-      "type": "Property",
-      "value": "AirQualityStation-PhuongBaDinh"
-  },
-  "source": {
-      "type": "Property",
-      "value": "https://openweathermap.org"
-  },
-  "CO": {
-      "type": "Property",
-      "value": 225.48,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GP"
-  },
-  "CO_Level": {
-      "type": "Property",
-      "value": "good",
-      "observedAt": "2025-11-04T06:38:37.506Z"
-  },
-  "NH3": {
-      "type": "Property",
-      "value": 0.82,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "NO": {
-      "type": "Property",
-      "value": 0.28,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "NO2": {
-      "type": "Property",
-      "value": 3.99,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "NOx": {
-      "type": "Property",
-      "value": 4.27,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "O3": {
-      "type": "Property",
-      "value": 43.74,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "SO2": {
-      "type": "Property",
-      "value": 2.1,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "pm2_5": {
-      "type": "Property",
-      "value": 10.3,
-      "observedAt": "2025-11-04T06:38:37.506Z",
-      "unitCode": "GQ"
-  },
-  "stationCode": {
-      "type": "Property",
-      "value": "HN-AQ-PHUONGBADINH"
-  },
-  "stationName": {
-      "type": "Property",
-      "value": "PhuongBaDinh"
-  },
-  "location": {
-      "type": "GeoProperty",
-      "value": {
-          "type": "Point",
-          "coordinates": [
-              105.837998409,
-              21.038569263
-          ]
-      }
+{
+  "id": "urn:ngsi-ld:Subscription:Device-QuantumLeap",
+  "type": "Subscription",
+  "entities": [{"type": "Device"}],
+  "notification": {
+    "endpoint": {
+      "uri": "http://fiware-quantumleap:8668/v2/notify"
+    }
   }
 }
 ```
+### 4. Platform → QuantumLeap
 
+```json
+{
+  "id": "urn:ngsi-ld:Subscription:Platform-QuantumLeap",
+  "type": "Subscription",
+  "entities": [{"type": "Platform"}],
+  "notification": {
+    "endpoint": {
+      "uri": "http://fiware-quantumleap:8668/v2/notify"
+    }
+  }
+}
+```
+## 🏗️ Kiến trúc SOSA/SSN
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                  SOSA/SSN Ontology Layer                       │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ObservableProperty (17 entities)                              │
+│  ├─ Temperature                                                │
+│  ├─ AtmosphericPressure                                        │
+│  ├─ RelativeHumidity                                           │
+│  ├─ CO, NO, NO2, O3, SO2                                       │
+│  ├─ PM2.5, PM10                                                │
+│  └─ ...                                                        │
+│                                                                │
+│  Platform (N entities - unified per district)                  │
+│  ├─ EnvironmentStation-PhuongBaDinh                            │
+│  │   ├─ hosts → WeatherSensor-PhuongBaDinh                     │
+│  │   └─ hosts → AirQualitySensor-PhuongBaDinh                  │
+│  └─ ...                                                        │
+│                         │                                      │
+│                         │ isHostedBy                           │
+│                         ▼                                      │
+│  Sensor/Device (N entities)                                    │
+│  ├─ WeatherSensor-PhuongBaDinh ───────────> ObservableProperty │
+│  ├─ AirQualitySensor-PhuongBaDinh ────────> ObservableProperty │
+│  └─ ...                                                        │
+│                         │                                      │
+│                         │ refDevice (madeBySensor)             │
+│                         ▼                                      │
+├─────────────────────────────────────────────────────────────── ┤
+│                Observation Layer (Dynamic)                     │
+├─────────────────────────────────────────────────────────────── ┤
+│                                                                │
+│  WeatherObserved (N entities - updated each cycle)             │
+│  ├─ ID: urn:ngsi-ld:WeatherObserved:Hanoi-{District}           │
+│  │  (Fixed ID - no timestamp for SSE)                          │
+│  └─ dateObserved updated each cycle                            │
+│                                                                │
+│  AirQualityObserved (N entities - updated each cycle)          │
+│  ├─ ID: urn:ngsi-ld:AirQualityObserved:Hanoi-{District}        │
+│  │  (Fixed ID - no timestamp for SSE)                          │
+│  └─ dateObserved updated each cycle                            │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+                         │
+                         │ Notify via Subscription
+                         ▼
+          ┌─────────────────────────────┐
+          │      QuantumLeap            │
+          │  - Time Series Storage      │
+          │  - Historical Queries       │
+          │  - Aggregations             │
+          └──────────┬──────────────────┘
+                     │
+                     ▼
+          ┌─────────────────────────────┐
+          │        CrateDB              │
+          │  - Columnar Storage         │
+          │  - Time-based Partitioning  │
+          └─────────────────────────────┘
+```
 ## 🗺️ Các phường/xã được giám sát
 
 Pipeline giả lập N trạm cảm biến tại **N phường/xã**
@@ -697,124 +415,46 @@ Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, qu�
 #### Tenant
 - **NGSILD-Tenant**: `hanoi`
 
----
-
-*Phần này sẽ được bổ sung với các API calls cụ thể cho dự án...*
-
-## 🏗️ Kiến trúc SOSA/SSN
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│                  SOSA/SSN Ontology Layer                       │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  ObservableProperty (17 entities)                              │
-│  ├─ Temperature                                                │
-│  ├─ AtmosphericPressure                                        │
-│  ├─ RelativeHumidity                                           │
-│  ├─ CO, NO, NO2, O3, SO2                                       │
-│  ├─ PM2.5, PM10                                                │
-│  └─ ...                                                        │
-│                                                                │
-│  Platform (N entities - N phường/xã)                           │
-│  ├─ WeatherStation-PhuongBaDinh ─────────────> WeatherSensor   │
-│  ├─ AirQualityStation-PhuongBaDinh ─────────> AQSensor         │
-│  └─ ...                                                        │
-│                         │                                      │
-│                         │ isHostedBy                           │
-│                         ▼                                      │
-│  Sensor/Device (N entities)                                    │
-│  ├─ WeatherSensor-PhuongBaDinh ───────────> ObservableProperty │
-│  ├─ AirQualitySensor-PhuongBaDinh ────────> ObservableProperty │
-│  └─ ...                                                        │
-│                         │                                      │
-│                         │ refDevice (madeBySensor)             │
-│                         ▼                                      │
-├─────────────────────────────────────────────────────────────── ┤
-│                Observation Layer (Dynamic)                     │
-├─────────────────────────────────────────────────────────────── ┤
-│                                                                │
-│  WeatherObserved (tạo mới mỗi chu kỳ)                          │
-│  AirQualityObserved (tạo mới mỗi chu kỳ)                       │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
-                         │
-                         │ ETL Pipeline
-                         ▼
-          ┌─────────────────────────────┐
-          │      OpenWeather API        │
-          │  - Weather Data             │
-          │  - Air Quality Data         │
-          └─────────────────────────────┘
-
-```
-
-## 🔗 Mối quan hệ SOSA/SSN
-
-1. **Platform `hosts` Sensor**: Platform chứa các Sensor
-2. **Sensor `isHostedBy` Platform**: Sensor được chứa bởi Platform
-3. **Sensor `observes` ObservableProperty**: Sensor quan sát các thuộc tính
-4. **Observation `refDevice` Sensor**: Observation được tạo bởi Sensor
-5. **Observation `observedProperty`**: Liên kết đến ObservableProperty
-
-## 🏗️ Kiến trúc ETL Pipeline
-
-```
-┌─────────────────┐
-│  OpenWeather    │
-│      API        │
-└────────┬────────┘
-         │ Extract (HTTP GET)
-         │
-         ▼
-┌─────────────────┐
-│  ETL Pipeline   │
-│   (Python)      │
-│                 │
-│  - Extract      │
-│  - Transform    │──┐
-│  - Load         │  │
-└─────────────────┘  │ Transform to
-                     │ NGSI-LD Entities
-                     │
-                     ▼
-         ┌──────────────────────┐
-         │   NGSI-LD Entities   │
-         │  - WeatherObserved   │
-         │  - AirQualityObserved│
-         └──────────┬───────────┘
-                    │ Load (HTTP POST/PATCH)
-                    │
-                    ▼
-         ┌──────────────────────┐
-         │    Orion-LD          │
-         │  Context Broker      │
-         └──────────────────────┘
-```
-
 ## 📚 Tài liệu tham khảo
 
 - [NGSI-LD Primer](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
 - [SOSA/SSN Ontology](https://www.w3.org/TR/vocab-ssn/)
 - [Smart Data Models](https://smartdatamodels.org/)
 - [OpenWeather API](https://openweathermap.org/api)
+- [FIWARE QuantumLeap](https://github.com/FIWARE/quantum-leap)
 - [FIWARE Orion-LD](https://github.com/FIWARE/context.Orion-LD)
 
 ## 🛠️ Troubleshooting
 
-### Lỗi kết nối Orion-LD
+### 1. Lỗi kết nối Orion-LD
 
 Kiểm tra Orion-LD đang chạy:
 
 ```bash
 curl http://localhost:1026/version
+
+# Kiểm tra logs
+docker logs fiware-orion-ld
+```
+### 2. QuantumLeap không nhận dữ liệu
+
+```bash
+# Kiểm tra subscriptions
+curl -X GET "http://localhost:1026/ngsi-ld/v1/subscriptions" \
+  -H "NGSILD-Tenant: hanoi"
+
+# Kiểm tra QuantumLeap logs
+docker logs fiware-quantumleap
+
+# Kiểm tra CrateDB
+curl http://localhost:5432
 ```
 
-### Lỗi API Key không hợp lệ
+### 3. Lỗi API Key không hợp lệ
 
 Kiểm tra API key tại: https://home.openweathermap.org/api_keys
 
-### Vượt quá giới hạn requests
+### 4. Vượt quá giới hạn requests
 
 Tăng `ETL_INTERVAL_MINUTES` hoặc nâng cấp OpenWeather plan.
 
