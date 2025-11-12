@@ -466,4 +466,8 @@ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2
 
 ## 👥 Contributors
 
-Hanoi Smart City Project Team
+- **TT** - [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
+- **Tankchoi** - [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
+- **Panh** - [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
+
+**Copyright © 2025 CHK. All rights reserved.**
