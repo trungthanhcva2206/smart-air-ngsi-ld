@@ -61,8 +61,8 @@ public class SseService {
     private final Sinks.Many<SseEventDTO<PlatformDataDTO>> allPlatformsSink = Sinks.many().multicast()
             .onBackpressureBuffer();
 
-    private final Sinks.Many<Map<String, AirQualityDataDTO>> allEnvironmentSink = 
-        Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<Map<String, AirQualityDataDTO>> allEnvironmentSink = Sinks.many().multicast()
+            .onBackpressureBuffer();
     // ============ Weather Streams ============
 
     /**
@@ -235,6 +235,7 @@ public class SseService {
             log.debug("No subscribers for air quality history in district: {}", district);
         }
     }
+
     /**
      * Broadcast weather data to subscribed clients
      */
@@ -490,15 +491,16 @@ public class SseService {
                             return Flux.empty();
                         }));
     }
+
     public Flux<Map<String, AirQualityDataDTO>> subscribeAllEnvironmentData() {
         log.info("Client subscribed to all-environment-data stream");
-        
+
         return allEnvironmentSink.asFlux()
-            .timeout(Duration.ofHours(24))
-            .onErrorResume(e -> {
-                log.error("Error in all-environment-data stream: {}", e.getMessage());
-                return Flux.empty();
-            });
+                .timeout(Duration.ofHours(24))
+                .onErrorResume(e -> {
+                    log.error("Error in all-environment-data stream: {}", e.getMessage());
+                    return Flux.empty();
+                });
     }
 
     public void broadcastAllEnvironmentData(Map<String, AirQualityDataDTO> dataMap) {
@@ -506,15 +508,16 @@ public class SseService {
             log.warn("Empty environment data map, not broadcasting");
             return;
         }
-        
+
         Sinks.EmitResult result = allEnvironmentSink.tryEmitNext(dataMap);
         if (result.isSuccess()) {
-            log.debug("Broadcasted environment data update to Python service ({} stations)", 
-                dataMap.size());
+            log.debug("Broadcasted environment data update to Python service ({} stations)",
+                    dataMap.size());
         } else {
             log.warn("Failed to broadcast environment data: {}", result);
         }
     }
+
     /**
      * Broadcast device data to subscribed clients
      */

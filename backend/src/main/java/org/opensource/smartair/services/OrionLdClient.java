@@ -177,6 +177,7 @@ public class OrionLdClient {
                     return Mono.empty();
                 });
     }
+
     /**
      * Get platform entity by ID
      * Uses webClientNoContext (no Link header needed for direct entity fetch)
@@ -250,6 +251,7 @@ public class OrionLdClient {
                     return Mono.just(List.of()); // Trả về danh sách rỗng nếu lỗi
                 });
     }
+
     /**
      * Get all platforms
      */
@@ -272,6 +274,39 @@ public class OrionLdClient {
                 })
                 .onErrorResume(error -> {
                     log.error("Error fetching platforms from Orion-LD", error);
+                    return Mono.just(List.of());
+                });
+    }
+
+    /**
+     * Get all devices hosted by a specific platform
+     * Query devices where isHostedBy relationship points to the given platformId
+     * 
+     * @param platformId Platform entity ID (e.g.,
+     *                   "urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoanKiem")
+     * @return List of devices hosted by this platform
+     */
+    public Mono<List<DeviceDataDTO>> getDevicesByPlatform(String platformId) {
+        log.info("Querying devices for platform: {}", platformId);
+
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", "Device")
+                        .queryParam("q", "isHostedBy==\"" + platformId + "\"")
+                        .queryParam("limit", "1000")
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class)
+                .map(entities -> {
+                    List<DeviceDataDTO> devices = ((List<Map<String, Object>>) entities).stream()
+                            .map(transformerService::transformDevice)
+                            .toList();
+                    log.info("Found {} devices for platform: {}", devices.size(), platformId);
+                    return devices;
+                })
+                .onErrorResume(error -> {
+                    log.error("Error fetching devices for platform: {}", platformId, error);
                     return Mono.just(List.of());
                 });
     }
