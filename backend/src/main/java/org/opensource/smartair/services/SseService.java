@@ -51,6 +51,11 @@ public class SseService {
     private final Map<String, Sinks.Many<SseEventDTO<DeviceDataDTO>>> deviceSinks = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<Map<String, Object>>> weatherHistorySinks = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<Map<String, Object>>> airQualityHistorySinks = new ConcurrentHashMap<>();
+    private final Sinks.Many<Map<String, Object>> aggregatedAirQualityHistorySink = 
+        Sinks.many().multicast().onBackpressureBuffer();
+
+    private final Sinks.Many<Map<String, Object>> aggregatedWeatherHistorySink = 
+        Sinks.many().multicast().onBackpressureBuffer();
 
     // Global sink for broadcasting ALL platform updates to map view
     private final Sinks.Many<SseEventDTO<PlatformDataDTO>> allPlatformsSink = Sinks.many().multicast()
@@ -101,6 +106,50 @@ public class SseService {
                         }));
     }
 
+    // ✅ NEW: Subscribe to Aggregated Weather History
+    public Flux<Map<String, Object>> subscribeAggregatedWeatherHistory() {
+        log.info("Client subscribed to aggregated weather history stream");
+        
+        return aggregatedWeatherHistorySink.asFlux()
+                .onBackpressureBuffer(100)
+                .doOnCancel(() -> log.info("Client unsubscribed from aggregated weather history"));
+    }
+
+    // ✅ NEW: Broadcast Aggregated Weather History
+    public void broadcastAggregatedWeatherHistoryUpdate(Map<String, Object> aggregatedData) {
+        int subscriberCount = aggregatedWeatherHistorySink.currentSubscriberCount();
+        log.info("📊 Broadcasting aggregated weather history update to {} subscribers", subscriberCount);
+        
+        if (subscriberCount > 0) {
+            try {
+                aggregatedWeatherHistorySink.tryEmitNext(aggregatedData);
+                log.debug("✅ Successfully broadcasted aggregated weather history");
+            } catch (Exception e) {
+                log.error("❌ Error broadcasting aggregated weather history: {}", e.getMessage());
+            }
+        } else {
+            log.debug("⚠️ No subscribers for aggregated weather history");
+        }
+    }
+
+    public Flux<Map<String, Object>> subscribeAggregatedAirQualityHistory() {
+        log.info("Client subscribed to aggregated air quality history stream");
+        
+        return aggregatedAirQualityHistorySink.asFlux()
+                .onBackpressureBuffer(100)
+                .doOnCancel(() -> log.info("Client unsubscribed from aggregated air quality history"));
+    }
+
+    public void broadcastAggregatedAirQualityHistoryUpdate(Map<String, Object> aggregatedData) {
+        log.debug("Broadcasting aggregated air quality history update to {} subscribers", 
+                 aggregatedAirQualityHistorySink.currentSubscriberCount());
+        
+        try {
+            aggregatedAirQualityHistorySink.tryEmitNext(aggregatedData);
+        } catch (Exception e) {
+            log.error("Error broadcasting aggregated air quality history: {}", e.getMessage());
+        }
+    }
     public Flux<Map<String, Object>> subscribeWeatherHistory(String district) {
         String key = "weather-history:" + district;
 
@@ -511,6 +560,8 @@ public class SseService {
         counts.put("device", deviceSinks.size());
         counts.put("weatherHistory", weatherHistorySinks.size());
         counts.put("airQualityHistory", airQualityHistorySinks.size());
+        counts.put("aggregatedAirQualityHistory", aggregatedAirQualityHistorySink.currentSubscriberCount());
+        counts.put("aggregatedWeatherHistory", aggregatedWeatherHistorySink.currentSubscriberCount()); // ✅ NEW
         return counts;
     }
 }

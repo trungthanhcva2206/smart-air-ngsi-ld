@@ -38,12 +38,15 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.util.retry.Retry;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -90,7 +93,56 @@ public class QuantumLeapClient {
     }
 
     // ============ Weather History ============
+    public Mono<Map<String, Object>> getAggregatedAirQualityHistory(List<String> districts) {
+        log.info("📊 Fetching aggregated air quality history for {} districts", districts.size());
+        
+        // Fetch history for each district in parallel
+        List<Mono<Map.Entry<String, Object>>> monos = districts.stream()
+            .map(district -> {
+                String entityId = String.format("urn:ngsi-ld:AirQualityObserved:Hanoi-%s", district);
+                
+                return getAirQualityHistory(district)
+                    .map(historyData -> Map.entry(district, (Object) historyData))
+                    .onErrorResume(error -> {
+                        log.warn("⚠️ Failed to fetch history for {}: {}", district, error.getMessage());
+                        return Mono.just(Map.entry(district, (Object) new HashMap<>()));
+                    });
+            })
+            .toList();
+        
+        // Combine all results into a single Map
+        return Flux.merge(monos)
+            .collectMap(Map.Entry::getKey, Map.Entry::getValue)
+            .doOnSuccess(aggregated -> 
+                log.info("✅ Successfully aggregated history for {}/{} districts", 
+                        aggregated.size(), districts.size()))
+            .doOnError(error -> 
+                log.error("❌ Error aggregating history: {}", error.getMessage()));
+    }
 
+    /**
+     * ✅ NEW: Fetch aggregated weather history for ALL districts
+     */
+    public Mono<Map<String, Object>> getAggregatedWeatherHistory(List<String> districts) {
+        log.info("📊 Fetching aggregated weather history for {} districts", districts.size());
+        
+        List<Mono<Map.Entry<String, Object>>> monos = districts.stream()
+            .map(district -> 
+                getWeatherHistory(district)
+                    .map(historyData -> Map.entry(district, (Object) historyData))
+                    .onErrorResume(error -> {
+                        log.warn("⚠️ Failed to fetch weather history for {}: {}", district, error.getMessage());
+                        return Mono.just(Map.entry(district, (Object) new HashMap<>()));
+                    })
+            )
+            .toList();
+        
+        return Flux.merge(monos)
+            .collectMap(Map.Entry::getKey, Map.Entry::getValue)
+            .doOnSuccess(aggregated -> 
+                log.info("✅ Successfully aggregated weather history for {}/{} districts", 
+                        aggregated.size(), districts.size()));
+    }
     public Mono<Map<String, Object>> getWeatherHistory(String district) {
         String entityId = buildWeatherEntityId(district);
         

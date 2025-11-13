@@ -130,6 +130,27 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+  
+  # MySQL Database for Spring Boot Backend
+  mysql-db:
+    image: mysql:8.0
+    hostname: mysql-db
+    container_name: db-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=smartair2024
+      - MYSQL_DATABASE=smartair_db
+      - MYSQL_USER=smartair
+      - MYSQL_PASSWORD=smartair2024
+    volumes:
+      - mysql-db-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psmartair2024"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   mongo-db-data:
@@ -141,6 +162,8 @@ volumes:
   redis-cache-data:
     driver: local
   grafana-data:
+    driver: local
+  mysql-db-data:
     driver: local
 
 networks:

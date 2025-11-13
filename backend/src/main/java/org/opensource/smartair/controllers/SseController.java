@@ -24,6 +24,7 @@ package org.opensource.smartair.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.*;
+import org.opensource.smartair.services.GeoJsonService;
 import org.opensource.smartair.services.OrionLdClient;
 import org.opensource.smartair.services.SseService;
 import org.springframework.http.MediaType;
@@ -35,6 +36,7 @@ import reactor.core.publisher.Flux;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,6 +53,7 @@ public class SseController {
     private final SseService sseService;
     private final QuantumLeapClient quantumLeapClient;
     private final OrionLdClient orionLdClient;
+    private final GeoJsonService geoJsonService;
 
     /**
      * SSE endpoint for weather updates
@@ -92,6 +95,72 @@ public class SseController {
                 .concatWith(keepAlive());
     }
 
+@GetMapping(value = "/airquality/all/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<Map<String, Object>>> streamAggregatedAirQualityHistory() {
+        log.info("Client subscribed to aggregated air quality history stream");
+        
+        // Get all districts from GeoJSON
+        List<String> allDistricts = geoJsonService.getAllDistricts();
+        log.info("📊 Fetching history for {} districts", allDistricts.size());
+        
+        // Fetch initial aggregated data from QuantumLeap
+        Flux<ServerSentEvent<Map<String, Object>>> initialData = 
+            quantumLeapClient.getAggregatedAirQualityHistory(allDistricts)
+                .map(aggregatedData -> ServerSentEvent.<Map<String, Object>>builder()
+                    .id(String.valueOf(System.currentTimeMillis()))
+                    .event("airquality.history.aggregated")
+                    .data(aggregatedData)
+                    .build())
+                .flux()
+                .doOnNext(event -> log.info("Sending initial aggregated air quality history"));
+        
+        // Subscribe to live updates (when any district updates)
+        Flux<ServerSentEvent<Map<String, Object>>> liveUpdates = 
+            sseService.subscribeAggregatedAirQualityHistory()
+                .map(aggregatedData -> ServerSentEvent.<Map<String, Object>>builder()
+                    .id(String.valueOf(System.currentTimeMillis()))
+                    .event("airquality.history.aggregated.update")
+                    .data(aggregatedData)
+                    .build());
+        
+        return Flux.concat(initialData, liveUpdates)
+                .concatWith(keepAlive())
+                .doOnCancel(() -> log.info("Client unsubscribed from aggregated air quality history"));
+    }
+
+     @GetMapping(value = "/weather/all/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+        public Flux<ServerSentEvent<Map<String, Object>>> streamAggregatedWeatherHistory() {
+        log.info("Client subscribed to aggregated weather history stream");
+        
+        List<String> allDistricts = geoJsonService.getAllDistricts();
+        log.info("📊 Fetching weather history for {} districts", allDistricts.size());
+        
+        // Step 1: Send initial data
+        Flux<ServerSentEvent<Map<String, Object>>> initialData = 
+                quantumLeapClient.getAggregatedWeatherHistory(allDistricts)
+                .map(aggregatedData -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("weather.history.aggregated")
+                        .data(aggregatedData)
+                        .build())
+                .flux()
+                .doOnNext(event -> log.info("✅ Sending initial aggregated weather history"));
+        
+        // ✅ NEW: Step 2: Subscribe to live updates
+        Flux<ServerSentEvent<Map<String, Object>>> liveUpdates = 
+                sseService.subscribeAggregatedWeatherHistory()
+                .map(aggregatedData -> ServerSentEvent.<Map<String, Object>>builder()
+                        .id(String.valueOf(System.currentTimeMillis()))
+                        .event("weather.history.aggregated.update")
+                        .data(aggregatedData)
+                        .build())
+                .doOnNext(event -> log.debug("📤 Sending weather history update to client"));
+        
+        // Step 3: Combine initial + live updates + keep-alive
+        return Flux.concat(initialData, liveUpdates)
+                .concatWith(keepAlive())
+                .doOnCancel(() -> log.info("Client unsubscribed from aggregated weather history"));
+        }
     /**
      * SSE endpoint for platform updates
      * URL: GET /api/sse/platform/{platformId}
