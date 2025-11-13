@@ -24,6 +24,7 @@ package org.opensource.smartair.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.*;
+import org.opensource.smartair.services.GeoJsonService;
 import org.opensource.smartair.services.NgsiTransformerService;
 import org.opensource.smartair.services.NotificationService;
 import org.opensource.smartair.services.OrionLdClient;
@@ -54,6 +55,7 @@ public class NgsiNotificationController {
     private final QuantumLeapClient quantumLeapClient;
     private final OrionLdClient orionLdClient;
     private final NotificationService notificationService;
+    private final GeoJsonService geoJsonService;
 
     @Value("${quantumleap.query.delay.seconds:2}")
     private int quantumLeapDelaySeconds;
@@ -131,9 +133,27 @@ public class NgsiNotificationController {
             // 2. Query QuantumLeap for historical data (with delay)
             queryAndBroadcastWeatherHistory(district);
 
+            // ✅ NEW: 3. Update aggregated weather history
+            updateAggregatedWeatherHistory();
+
         } catch (Exception e) {
             log.error("Error handling WeatherObserved entity", e);
         }
+    }
+
+    private void updateAggregatedWeatherHistory() {
+        Mono.delay(Duration.ofSeconds(quantumLeapDelaySeconds))
+            .flatMap(tick -> {
+                List<String> allDistricts = geoJsonService.getAllDistricts();
+                return quantumLeapClient.getAggregatedWeatherHistory(allDistricts);
+            })
+            .subscribe(
+                aggregatedData -> {
+                    log.info("✅ Broadcasting updated aggregated weather history");
+                    sseService.broadcastAggregatedWeatherHistoryUpdate(aggregatedData);
+                },
+                error -> log.error("❌ Error updating aggregated weather history: {}", error.getMessage())
+            );
     }
 
     private void queryAndBroadcastWeatherHistory(String district) {
@@ -181,15 +201,33 @@ public class NgsiNotificationController {
             // 2. Query QuantumLeap for historical data (with delay)
             queryAndBroadcastAirQualityHistory(district);
 
-            // 3. Broadcast ALL environment data to Python service
+            // ✅ NEW: 3. Update aggregated history for ALL districts
+            updateAggregatedAirQualityHistory();
+
+            // 4. Broadcast ALL environment data to Python service
             broadcastAllEnvironmentDataToPython();
 
-            // 4. Auto-trigger email notifications if air quality is poor/very poor
+            // 5. Auto-trigger email notifications if air quality is poor/very poor
             notificationService.sendAirQualityAlert(data);
 
         } catch (Exception e) {
             log.error("Error handling AirQualityObserved entity", e);
         }
+    }
+
+    private void updateAggregatedAirQualityHistory() {
+        Mono.delay(Duration.ofSeconds(quantumLeapDelaySeconds))
+            .flatMap(tick -> {
+                List<String> allDistricts = geoJsonService.getAllDistricts();
+                return quantumLeapClient.getAggregatedAirQualityHistory(allDistricts);
+            })
+            .subscribe(
+                aggregatedData -> {
+                    log.info("✅ Broadcasting updated aggregated air quality history");
+                    sseService.broadcastAggregatedAirQualityHistoryUpdate(aggregatedData);
+                },
+                error -> log.error("❌ Error updating aggregated air quality history: {}", error.getMessage())
+            );
     }
 
     private void broadcastAllEnvironmentDataToPython() {
