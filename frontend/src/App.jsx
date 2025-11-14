@@ -38,7 +38,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Client />}>
           <Route index element={<StationMap />} />
-          <Route path="/:stationId" element={<StationDetail />} />
+          <Route path="/:platformId" element={<StationDetail />} />
           <Route path="map" element={<Map />} />
           <Route path="air-quality" element={<AirQuality />} />
           <Route path="open-data" element={<OpenData />} />
