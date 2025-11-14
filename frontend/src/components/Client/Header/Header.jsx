@@ -44,8 +44,8 @@ const Header = () => {
                     <nav className="navbar-nav ms-auto align-items-lg-center gap-2 gap-lg-3">
                         <NavLink to="/" className={({ isActive }) => isActive || window.location.pathname.startsWith('/urn:') ? 'nav-link active' : 'nav-link'}>Bản đồ trạm</NavLink>
                         <NavLink to="/map" className="nav-link">Đường đi</NavLink>
-                        <NavLink to="/air-quality" className="nav-link">Chất lượng không khí</NavLink>
                         <NavLink to="/analysis" className="nav-link">Thống kê</NavLink>
+                        <NavLink to="/air-quality" className="nav-link">Chất lượng không khí</NavLink>
                         <NavLink to="/open-data" className="nav-link">Dữ liệu mở</NavLink>
                         <NavLink to="/about" className="nav-link">Về chúng tôi</NavLink>
                     </nav>

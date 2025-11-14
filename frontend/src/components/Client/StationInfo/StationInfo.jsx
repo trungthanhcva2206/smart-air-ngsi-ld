@@ -323,7 +323,10 @@ const StationInfo = ({ platform, weatherData, airQualityData, loading, error, on
 
             {/* View Details Button */}
             <div className="card-footer bg-white border-top">
-                <button className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" onClick={() => navigate(`/${platform.entityId}`)}>
+                <button
+                    className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                    onClick={() => navigate(`/${platform.entityId}`, { state: { platform } })}
+                >
                     <span>Xem chi tiết</span>
                     <BsArrowRight />
                 </button>
