@@ -43,6 +43,11 @@
         gap: 0.5rem;
         font-size: 0.9rem;
 
+        // Override Bootstrap default "/" separator
+        &::before {
+            content: none !important;
+        }
+
         &:last-child {
             .breadcrumb-separator {
                 display: none;
