@@ -129,7 +129,8 @@ export const getAirQualityHistory = async (district, attribute, timeRange) => {
         const toDateStr = toDate.toISOString();
 
         // Convert attribute to lowercase (backend stores attributes in lowercase)
-        const attributeLower = attribute.toLowerCase();
+        const attributeConverted = attribute.replace('PM2.5', 'pm2_5');
+        const attributeLower = attributeConverted.toLowerCase();
 
         const response = await axios.get(
             `/api/airquality/${district}/attrs/${attributeLower}/history`,
@@ -157,9 +158,10 @@ export const getAirQualityHistory = async (district, attribute, timeRange) => {
 /**
  * Transform API response to chart data format
  * @param {object} apiResponse - Response from getWeatherHistory or getAirQualityHistory
+ * @param {string} attribute - Attribute name to determine if value needs /10 conversion
  * @returns {Array<{time: string, value: number}>}
  */
-export const transformToChartData = (apiResponse) => {
+export const transformToChartData = (apiResponse, attribute = '') => {
     if (!apiResponse || apiResponse.EC !== 0 || !apiResponse.DT) {
         return [];
     }
@@ -170,18 +172,26 @@ export const transformToChartData = (apiResponse) => {
         return [];
     }
 
+    // Attributes stored as int*10 in QuantumLeap (need to divide by 10)
+    const needsDivision = ['temperature', 'feelsliketemperature', 'windspeed', 'precipitation'];
+    const shouldDivide = needsDivision.includes(attribute.toLowerCase());
+
     return index.map((timestamp, idx) => {
         const date = new Date(timestamp);
         // Format time based on granularity
         const timeStr = date.toLocaleString('vi-VN', {
+            year: 'numeric',
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit'
         });
 
-        // Convert value (API returns int*10 for temperature, windSpeed, precipitation)
+        // Convert value: divide by 10 if needed (temperature, windSpeed, precipitation)
         let value = values[idx];
+        if (shouldDivide) {
+            value = value / 10;
+        }
 
         return {
             time: timeStr,

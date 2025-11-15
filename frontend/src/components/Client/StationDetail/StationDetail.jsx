@@ -247,7 +247,7 @@ const StationDetail = () => {
         const response = await getAirQualityHistory(district, selectedMetric, timeRange);
         if (response.EC === 0) {
             // Transform API response to chart data
-            const chartData = transformToChartData(response);
+            const chartData = transformToChartData(response, selectedMetric);
             setAirQualityChartData(chartData);
 
             // Apply config và hiển thị biểu đồ
@@ -281,7 +281,7 @@ const StationDetail = () => {
 
         if (response.EC === 0) {
             // Transform API response to chart data
-            const chartData = transformToChartData(response);
+            const chartData = transformToChartData(response, selectedWeatherMetric);
             setWeatherChartData(chartData);
 
             // Apply config và hiển thị biểu đồ
