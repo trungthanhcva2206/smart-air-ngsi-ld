@@ -29,6 +29,7 @@ import logging
 import schedule
 import time
 import sys
+import os
 from datetime import datetime
 from .etl_pipeline import ETLPipeline
 from .orion_client import OrionLDClient
@@ -226,6 +227,9 @@ def run_etl_job():
         stats = pipeline.get_statistics()
         logger.info(f"ETL Statistics: {stats}")
         
+        # Cleanup
+        pipeline.cleanup()
+        
     except Exception as e:
         logger.error(f"Error in ETL job: {e}", exc_info=True)
 
@@ -265,6 +269,19 @@ def main():
         logger.info(f"Number of districts: {len(HANOI_DISTRICTS)}")
         logger.info(f"Estimated daily requests: {(1440 / ETL_INTERVAL_MINUTES) * len(HANOI_DISTRICTS) * 2:.0f}")
         logger.info(f"QuantumLeap: {'Enabled' if QUANTUMLEAP_ENABLED else 'Disabled'}")
+        
+        # Check MQTT configuration
+        enable_mqtt = os.getenv('ENABLE_MQTT', 'true').lower() in ('true', '1', 'yes')
+        mqtt_host = os.getenv('MQTT_BROKER_HOST', 'localhost')
+        mqtt_port = os.getenv('MQTT_BROKER_PORT', '1883')
+        
+        if enable_mqtt:
+            logger.info(f"MQTT Publishing: ENABLED (FIWARE IoT Agent path)")
+            logger.info(f"  MQTT Broker: {mqtt_host}:{mqtt_port}")
+            logger.info(f"  Dual-path mode: REST + MQTT")
+        else:
+            logger.info(f"MQTT Publishing: DISABLED (REST-only mode)")
+        
         logger.info("=" * 70)
         
         # Run immediately on startup

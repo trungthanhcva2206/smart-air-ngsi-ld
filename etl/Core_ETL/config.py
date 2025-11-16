@@ -47,6 +47,14 @@ QUANTUMLEAP_EXTERNAL_URL = os.getenv('QUANTUMLEAP_EXTERNAL_URL', 'http://localho
 QUANTUMLEAP_INTERNAL_URL = os.getenv('QUANTUMLEAP_INTERNAL_URL', 'http://fiware-quantumleap:8668')
 QUANTUMLEAP_ENABLED = os.getenv('QUANTUMLEAP_ENABLED', 'true').lower() == 'true'
 
+# ETL Mode Configuration
+# ETL_MODE: 'rest' (REST only), 'mqtt' (MQTT only), 'dual' (both paths)
+ETL_MODE = os.getenv('ETL_MODE', 'dual').lower()
+
+# MQTT Configuration (for IoT Agent path)
+MQTT_BROKER_HOST = os.getenv('MQTT_BROKER_HOST', 'localhost')
+MQTT_BROKER_PORT = int(os.getenv('MQTT_BROKER_PORT', '1883'))
+
 # ETL Configuration
 # Với 126 phường/xã: 126 locations × 2 APIs × 3 cycles/day = 756 requests/day < 1000 limit
 # 24 hours / 3 cycles = 480 minutes (8 hours) per cycle
