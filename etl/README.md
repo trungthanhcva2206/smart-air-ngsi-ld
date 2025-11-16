@@ -27,7 +27,7 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
 4. **✅ Time Series Data Storage với QuantumLeap**
    - Lưu trữ dữ liệu lịch sử tự động qua subscriptions
    - Hỗ trợ truy vấn dữ liệu theo thời gian
-   - Tích hợp với CrateDB để lưu trữ hiệu quả
+   - Tích hợp với TimescaleDB để lưu trữ hiệu quả
 
 5. **✅ Real-time Notifications**
    - Subscriptions tự động từ Orion-LD đến QuantumLeap
@@ -41,53 +41,82 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
 ## 🏗️ Kiến trúc hệ thống
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    FIWARE Platform                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐      ┌──────────────┐     ┌──────────────┐ │
-│  │   Orion-LD  │      │ QuantumLeap  │     │   CrateDB    │ │
-│  │   (1026)    │◄────►│   (8668)     │────►│   (4200)     │ │
-│  │  Context    │      │  Time Series │     │   Storage    │ │
-│  │   Broker    │      │   Service    │     │              │ │
-│  └──────┬──────┘      └──────────────┘     └──────────────┘ │
-│         │                    ▲                              │
-│         │ subscription       │ notify                       │
-│         └────────────────────┘                              │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-         ▲                    
-         │ HTTP POST/PATCH (upsert entities)
-         │
-┌────────┴─────────┐
-│   ETL Pipeline   │
-│    (Python)      │
-│                  │
-│  - Extract       │──┐
-│  - Transform     │  │ Transform to
-│  - Load          │  │ NGSI-LD
-│  - Schedule      │  │
-└────────┬─────────┘  │
-         │            │
-         │ Extract    ▼
-         │      ┌──────────────────┐
-         └─────►│  NGSI-LD Models  │
-                │  - Weather       │
-                │  - AirQuality    │
-                │  - SOSA/SSN      │
-                └──────────────────┘
-                         ▲
-                         │ HTTP GET
-                         │
-                ┌────────┴─────────┐
-                │  OpenWeather API │
-                │  - Weather Data  │
-                │  - Air Quality   │
-                └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         FIWARE Platform                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐      ┌──────────────┐                                      │
+│  │   Orion-LD  │      │ QuantumLeap  │                                      │
+│  │   (1026)    │◄────►│   (8668)     │                                      │
+│  │  Context    │      │  Time Series │                                      │
+│  │   Broker    │      │   Service    │                                      │
+│  └──────▲──────┘      └──────────────┘                                      │
+│         │                    ▲                                              │
+│         │                    │                                              │
+│         │ ┌──────────────────┴─────┐                                        │
+│         │ │  subscription/notify   │                                        │
+│         │ └────────────────────────┘                                        │
+│         │                                                                   │
+│         │ NGSI-LD                                                           │
+│         │ Entities           ┌─────────────────┐                            │
+│         │                    │   IoT Agent     │                            │
+│         │                    │   JSON (4041)   │                            │
+│         │                    │   - Device Mgmt │                            │
+│         │◄───────────────────┤   - Transform   │                            │
+│         │                    │   - Provision   │                            │
+│         │                    └────────▲────────┘                            │
+│         │                             │                                     │
+│         │                             │ MQTT                                │
+│         │                             │ (Raw Data)                          │
+│         │                             │                                     │
+│         │                    ┌────────┴────────┐                            │
+│         │                    │   Mosquitto     │                            │
+│         │                    │   MQTT Broker   │                            │
+│         │                    │   (1883)        │                            │
+│         │                    └────────▲────────┘                            │
+└─────────┼─────────────────────────────┼─────────────────────────────────────┘
+          │                             │
+          │ REST API                    │ MQTT Publish
+          │ (NGSI-LD)                   │ (JSON)
+          │                             │
+┌─────────┴─────────────────────────────┴───────┐
+│           ETL Pipeline (Python)               │
+│                                               │
+│  ┌──────────────────────────────────────┐     │
+│  │   Dual-Path Architecture             │     │
+│  │                                      │     │
+│  │  PATH 1: REST API → Orion-LD         │     │
+│  │  - Full NGSI-LD entities             │     │
+│  │  - GeoProperty (location)            │     │  
+│  │  - Relationships (refDevice)         │     │
+│  │                                      │     │
+│  │  PATH 2: MQTT → IoT Agent → Orion-LD │     │
+│  │  - Raw measurements                  │     │
+│  │  - Device provisioning               │     │
+│  │  - FIWARE compliant                  │     │
+│  └──────────────────────────────────────┘     │
+│                                               │
+│  Mode: ETL_MODE environment variable          │
+│  - 'rest': REST API only                      │
+│  - 'mqtt': MQTT → IoT Agent only              │
+│  - 'dual': Both paths (default)               │
+└───────────────┬───────────────────────────────┘
+                │
+                │ Extract (HTTP GET)
+                ▼
+       ┌────────────────────┐
+       │  OpenWeather API   │
+       │  - Weather Data    │
+       │  - Air Quality     │
+       └────────────────────┘
 ```
 ## 📊 Luồng dữ liệu
 
-### 1. ETL Process (Định kỳ theo chu kỳ)
+### 1. Dual-Path ETL Architecture
+
+Pipeline hỗ trợ 2 luồng dữ liệu song song hoặc độc lập:
+
+#### PATH 1: REST API → Orion-LD (Traditional)
 
 ```
 OpenWeather API
@@ -97,12 +126,51 @@ OpenWeather API
 ETL Pipeline (Python)
       │
       │ 2. Transform to NGSI-LD
+      │    - Full entity structure
+      │    - GeoProperty (location)
+      │    - Relationships (refDevice)
       ▼
 NGSI-LD Entities
   - WeatherObserved
   - AirQualityObserved
       │
       │ 3. Upsert (POST/PATCH)
+      ▼
+Orion-LD Context Broker
+```
+
+#### PATH 2: MQTT → IoT Agent → Orion-LD (FIWARE Compliant)
+
+```
+OpenWeather API
+      │
+      │ 1. Extract (HTTP GET)
+      ▼
+ETL Pipeline (Python)
+      │
+      │ 2. Transform to RAW JSON
+      │    - Measurements only
+      │    - Minimal processing
+      ▼
+MQTT Payload (JSON)
+      │
+      │ 3. Publish to topic
+      │    /{apikey}/{device_id}/attrs
+      ▼
+Mosquitto MQTT Broker
+      │
+      │ 4. Subscribe
+      ▼
+IoT Agent JSON
+      │
+      │ 5. Transform to NGSI-LD
+      │    - Device provisioning
+      │    - Attribute mapping
+      │    - Static attributes
+      ▼
+NGSI-LD Entities
+      │
+      │ 6. Update/Create
       ▼
 Orion-LD Context Broker
 ```
@@ -122,8 +190,28 @@ QuantumLeap
       │
       │ Store
       ▼
-CrateDB (Time Series)
+TimescaleDB (Time Series)
 ```
+
+### 3. ETL Mode Configuration
+
+Chọn chế độ ETL qua biến môi trường `ETL_MODE`:
+
+- **`rest`**: Chỉ sử dụng REST API (PATH 1)
+  - ✅ Đầy đủ entity structure từ models.py
+  - ✅ GeoProperty và Relationships
+  - ⚠️ Không tuân thủ FIWARE IoT architecture
+
+- **`mqtt`**: Chỉ sử dụng MQTT → IoT Agent (PATH 2)
+  - ✅ FIWARE compliant architecture
+  - ✅ Device provisioning và management
+  - ⚠️ Không có GeoProperty (location phải set qua provisioning)
+
+- **`dual`**: Cả 2 paths chạy song song (mặc định)
+  - ✅ REST tạo entity đầy tiên với GeoProperty
+  - ✅ MQTT update measurements qua IoT Agent
+  - ✅ Backup lẫn nhau
+  - ⚠️ REST phải chạy trước để tạo structure
 ## 📋 Yêu cầu
 
 - Python 3.8+
@@ -147,8 +235,9 @@ docker-compose up -d
 Services được khởi động:
 - **Orion-LD**: `localhost:1026` - Context Broker
 - **QuantumLeap**: `localhost:8668` - Time Series Service
-- **CrateDB**: `localhost:5432` - Time Series Database
-- **CrateDB Admin UI**: `localhost:5432` - Database Admin Interface
+- **TimescaleDB**: `localhost:5432` - PostgreSQL Time Series Database
+- **Mosquitto**: `localhost:1883` - MQTT Broker
+- **IoT Agent JSON**: `localhost:4041` - IoT Device Management
 
 Kiểm tra services:
 
@@ -159,8 +248,15 @@ curl http://localhost:1026/version
 # QuantumLeap
 curl http://localhost:8668/version
 
-# CrateDB
-curl http://localhost:5432
+# TimescaleDB (PostgreSQL)
+# Use psql or any PostgreSQL client to connect
+# psql -h localhost -p 5432 -U postgres
+
+# IoT Agent
+curl http://localhost:4041/iot/about
+
+# MQTT Broker
+# Sử dụng MQTT client để test: mosquitto_sub -h localhost -p 1883 -t "#"
 ```
 
 ### 3. Cấu hình ETL Pipeline
@@ -190,6 +286,18 @@ QUANTUMLEAP_EXTERNAL_URL=http://localhost:8668
 QUANTUMLEAP_INTERNAL_URL=http://fiware-quantumleap:8668
 QUANTUMLEAP_ENABLED=true
 
+# MQTT Broker Configuration (for FIWARE IoT Agent)
+MQTT_BROKER_HOST=localhost
+MQTT_BROKER_PORT=1883
+
+# ETL Mode Configuration
+# ETL_MODE: 'rest' (REST API only), 'mqtt' (MQTT → IoT Agent only), 'dual' (both paths)
+# - rest: Direct REST API to Orion-LD (traditional approach, full entity structure)
+# - mqtt: MQTT → IoT Agent → Orion-LD (FIWARE compliant, device provisioning required)
+# - dual: Both paths running in parallel (REST creates structure, MQTT updates measurements)
+# Recommendation: Use 'dual' for first run, then can switch to 'mqtt' for subsequent runs
+ETL_MODE=dual
+
 # ETL Schedule
 ETL_INTERVAL_MINUTES=480
 
@@ -200,7 +308,33 @@ ETL_INTERVAL_MINUTES=480
 HANOI_GEOJSON_PATH=./etl/ha_noi_with_latlon2.geojson
 ```
 
-### 4. Chạy ETL Pipeline
+### 4. Provision IoT Agent Devices (Required for MQTT mode)
+
+Nếu sử dụng `ETL_MODE=mqtt` hoặc `ETL_MODE=dual`, cần provision devices trước:
+
+#### Windows (PowerShell)
+```powershell
+.\iot-agent-provisioning.ps1
+```
+
+#### Linux/Mac (Bash)
+```bash
+chmod +x iot-agent-provisioning.sh
+./iot-agent-provisioning.sh
+```
+
+Script sẽ tự động:
+- ✅ Provision service group với MQTT transport
+- ✅ Provision 252 devices (126 weather + 126 air quality)
+- ✅ Mapping attributes theo models.py
+- ✅ Static attributes (address, dataProvider, source)
+
+**Lưu ý quan trọng:**
+- Chỉ cần chạy **1 lần** khi setup lần đầu
+- Nếu sửa attribute mapping → Chạy lại script để update
+- Device ID format: `weather-{district}`, `airquality-{district}` (lowercase, hyphens)
+
+### 5. Chạy ETL Pipeline
 
 ```bash
 python -m etl.Core_ETL.main
@@ -210,6 +344,11 @@ python -m etl.Core_ETL.main
 2. ✅ Tạo subscriptions từ Orion-LD đến QuantumLeap
 3. ✅ Chạy ETL cycle đầu tiên ngay lập tức
 4. ✅ Lên lịch chạy định kỳ theo chu kỳ cấu hình
+5. ✅ Publish MQTT messages (nếu mode = 'mqtt' hoặc 'dual')
+
+**Khuyến nghị:**
+- **Lần đầu tiên**: Dùng `ETL_MODE=dual` để tạo entities đầy đủ
+- **Lần sau**: Có thể chuyển sang `ETL_MODE=mqtt` để chỉ update qua IoT Agent
 
 ## 🔧 Subscription Manager
 
@@ -326,13 +465,6 @@ Pipeline tự động tạo các subscriptions sau:
           │  - Time Series Storage      │
           │  - Historical Queries       │
           │  - Aggregations             │
-          └──────────┬──────────────────┘
-                     │
-                     ▼
-          ┌─────────────────────────────┐
-          │        CrateDB              │
-          │  - Columnar Storage         │
-          │  - Time-based Partitioning  │
           └─────────────────────────────┘
 ```
 ## 🗺️ Các phường/xã được giám sát
@@ -446,15 +578,42 @@ curl -X GET "http://localhost:1026/ngsi-ld/v1/subscriptions" \
 # Kiểm tra QuantumLeap logs
 docker logs fiware-quantumleap
 
-# Kiểm tra CrateDB
-curl http://localhost:5432
+# Kiểm tra TimescaleDB
+# Kết nối qua psql
+psql -h localhost -p 5432 -U postgres -d quantumleap
 ```
 
 ### 3. Lỗi API Key không hợp lệ
 
 Kiểm tra API key tại: https://home.openweathermap.org/api_keys
 
-### 4. Vượt quá giới hạn requests
+### 4. IoT Agent không nhận MQTT messages
+
+```bash
+# Kiểm tra IoT Agent status
+curl http://localhost:4041/iot/about
+
+# Kiểm tra devices đã provision
+curl http://localhost:4041/iot/devices -H "fiware-service: hanoi" -H "fiware-servicepath: /"
+
+# Kiểm tra MQTT broker
+docker logs mosquitto
+
+# Kiểm tra IoT Agent logs
+docker logs fiware-iot-agent --tail 100
+
+# Test MQTT publish
+mosquitto_pub -h localhost -p 1883 -t "/hanoi/weather-test/attrs" -m '{"temperature": 250}'
+```
+
+### 5. Device ID mismatch
+
+Nếu thấy lỗi "Device not found" trong IoT Agent logs:
+- Kiểm tra device_id format trong MQTT payload khớp với provisioning script
+- Device ID phải lowercase + hyphens + Vietnamese normalization
+- Ví dụ: "Phường Hoàn Kiếm" → "weather-phuong-hoan-kiem"
+
+### 6. Vượt quá giới hạn requests
 
 Tăng `ETL_INTERVAL_MINUTES` hoặc nâng cấp OpenWeather plan.
 
