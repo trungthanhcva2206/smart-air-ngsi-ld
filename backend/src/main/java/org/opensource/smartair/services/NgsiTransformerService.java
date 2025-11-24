@@ -36,9 +36,23 @@ public class NgsiTransformerService {
 
     /**
      * Transform WeatherObserved entity to DTO
-     * CRITICAL: Reverse conversion for temperature, windSpeed, precipitation
+     * NO conversion needed - ETL sends float values directly
+     * Only handle 0.001 → 0 for precipitation and pressureTendency
      */
     public WeatherDataDTO transformWeatherObserved(Map<String, Object> entity) {
+        // Extract values directly (already float/double from ETL)
+        double temperature = extractDoubleValue(entity, "temperature");
+        double feelsLikeTemperature = extractDoubleValue(entity, "feelsLikeTemperature");
+        double windSpeed = extractDoubleValue(entity, "windSpeed");
+        double precipitation = extractDoubleValue(entity, "precipitation");
+        double pressureTendency = extractDoubleValue(entity, "pressureTendency");
+
+        // Handle 0.001 → 0 for user display
+        if (precipitation <= 0.001)
+            precipitation = 0.0;
+        if (pressureTendency <= 0.001)
+            pressureTendency = 0.0;
+
         WeatherDataDTO data = WeatherDataDTO.builder()
                 .entityId((String) entity.get("id"))
                 .stationName(extractStringValue(entity, "stationName"))
@@ -47,14 +61,14 @@ public class NgsiTransformerService {
                 .observedAt(extractObservedAt(entity, "temperature"))
                 .location(extractLocation(entity))
 
-                // CRITICAL: Reverse conversion (divide by 10)
-                .temperature(extractIntValue(entity, "temperature") / 10.0)
-                .feelsLikeTemperature(extractIntValue(entity, "feelsLikeTemperature") / 10.0)
-                .windSpeed(extractIntValue(entity, "windSpeed") / 10.0)
-                .precipitation(extractIntValue(entity, "precipitation") / 10.0)
+                // Float values - use directly (no conversion)
+                .temperature(temperature)
+                .feelsLikeTemperature(feelsLikeTemperature)
+                .windSpeed(windSpeed)
+                .precipitation(precipitation)
+                .pressureTendency(pressureTendency)
 
-                // Humidity: can be 0-100 or 0-1 based on frontend need
-                // Here we keep 0-1 for consistency
+                // Humidity: already 0-100 integer, convert to 0-1 for consistency
                 .relativeHumidity(extractIntValue(entity, "relativeHumidity") / 100.0)
 
                 // Integer values (no conversion)
@@ -63,7 +77,6 @@ public class NgsiTransformerService {
                 .visibility(extractIntValue(entity, "visibility"))
                 .cloudiness(extractIntValue(entity, "cloudiness"))
                 .illuminance(extractIntValue(entity, "illuminance"))
-                .pressureTendency(extractIntValue(entity, "pressureTendency"))
 
                 // Text values
                 .weatherType(extractStringValue(entity, "weatherType"))
@@ -79,8 +92,50 @@ public class NgsiTransformerService {
 
     /**
      * Transform AirQualityObserved entity to DTO
+     * NO conversion needed - ETL sends float values directly
+     * Only handle 0.001 → 0 for pollutants
      */
     public AirQualityDataDTO transformAirQualityObserved(Map<String, Object> entity) {
+        // Extract pollutants (already double from ETL)
+        double co = extractDoubleValue(entity, "CO");
+        double no = extractDoubleValue(entity, "NO");
+        double no2 = extractDoubleValue(entity, "NO2");
+        double nox = extractDoubleValue(entity, "NOx");
+        double o3 = extractDoubleValue(entity, "O3");
+        double so2 = extractDoubleValue(entity, "SO2");
+        double pm2_5 = extractDoubleValue(entity, "pm2_5");
+        double pm10 = extractDoubleValue(entity, "pm10");
+        double nh3 = extractDoubleValue(entity, "NH3");
+
+        // Handle 0.001 → 0 for user display
+        if (co <= 0.001)
+            co = 0.0;
+        if (no <= 0.001)
+            no = 0.0;
+        if (no2 <= 0.001)
+            no2 = 0.0;
+        if (nox <= 0.001)
+            nox = 0.0;
+        if (o3 <= 0.001)
+            o3 = 0.0;
+        if (so2 <= 0.001)
+            so2 = 0.0;
+        if (pm2_5 <= 0.001)
+            pm2_5 = 0.0;
+        if (pm10 <= 0.001)
+            pm10 = 0.0;
+        if (nh3 <= 0.001)
+            nh3 = 0.0;
+
+        // Optional weather data
+        Double temperature = entity.containsKey("temperature") ? extractDoubleValue(entity, "temperature") : null;
+        Double windSpeed = entity.containsKey("windSpeed") ? extractDoubleValue(entity, "windSpeed") : null;
+        Double precipitation = entity.containsKey("precipitation") ? extractDoubleValue(entity, "precipitation") : null;
+
+        // Handle 0.001 → 0 for optional weather
+        if (precipitation != null && precipitation <= 0.001)
+            precipitation = 0.0;
+
         AirQualityDataDTO data = AirQualityDataDTO.builder()
                 .entityId((String) entity.get("id"))
                 .stationName(extractStringValue(entity, "stationName"))
@@ -93,16 +148,16 @@ public class NgsiTransformerService {
                 .airQualityIndex(extractIntValue(entity, "airQualityIndex"))
                 .airQualityLevel(extractStringValue(entity, "airQualityLevel"))
 
-                // Pollutants (already double in NGSI-LD)
-                .co(extractDoubleValue(entity, "CO"))
-                .no(extractDoubleValue(entity, "NO"))
-                .no2(extractDoubleValue(entity, "NO2"))
-                .nox(extractDoubleValue(entity, "NOx"))
-                .o3(extractDoubleValue(entity, "O3"))
-                .so2(extractDoubleValue(entity, "SO2"))
-                .pm2_5(extractDoubleValue(entity, "pm2_5"))
-                .pm10(extractDoubleValue(entity, "pm10"))
-                .nh3(extractDoubleValue(entity, "NH3"))
+                // Pollutants (use directly, 0.001 already converted to 0)
+                .co(co)
+                .no(no)
+                .no2(no2)
+                .nox(nox)
+                .o3(o3)
+                .so2(so2)
+                .pm2_5(pm2_5)
+                .pm10(pm10)
+                .nh3(nh3)
 
                 // Levels
                 .coLevel(extractStringValue(entity, "CO_Level"))
@@ -115,15 +170,14 @@ public class NgsiTransformerService {
                 // Metadata
                 .reliability(extractDoubleValue(entity, "reliability"))
 
-                // Optional weather data (with conversion if present)
-                .temperature(entity.containsKey("temperature") ? extractIntValue(entity, "temperature") / 10.0 : null)
+                // Optional weather data (no conversion, already float)
+                .temperature(temperature)
                 .relativeHumidity(
                         entity.containsKey("relativeHumidity") ? extractIntValue(entity, "relativeHumidity") / 100.0
                                 : null)
-                .windSpeed(entity.containsKey("windSpeed") ? extractIntValue(entity, "windSpeed") / 10.0 : null)
+                .windSpeed(windSpeed)
                 .windDirection(entity.containsKey("windDirection") ? extractIntValue(entity, "windDirection") : null)
-                .precipitation(
-                        entity.containsKey("precipitation") ? extractIntValue(entity, "precipitation") / 10.0 : null)
+                .precipitation(precipitation)
 
                 // Relationships
                 .refDevice(extractRelationship(entity, "refDevice"))

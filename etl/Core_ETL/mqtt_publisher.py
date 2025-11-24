@@ -124,7 +124,7 @@ class MQTTPublisher:
         visibility = weather_data.get('visibility', 10000)
         
         # Match models.py WeatherObservedEntity exactly
-        # API returns Celsius (units=metric), temperature use _to_int_safe (×10)
+        # API returns Celsius (units=metric), keep as float
         temp_celsius = main.get('temp', 0)
         feels_like_celsius = main.get('feels_like', 0)
         wind_speed = wind.get('speed', 0)
@@ -152,9 +152,9 @@ class MQTTPublisher:
             # Observation time
             "dateObserved": observed_at,
             
-            # Temperature measurements - _to_int_safe (Celsius × 10)
-            "temperature": int(round(temp_celsius * 10)),
-            "feelsLikeTemperature": int(round(feels_like_celsius * 10)),
+            # Temperature measurements - Keep as float
+            "temperature": round(temp_celsius, 2),
+            "feelsLikeTemperature": round(feels_like_celsius, 2),
             
             # Atmospheric measurements
             "pressure": int(round(main.get('pressure', 0))),
@@ -165,18 +165,18 @@ class MQTTPublisher:
             "weatherDescription": weather_data.get('weather', [{}])[0].get('description', ''),
             
             # Wind measurements
-            "windSpeed": int(round(wind_speed * 10)),
+            "windSpeed": round(wind_speed, 2),
             "windDirection": wind.get('deg', 0),
             
             # Visibility and cloudiness
             "visibility": visibility,
             "cloudiness": clouds.get('all', 0),
             
-            # Precipitation (mm*10 to keep 1 decimal)
-            "precipitation": int(round(weather_data.get('rain', {}).get('1h', 0) * 10)) if 'rain' in weather_data and '1h' in weather_data['rain'] else (int(round(weather_data.get('rain', {}).get('3h', 0) / 3 * 10)) if 'rain' in weather_data and '3h' in weather_data['rain'] else 0),
+            # Precipitation (mm as float)
+            "precipitation": round(weather_data.get('rain', {}).get('1h', 0.001), 2) if 'rain' in weather_data and '1h' in weather_data['rain'] else (round(weather_data.get('rain', {}).get('3h', 0.001) / 3, 2) if 'rain' in weather_data and '3h' in weather_data['rain'] else 0.001),
             
             # Pressure tendency (placeholder)
-            "pressureTendency": 0,
+            "pressureTendency": 0.001,
             
             # Illuminance (estimated from weather condition)
             "illuminance": illuminance_map.get(weather_type, 50000),
@@ -266,15 +266,15 @@ class MQTTPublisher:
             "airQualityLevel": aqi_levels.get(aqi, "unknown"),
             
             # Pollutants (concentrations in μg/m³)
-            "co": round(components.get('co', 0), 2),
-            "no": round(components.get('no', 0), 2),
-            "no2": round(components.get('no2', 0), 2),
-            "nox": round(components.get('no', 0) + components.get('no2', 0), 2),
-            "o3": round(components.get('o3', 0), 2),
-            "so2": round(components.get('so2', 0), 2),
-            "pm2_5": round(components.get('pm2_5', 0), 2),
-            "pm10": round(components.get('pm10', 0), 2),
-            "nh3": round(components.get('nh3', 0), 2),
+            "co": round(components.get('co', 0.001), 2),
+            "no": round(components.get('no', 0.001), 2),
+            "no2": round(components.get('no2', 0.001), 2),
+            "nox": round(components.get('no', 0.001) + components.get('no2', 0.001), 2),
+            "o3": round(components.get('o3', 0.001), 2),
+            "so2": round(components.get('so2', 0.001), 2),
+            "pm2_5": round(components.get('pm2_5', 0.001), 2),
+            "pm10": round(components.get('pm10', 0.001), 2),
+            "nh3": round(components.get('nh3', 0.001), 2),
             
             # Data quality
             "reliability": 0.85,
@@ -283,11 +283,11 @@ class MQTTPublisher:
             "coLevel": co_level,
             
             # Weather context
-            "temperature": int(round(temp_celsius * 10)),
+            "temperature": round(temp_celsius, 2),
             "humidity": weather_data.get('main', {}).get('humidity', 0),
-            "windSpeed": int(round(weather_data.get('wind', {}).get('speed', 0) * 10)),
+            "windSpeed": round(weather_data.get('wind', {}).get('speed', 0), 2),
             "windDirection": weather_data.get('wind', {}).get('deg', 0),
-            "precipitation": int(round(weather_data.get('rain', {}).get('1h', 0) * 10)) if 'rain' in weather_data and '1h' in weather_data['rain'] else (int(round(weather_data.get('rain', {}).get('3h', 0) / 3 * 10)) if 'rain' in weather_data and '3h' in weather_data['rain'] else 0),
+            "precipitation": round(weather_data.get('rain', {}).get('1h', 0.001), 2) if 'rain' in weather_data and '1h' in weather_data['rain'] else (round(weather_data.get('rain', {}).get('3h', 0.001) / 3, 2) if 'rain' in weather_data and '3h' in weather_data['rain'] else 0.001),
             
             # Location
             "latitude": float(air_quality_data.get('coord', {}).get('lat', 0)),

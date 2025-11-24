@@ -158,10 +158,9 @@ export const getAirQualityHistory = async (district, attribute, timeRange) => {
 /**
  * Transform API response to chart data format
  * @param {object} apiResponse - Response from getWeatherHistory or getAirQualityHistory
- * @param {string} attribute - Attribute name to determine if value needs /10 conversion
  * @returns {Array<{time: string, value: number}>}
  */
-export const transformToChartData = (apiResponse, attribute = '') => {
+export const transformToChartData = (apiResponse) => {
     if (!apiResponse || apiResponse.EC !== 0 || !apiResponse.DT) {
         return [];
     }
@@ -172,13 +171,9 @@ export const transformToChartData = (apiResponse, attribute = '') => {
         return [];
     }
 
-    // Attributes stored as int*10 in QuantumLeap (need to divide by 10)
-    const needsDivision = ['temperature', 'feelsliketemperature', 'windspeed', 'precipitation'];
-    const shouldDivide = needsDivision.includes(attribute.toLowerCase());
-
     return index.map((timestamp, idx) => {
         const date = new Date(timestamp);
-        // Format time based on granularity
+        // Format time for display
         const timeStr = date.toLocaleString('vi-VN', {
             year: 'numeric',
             month: '2-digit',
@@ -187,11 +182,9 @@ export const transformToChartData = (apiResponse, attribute = '') => {
             minute: '2-digit'
         });
 
-        // Convert value: divide by 10 if needed (temperature, windSpeed, precipitation)
-        let value = values[idx];
-        if (shouldDivide) {
-            value = value / 10;
-        }
+        // Values are already in correct format (double precision from ETL)
+        // No need to divide by 10 anymore
+        const value = values[idx];
 
         return {
             time: timeStr,

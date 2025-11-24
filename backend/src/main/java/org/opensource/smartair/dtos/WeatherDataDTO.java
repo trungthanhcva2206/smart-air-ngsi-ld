@@ -69,8 +69,8 @@ public class WeatherDataDTO {
     private Integer cloudiness; // 0-100 %
     private Integer illuminance; // lux
 
-    // Optional
-    private Integer pressureTendency;
+    // Optional (converted from double, 0.001 → 0)
+    private Double pressureTendency; // hPa/h
 
     @JsonProperty("refDevice")
     private String refDevice; // Device URN
