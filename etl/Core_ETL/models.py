@@ -69,15 +69,6 @@ class NGSILDEntity:
         return cleaned
 
     @staticmethod
-    def _to_int_safe(value: float) -> int:
-        """
-        Convert float to int safely for QuantumLeap.
-        Multiply by 10 to preserve 1 decimal place precision.
-        Example: 21.1 → 211, 1.65 → 17 (rounded)
-        """
-        return int(round(value * 10))
-    
-    @staticmethod
     def create_property(value: Any, observed_at: Optional[str] = None, 
                        unit_code: Optional[str] = None) -> Dict:
         """Create a NGSI-LD Property"""
@@ -166,22 +157,21 @@ class WeatherObservedEntity(NGSILDEntity):
                 }
             },
             
-            # Temperature (Celsius) - Convert to int*10 to avoid QuantumLeap bigint issue
-            # 21.1°C → 211 (divide by 10 when querying)
+            # Temperature (Celsius) - Keep as float for QuantumLeap DOUBLE PRECISION
             "temperature": NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['main']['temp']),
+                round(weather_data['main']['temp'], 2),
                 observed_at,
                 "CEL"
             ),
             "feelsLikeTemperature": NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['main']['feels_like']),
+                round(weather_data['main']['feels_like'], 2),
                 observed_at,
                 "CEL"
             ),
             
-            # Pressure (hPa) - Keep as int (no decimals needed)
+            # Pressure (hPa) - Integer value from API
             "atmosphericPressure": NGSILDEntity.create_property(
-                int(round(weather_data['main']['pressure'])),
+                weather_data['main']['pressure'],
                 observed_at,
                 "HPA"
             ),
@@ -203,9 +193,9 @@ class WeatherObservedEntity(NGSILDEntity):
                 observed_at
             ),
             
-            # Wind - Convert to int*10
+            # Wind - Keep as float for precision
             "windSpeed": NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['wind']['speed']),
+                round(weather_data['wind']['speed'], 2),
                 observed_at,
                 "MTS"
             ),
@@ -239,31 +229,31 @@ class WeatherObservedEntity(NGSILDEntity):
                 "C62"
             )
         
-        # Optional: Precipitation (mm*10 to keep 1 decimal)
+        # Optional: Precipitation (mm as float)
         if 'rain' in weather_data and '1h' in weather_data['rain']:
             entity["precipitation"] = NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['rain']['1h']),
+                round(weather_data['rain']['1h'], 2),
                 observed_at,
                 "MMT"  # Millimeter
             )
         elif 'rain' in weather_data and '3h' in weather_data['rain']:
             # Convert 3h to 1h average
             entity["precipitation"] = NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['rain']['3h'] / 3),
+                round(weather_data['rain']['3h'] / 3, 2),
                 observed_at,
                 "MMT"
             )
         else:
             entity["precipitation"] = NGSILDEntity.create_property(
-                0,
+                0.001,
                 observed_at,
                 "MMT"
             )
         
         # Optional: Pressure tendency (if we have historical data)
-        # For now, set to 0 as we don't have historical comparison
+        # For now, set to 0.001 as we don't have historical comparison
         entity["pressureTendency"] = NGSILDEntity.create_property(
-            0,
+            0.001,
             observed_at,
             "A97"  # Hectopascal per hour
         )
@@ -377,62 +367,62 @@ class AirQualityObservedEntity(NGSILDEntity):
                 observed_at
             ),
             
-            # Pollutants (concentrations in μg/m³)
+            # Pollutants (concentrations in μg/m³) - use 0.001 to force float type
             # Carbon Monoxide
             "CO": NGSILDEntity.create_property(
-                round(components.get('co', 0), 2),
+                round(components.get('co', 0.001), 2),
                 observed_at,
                 "GP"  # Micrograms per cubic meter
             ),
             
             # Nitrogen Oxides
             "NO": NGSILDEntity.create_property(
-                round(components.get('no', 0), 2),
+                round(components.get('no', 0.001), 2),
                 observed_at,
                 "GQ"  # Micrograms per cubic meter
             ),
             "NO2": NGSILDEntity.create_property(
-                round(components.get('no2', 0), 2),
+                round(components.get('no2', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
             
             # Calculate NOx (NO + NO2)
             "NOx": NGSILDEntity.create_property(
-                round(components.get('no', 0) + components.get('no2', 0), 2),
+                round(components.get('no', 0.001) + components.get('no2', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
             
             # Ozone
             "O3": NGSILDEntity.create_property(
-                round(components.get('o3', 0), 2),
+                round(components.get('o3', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
             
             # Sulfur Dioxide
             "SO2": NGSILDEntity.create_property(
-                round(components.get('so2', 0), 2),
+                round(components.get('so2', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
             
             # Particulate Matter
             "pm2_5": NGSILDEntity.create_property(
-                round(components.get('pm2_5', 0), 2),
+                round(components.get('pm2_5', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
             "pm10": NGSILDEntity.create_property(
-                round(components.get('pm10', 0), 2),
+                round(components.get('pm10', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
             
             # Ammonia
             "NH3": NGSILDEntity.create_property(
-                round(components.get('nh3', 0), 2),
+                round(components.get('nh3', 0.001), 2),
                 observed_at,
                 "GQ"
             ),
@@ -451,9 +441,9 @@ class AirQualityObservedEntity(NGSILDEntity):
         
         # Add weather context if available
         if weather_data:
-            # Temperature - Convert to int*10
+            # Temperature - Keep as float
             entity["temperature"] = NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['main']['temp']),
+                round(weather_data['main']['temp'], 2),
                 observed_at,
                 "CEL"
             )
@@ -465,9 +455,9 @@ class AirQualityObservedEntity(NGSILDEntity):
                 "C62"
             )
             
-            # Wind Speed - Convert to int*10
+            # Wind Speed - Keep as float
             entity["windSpeed"] = NGSILDEntity.create_property(
-                NGSILDEntity._to_int_safe(weather_data['wind']['speed']),
+                round(weather_data['wind']['speed'], 2),
                 observed_at,
                 "MTS"
             )
@@ -480,22 +470,22 @@ class AirQualityObservedEntity(NGSILDEntity):
                     "DD"
                 )
             
-            # Precipitation - Convert to int*10
+            # Precipitation - Keep as float
             if 'rain' in weather_data and '1h' in weather_data['rain']:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    NGSILDEntity._to_int_safe(weather_data['rain']['1h']),
+                    round(weather_data['rain']['1h'], 2),
                     observed_at,
                     "MMT"
                 )
             elif 'rain' in weather_data and '3h' in weather_data['rain']:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    NGSILDEntity._to_int_safe(weather_data['rain']['3h'] / 3),
+                    round(weather_data['rain']['3h'] / 3, 2),
                     observed_at,
                     "MMT"
                 )
             else:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    0,
+                    0.001,
                     observed_at,
                     "MMT"
                 )

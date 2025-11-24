@@ -5,10 +5,10 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import './Analysis.css';
-import { 
+import {
     useAggregatedDistrictHistory,
     transformHistoryToChartData,
-    calculateHistoryStats 
+    calculateHistoryStats
 } from '../../../hooks/useAnalysisHistorySSE';
 import { getAllWards } from '../../../utils/geoJsonParser';
 
@@ -20,16 +20,16 @@ const Analysis = () => {
     const [loading, setLoading] = useState(true);
 
     // ✅ Fetch BOTH air quality AND weather data
-    const { 
-        historyData: airQualityHistory, 
-        loading: airLoading, 
-        error: airError 
+    const {
+        historyData: airQualityHistory,
+        loading: airLoading,
+        error: airError
     } = useAggregatedDistrictHistory('airquality');
 
-    const { 
-        historyData: weatherHistory, 
-        loading: weatherLoading, 
-        error: weatherError 
+    const {
+        historyData: weatherHistory,
+        loading: weatherLoading,
+        error: weatherError
     } = useAggregatedDistrictHistory('weather');
 
     // ✅ Load districts từ GeoJSON
@@ -60,16 +60,16 @@ const Analysis = () => {
         if (selectedStation === 'all') {
             return Object.keys(airQualityHistory);
         }
-        
+
         const matchingDistrict = Object.keys(airQualityHistory).find(districtName => {
             const normalizedDistrictName = districtName.toLowerCase().replace(/\s+/g, '');
             const normalizedSelectedStation = selectedStation.toLowerCase().replace(/\s+/g, '');
-            return normalizedDistrictName.includes(normalizedSelectedStation) || 
-                   normalizedSelectedStation.includes(normalizedDistrictName);
+            return normalizedDistrictName.includes(normalizedSelectedStation) ||
+                normalizedSelectedStation.includes(normalizedDistrictName);
         });
 
         console.log('🔍 Found matching district:', matchingDistrict);
-        
+
         return matchingDistrict ? [matchingDistrict] : [];
     };
 
@@ -87,7 +87,7 @@ const Analysis = () => {
     // ============================================
     const buildTimeSeriesData = () => {
         const filteredDistricts = getFilteredDistricts();
-        
+
         if (filteredDistricts.length === 0) {
             console.log('⚠️ No districts to process');
             return [];
@@ -96,11 +96,11 @@ const Analysis = () => {
         console.log(`📊 Processing ${filteredDistricts.length} districts:`, filteredDistricts);
 
         const allTimestampsSet = new Set();
-        
+
         filteredDistricts.forEach(districtName => {
             const airData = airQualityHistory[districtName];
             const weatherData = weatherHistory[districtName];
-            
+
             if (airData?.index) {
                 airData.index.forEach(ts => {
                     const roundedTs = roundToNearestMinutes(ts, 2);
@@ -115,7 +115,7 @@ const Analysis = () => {
             }
         });
 
-        const allTimestamps = Array.from(allTimestampsSet).sort((a, b) => 
+        const allTimestamps = Array.from(allTimestampsSet).sort((a, b) =>
             new Date(a) - new Date(b)
         );
 
@@ -147,7 +147,7 @@ const Analysis = () => {
             if (airData?.index && airData?.attributes) {
                 airData.index.forEach((timestamp, idx) => {
                     const roundedTs = roundToNearestMinutes(timestamp, 2);
-                    
+
                     if (timeSeriesMap.has(roundedTs)) {
                         const point = timeSeriesMap.get(roundedTs);
 
@@ -163,7 +163,7 @@ const Analysis = () => {
             if (weatherData?.index && weatherData?.attributes) {
                 weatherData.index.forEach((timestamp, idx) => {
                     const roundedTs = roundToNearestMinutes(timestamp, 2);
-                    
+
                     if (timeSeriesMap.has(roundedTs)) {
                         const point = timeSeriesMap.get(roundedTs);
 
@@ -196,15 +196,11 @@ const Analysis = () => {
 
             ['pm2_5', 'pm10', 'CO', 'NO2', 'SO2', 'O3', 'NH3', 'temperature', 'humidity', 'pressure', 'windSpeed'].forEach(metric => {
                 const values = point[metric].filter(v => v != null && !isNaN(v));
-                
+
                 if (values.length > 0) {
                     const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-                    
-                    if (metric === 'temperature' || metric === 'windSpeed') {
-                        avgPoint[metric] = parseFloat((avg / 10).toFixed(2));
-                    } else {
-                        avgPoint[metric] = parseFloat(avg.toFixed(2));
-                    }
+                    // All values are already in correct format (double precision from ETL)
+                    avgPoint[metric] = parseFloat(avg.toFixed(2));
                 } else {
                     avgPoint[metric] = null;
                 }
@@ -213,12 +209,12 @@ const Analysis = () => {
             return avgPoint;
         });
 
-        const validTimeSeriesArray = timeSeriesArray.filter(point => 
+        const validTimeSeriesArray = timeSeriesArray.filter(point =>
             point[selectedMetric] !== null && point[selectedMetric] !== undefined
         );
 
         console.log(`📊 Generated ${validTimeSeriesArray.length} time series points`);
-        
+
         return validTimeSeriesArray;
     };
 
@@ -252,7 +248,7 @@ const Analysis = () => {
             const values = timeSeriesData
                 .map(point => point[metricName])
                 .filter(v => v != null && !isNaN(v));
-            
+
             if (values.length === 0) {
                 return { avg: 0, max: 0, min: 0, latest: 0 };
             }
@@ -297,91 +293,91 @@ const Analysis = () => {
     // ✅ PROGRESS DATA
     // ============================================
     const progressData = [
-        { 
-            label: 'PM2.5', 
-            value: airQualityStats.pm2_5.avg, 
-            maxValue: 150, 
-            unit: 'µg/m³', 
+        {
+            label: 'PM2.5',
+            value: airQualityStats.pm2_5.avg,
+            maxValue: 150,
+            unit: 'µg/m³',
             color: '#3197B1',
             description: `Min: ${airQualityStats.pm2_5.min} | Max: ${airQualityStats.pm2_5.max}`
         },
-        { 
-            label: 'PM10', 
-            value: airQualityStats.pm10.avg, 
-            maxValue: 250, 
-            unit: 'µg/m³', 
+        {
+            label: 'PM10',
+            value: airQualityStats.pm10.avg,
+            maxValue: 250,
+            unit: 'µg/m³',
             color: '#FF6B6B',
             description: `Min: ${airQualityStats.pm10.min} | Max: ${airQualityStats.pm10.max}`
         },
-        { 
-            label: 'CO', 
-            value: airQualityStats.CO.avg, 
-            maxValue: 1000, 
-            unit: 'µg/m³', 
+        {
+            label: 'CO',
+            value: airQualityStats.CO.avg,
+            maxValue: 1000,
+            unit: 'µg/m³',
             color: '#4ECDC4',
             description: `Min: ${airQualityStats.CO.min} | Max: ${airQualityStats.CO.max}`
         },
-        { 
-            label: 'NO2', 
-            value: airQualityStats.NO2.avg, 
-            maxValue: 100, 
-            unit: 'µg/m³', 
+        {
+            label: 'NO2',
+            value: airQualityStats.NO2.avg,
+            maxValue: 100,
+            unit: 'µg/m³',
             color: '#FFA726',
             description: `Min: ${airQualityStats.NO2.min} | Max: ${airQualityStats.NO2.max}`
         },
-        { 
-            label: 'SO2', 
-            value: airQualityStats.SO2.avg, 
-            maxValue: 50, 
-            unit: 'µg/m³', 
+        {
+            label: 'SO2',
+            value: airQualityStats.SO2.avg,
+            maxValue: 50,
+            unit: 'µg/m³',
             color: '#AB47BC',
             description: `Min: ${airQualityStats.SO2.min} | Max: ${airQualityStats.SO2.max}`
         },
-        { 
-            label: 'O3', 
-            value: airQualityStats.O3.avg, 
-            maxValue: 100, 
-            unit: 'µg/m³', 
+        {
+            label: 'O3',
+            value: airQualityStats.O3.avg,
+            maxValue: 100,
+            unit: 'µg/m³',
             color: '#66BB6A',
             description: `Min: ${airQualityStats.O3.min} | Max: ${airQualityStats.O3.max}`
         },
-        { 
-            label: 'NH3', 
-            value: airQualityStats.NH3.avg, 
-            maxValue: 20, 
-            unit: 'µg/m³', 
+        {
+            label: 'NH3',
+            value: airQualityStats.NH3.avg,
+            maxValue: 20,
+            unit: 'µg/m³',
             color: '#42A5F5',
             description: `Min: ${airQualityStats.NH3.min} | Max: ${airQualityStats.NH3.max}`
         },
-        { 
-            label: 'Nhiệt độ', 
-            value: weatherStats.temperature.avg, 
-            maxValue: 35, 
-            unit: '°C', 
+        {
+            label: 'Nhiệt độ',
+            value: weatherStats.temperature.avg,
+            maxValue: 35,
+            unit: '°C',
             color: '#EF5350',
             description: `Min: ${weatherStats.temperature.min} | Max: ${weatherStats.temperature.max}`
         },
-        { 
-            label: 'Độ ẩm', 
-            value: weatherStats.humidity.avg, 
-            maxValue: 100, 
-            unit: '%', 
+        {
+            label: 'Độ ẩm',
+            value: weatherStats.humidity.avg,
+            maxValue: 100,
+            unit: '%',
             color: '#26C6DA',
             description: `Min: ${weatherStats.humidity.min} | Max: ${weatherStats.humidity.max}`
         },
-        { 
-            label: 'Áp suất', 
-            value: weatherStats.pressure.avg, 
-            maxValue: 1050, 
-            unit: 'hPa', 
+        {
+            label: 'Áp suất',
+            value: weatherStats.pressure.avg,
+            maxValue: 1050,
+            unit: 'hPa',
             color: '#8D6E63',
             description: `Min: ${weatherStats.pressure.min} | Max: ${weatherStats.pressure.max}`
         },
-        { 
-            label: 'Tốc độ gió', 
-            value: weatherStats.windSpeed.avg, 
-            maxValue: 20, 
-            unit: 'm/s', 
+        {
+            label: 'Tốc độ gió',
+            value: weatherStats.windSpeed.avg,
+            maxValue: 20,
+            unit: 'm/s',
             color: '#78909C',
             description: `Min: ${weatherStats.windSpeed.min} | Max: ${weatherStats.windSpeed.max}`
         }
@@ -391,61 +387,61 @@ const Analysis = () => {
     // ✅ SLIDER DATA
     // ============================================
     const sliderData = [
-        { 
-            label: 'PM2.5', 
-            value: Math.min((airQualityStats.pm2_5.avg / 150) * 100, 100), 
-            rawValue: airQualityStats.pm2_5.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 150 
+        {
+            label: 'PM2.5',
+            value: Math.min((airQualityStats.pm2_5.avg / 150) * 100, 100),
+            rawValue: airQualityStats.pm2_5.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 150
         },
-        { 
-            label: 'PM10', 
-            value: Math.min((airQualityStats.pm10.avg / 250) * 100, 100), 
-            rawValue: airQualityStats.pm10.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 250 
+        {
+            label: 'PM10',
+            value: Math.min((airQualityStats.pm10.avg / 250) * 100, 100),
+            rawValue: airQualityStats.pm10.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 250
         },
-        { 
-            label: 'CO', 
-            value: Math.min((airQualityStats.CO.avg / 1000) * 100, 100), 
-            rawValue: airQualityStats.CO.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 1000 
+        {
+            label: 'CO',
+            value: Math.min((airQualityStats.CO.avg / 1000) * 100, 100),
+            rawValue: airQualityStats.CO.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 1000
         },
-        { 
-            label: 'NO2', 
-            value: Math.min((airQualityStats.NO2.avg / 100) * 100, 100), 
-            rawValue: airQualityStats.NO2.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 100 
+        {
+            label: 'NO2',
+            value: Math.min((airQualityStats.NO2.avg / 100) * 100, 100),
+            rawValue: airQualityStats.NO2.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 100
         },
-        { 
-            label: 'SO2', 
-            value: Math.min((airQualityStats.SO2.avg / 50) * 100, 100), 
-            rawValue: airQualityStats.SO2.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 50 
+        {
+            label: 'SO2',
+            value: Math.min((airQualityStats.SO2.avg / 50) * 100, 100),
+            rawValue: airQualityStats.SO2.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 50
         },
-        { 
-            label: 'O3', 
-            value: Math.min((airQualityStats.O3.avg / 100) * 100, 100), 
-            rawValue: airQualityStats.O3.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 100 
+        {
+            label: 'O3',
+            value: Math.min((airQualityStats.O3.avg / 100) * 100, 100),
+            rawValue: airQualityStats.O3.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 100
         },
-        { 
-            label: 'NH3', 
-            value: Math.min((airQualityStats.NH3.avg / 20) * 100, 100), 
-            rawValue: airQualityStats.NH3.avg.toFixed(1), 
-            unit: 'µg/m³', 
-            maxValue: 20 
+        {
+            label: 'NH3',
+            value: Math.min((airQualityStats.NH3.avg / 20) * 100, 100),
+            rawValue: airQualityStats.NH3.avg.toFixed(1),
+            unit: 'µg/m³',
+            maxValue: 20
         },
-        { 
-            label: 'Nhiệt độ', 
-            value: Math.min((weatherStats.temperature.avg / 35) * 100, 100), 
-            rawValue: weatherStats.temperature.avg.toFixed(1), 
-            unit: '°C', 
-            maxValue: 35 
+        {
+            label: 'Nhiệt độ',
+            value: Math.min((weatherStats.temperature.avg / 35) * 100, 100),
+            rawValue: weatherStats.temperature.avg.toFixed(1),
+            unit: '°C',
+            maxValue: 35
         }
     ];
 
@@ -455,7 +451,7 @@ const Analysis = () => {
     const radarData = [
         { subject: 'PM2.5', A: Math.round(airQualityStats.pm2_5.avg), fullMark: 150 },
         { subject: 'PM10', A: Math.round(airQualityStats.pm10.avg), fullMark: 250 },
-        { subject: 'CO', A: Math.round(airQualityStats.CO.avg / 10), fullMark: 100 },
+        { subject: 'CO', A: Math.round(airQualityStats.CO.avg), fullMark: 1000 },
         { subject: 'NO2', A: Math.round(airQualityStats.NO2.avg), fullMark: 100 },
         { subject: 'SO2', A: Math.round(airQualityStats.SO2.avg), fullMark: 50 },
         { subject: 'O3', A: Math.round(airQualityStats.O3.avg), fullMark: 100 }
@@ -474,7 +470,7 @@ const Analysis = () => {
     };
 
     const currentAQI = calculateAQI();
-    
+
     const getStatusInfo = (aqi) => {
         const statuses = {
             1: { label: 'Tốt', color: '#00E400' },
@@ -582,7 +578,7 @@ const Analysis = () => {
                             Trạm quan trắc ({stations.length - 1} trạm)
                             {selectedStation !== 'all' && ` - Đang xem: ${stations.find(s => s.value === selectedStation)?.label}`}
                         </label>
-                        <select 
+                        <select
                             className="filter-select"
                             value={selectedStation}
                             onChange={(e) => setSelectedStation(e.target.value)}
@@ -608,11 +604,11 @@ const Analysis = () => {
                                 </span>
                             </div>
                             <div className="progress-bar-container">
-                                <div 
-                                    className="progress-bar-fill" 
-                                    style={{ 
+                                <div
+                                    className="progress-bar-fill"
+                                    style={{
                                         width: `${Math.min((item.value / item.maxValue) * 100, 100)}%`,
-                                        backgroundColor: item.color 
+                                        backgroundColor: item.color
                                     }}
                                 ></div>
                             </div>
@@ -636,8 +632,8 @@ const Analysis = () => {
                                 <div className="chart-filters">
                                     <div className="filter-group-inline">
                                         <label className="filter-label-small">Chỉ số</label>
-                                        <select 
-                                            className="filter-select-small" 
+                                        <select
+                                            className="filter-select-small"
                                             value={selectedMetric}
                                             onChange={(e) => setSelectedMetric(e.target.value)}
                                         >
@@ -659,9 +655,9 @@ const Analysis = () => {
                                                 </linearGradient>
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                            <XAxis 
-                                                dataKey="displayTime" 
-                                                stroke="#9CA3AF" 
+                                            <XAxis
+                                                dataKey="displayTime"
+                                                stroke="#9CA3AF"
                                                 tick={{ fontSize: 10 }}
                                                 angle={-45}
                                                 textAnchor="end"
@@ -727,7 +723,7 @@ const Analysis = () => {
                                     <span className="aqi-value-large">{currentAQI}</span>
                                     <span className="aqi-label-large">{statusInfo.label}</span>
                                 </div>
-                                
+
                                 {/* Weather Info Inline */}
                                 <div className="weather-inline">
                                     <div className="weather-inline-item">
@@ -773,12 +769,12 @@ const Analysis = () => {
                                     <RadarChart data={radarData}>
                                         <PolarGrid stroke="#E5E7EB" />
                                         <PolarAngleAxis dataKey="subject" stroke="#6B7280" />
-                                        <Radar 
-                                            name="Giá trị" 
-                                            dataKey="A" 
-                                            stroke="#3197B1" 
-                                            fill="#3197B1" 
-                                            fillOpacity={0.5} 
+                                        <Radar
+                                            name="Giá trị"
+                                            dataKey="A"
+                                            stroke="#3197B1"
+                                            fill="#3197B1"
+                                            fillOpacity={0.5}
                                         />
                                     </RadarChart>
                                 </ResponsiveContainer>
