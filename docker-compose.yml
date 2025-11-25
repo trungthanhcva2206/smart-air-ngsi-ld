@@ -32,6 +32,7 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
+    command: mosquitto -c /mosquitto-no-auth.conf
     healthcheck:
       test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "test"]
       interval: 30s

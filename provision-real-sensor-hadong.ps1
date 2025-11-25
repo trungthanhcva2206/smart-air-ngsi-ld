@@ -1,0 +1,171 @@
+# FIWARE Orion-LD - Real Sensor Device Entity Provisioning
+# This script creates SOSA/SSN compliant Device entities in Orion-LD for ESP32 dust sensor
+
+$ORION_URL = "http://localhost:1026"
+$FIWARE_SERVICE = "hanoi"
+
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "FIWARE Orion-LD - Real Sensor Device Provisioning" -ForegroundColor Cyan
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "Orion-LD URL: $ORION_URL"
+Write-Host "FIWARE Service: $FIWARE_SERVICE"
+Write-Host "==================================================" -ForegroundColor Cyan
+
+# Function to create Device entity
+function Create-DeviceEntity {
+    param(
+        [string]$DeviceId,
+        [string]$Name,
+        [string]$Description,
+        [string]$SerialNumber,
+        [string]$Category,
+        [string]$Location,
+        [double]$Latitude,
+        [double]$Longitude
+    )
+    
+    Write-Host "`nCreating Device Entity: $DeviceId" -ForegroundColor Yellow
+    
+    $body = @{
+        id = "urn:ngsi-ld:Device:$DeviceId"
+        type = "Device"
+        name = @{
+            type = "Property"
+            value = $Name
+        }
+        description = @{
+            type = "Property"
+            value = $Description
+        }
+        deviceCategory = @{
+            type = "Property"
+            value = @($Category)
+        }
+        controlledProperty = @{
+            type = "Property"
+            value = @("pm2_5")
+        }
+        sensorType = @{
+            type = "Property"
+            value = "DustSensor"
+        }
+        serialNumber = @{
+            type = "Property"
+            value = $SerialNumber
+        }
+        deviceState = @{
+            type = "Property"
+            value = "active"
+        }
+        dateInstalled = @{
+            type = "Property"
+            value = @{
+                "@type" = "DateTime"
+                "@value" = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            }
+        }
+        dateFirstUsed = @{
+            type = "Property"
+            value = @{
+                "@type" = "DateTime"
+                "@value" = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            }
+        }
+        owner = @{
+            type = "Property"
+            value = @("Tuan Anh IoT Project")
+        }
+        supportedProtocol = @{
+            type = "Property"
+            value = @("mqtt")
+        }
+        hardwareVersion = @{
+            type = "Property"
+            value = "1.0"
+        }
+        softwareVersion = @{
+            type = "Property"
+            value = "1.0.0"
+        }
+        firmwareVersion = @{
+            type = "Property"
+            value = "1.0.0"
+        }
+        brandName = @{
+            type = "Property"
+            value = "ESP32"
+        }
+        modelName = @{
+            type = "Property"
+            value = "GP2Y1010AU0F Dust Sensor"
+        }
+        configuration = @{
+            type = "Property"
+            value = @{
+                publishInterval = 300
+            }
+        }
+        dataProvider = @{
+            type = "Property"
+            value = "Tuan Anh IoT Project"
+        }
+        location = @{
+            type = "GeoProperty"
+            value = @{
+                type = "Point"
+                coordinates = @($Longitude, $Latitude)
+            }
+        }
+        address = @{
+            type = "Property"
+            value = @{
+                addressLocality = $Location
+                addressRegion = "Hanoi"
+                addressCountry = "VN"
+                type = "PostalAddress"
+            }
+        }
+        "@context" = @(
+            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+            "https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld"
+        )
+    } | ConvertTo-Json -Depth 10
+    
+    $headers = @{
+        "Content-Type" = "application/ld+json"
+        "fiware-service" = $FIWARE_SERVICE
+        "fiware-servicepath" = "/"
+    }
+    
+    try {
+        Invoke-RestMethod -Uri "$ORION_URL/ngsi-ld/v1/entities" -Method POST -Body $body -Headers $headers
+        Write-Host "Device entity created: $DeviceId" -ForegroundColor Green
+    } catch {
+        Write-Host "Device entity may already exist or error: $_" -ForegroundColor Yellow
+    }
+}
+
+# Main provisioning
+Write-Host "`nStep 1: Creating Real Sensor Device Entity..." -ForegroundColor Cyan
+
+Create-DeviceEntity `
+    -DeviceId "real-dust-sensor-hadong-001" `
+    -Name "ESP32 Dust Sensor - Ha Dong District" `
+    -Description "ESP32-DevKit-V1 with GP2Y1010AU0F optical dust sensor measuring PM2.5 particulate matter in Ha Dong, Hanoi" `
+    -SerialNumber "ESP32-HADONG-001" `
+    -Category "sensor" `
+    -Location "Phuong Ha Dong" `
+    -Latitude 20.973444270892386 `
+    -Longitude 105.77817372781909
+
+Write-Host "`n==================================================" -ForegroundColor Green
+Write-Host "Real sensor device entity provisioned successfully!" -ForegroundColor Green
+Write-Host "==================================================" -ForegroundColor Green
+Write-Host "`nSummary:"
+Write-Host "  - Device ID: real-dust-sensor-hadong-001"
+Write-Host "  - Location: Phuong Ha Dong, Hanoi"
+Write-Host "  - Coordinates: 20.973444N, 105.778174E"
+Write-Host "  - Sensor Type: GP2Y1010AU0F (PM2.5)"
+Write-Host ""
+Write-Host "To verify, run: Invoke-RestMethod -Uri http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Device:real-dust-sensor-hadong-001 -Headers @{'fiware-service'='hanoi'; 'Accept'='application/ld+json'}" -ForegroundColor Cyan
+Write-Host ""
