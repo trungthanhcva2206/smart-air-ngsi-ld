@@ -40,22 +40,22 @@ import lombok.NoArgsConstructor;
 public class ApiResponse<T> {
 
     @JsonProperty("EC")
-    private Integer EC; // Error Code: 0 = success, 1 = error
+    private Integer ec; // Error Code: 0 = success, 1 = error
 
     @JsonProperty("EM")
-    private String EM; // Error Message
+    private String em; // Error Message
 
     @JsonProperty("DT")
-    private T DT; // Data (response data - generic)
+    private T dt; // Data (response data - generic)
 
     /**
      * Create success response with data
      */
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
-                .EC(0)
-                .EM("Success")
-                .DT(data)
+                .ec(0)
+                .em("Success")
+                .dt(data)
                 .build();
     }
 
@@ -64,9 +64,9 @@ public class ApiResponse<T> {
      */
     public static <T> ApiResponse<T> success(String message, T data) {
         return ApiResponse.<T>builder()
-                .EC(0)
-                .EM(message)
-                .DT(data)
+                .ec(0)
+                .em(message)
+                .dt(data)
                 .build();
     }
 
@@ -75,9 +75,9 @@ public class ApiResponse<T> {
      */
     public static <T> ApiResponse<T> error(String message) {
         return ApiResponse.<T>builder()
-                .EC(1)
-                .EM(message)
-                .DT(null)
+                .ec(1)
+                .em(message)
+                .dt(null)
                 .build();
     }
 
@@ -86,9 +86,9 @@ public class ApiResponse<T> {
      */
     public static <T> ApiResponse<T> error(String message, T data) {
         return ApiResponse.<T>builder()
-                .EC(1)
-                .EM(message)
-                .DT(data)
+                .ec(1)
+                .em(message)
+                .dt(data)
                 .build();
     }
 }

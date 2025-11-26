@@ -248,7 +248,152 @@ public class OrionLdClient {
                 })
                 .onErrorResume(error -> {
                     log.error("Client: Lỗi khi lấy AirQualityObserved", error);
-                    return Mono.just(List.of()); // Trả về danh sách rỗng nếu lỗi
+                    return Mono.just(List.of()); // Trả về danh sách rỗng nếu lỗi;
+                });
+    }
+
+    // ============ RAW NGSI-LD Methods for Open Data API ============
+
+    /**
+     * Get latest weather observation for a district (RAW NGSI-LD format)
+     * For Open Data API - returns NGSI-LD normalized format
+     */
+    public Mono<Map<String, Object>> getLatestWeatherRaw(String district) {
+        String entityType = "weatherObserved";
+        String query = String.format("stationName==\"%s\"", district);
+
+        log.debug("Querying weather data (RAW): type={}, q={}", entityType, query);
+
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", entityType)
+                        .queryParam("q", query)
+                        .queryParam("limit", "1")
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class)
+                .flatMap(entities -> {
+                    if (entities == null || entities.isEmpty()) {
+                        log.warn("No weather data found for district: {}", district);
+                        return Mono.empty();
+                    }
+                    Map<String, Object> entity = (Map<String, Object>) entities.get(0);
+                    log.info("Fetched raw weather data for district: {}", district);
+                    return Mono.just(entity);
+                })
+                .onErrorResume(error -> {
+                    log.error("Error fetching raw weather data from Orion-LD for district: {}", district, error);
+                    return Mono.empty();
+                });
+    }
+
+    /**
+     * Get latest air quality observation for a district (RAW NGSI-LD format)
+     * For Open Data API - returns NGSI-LD normalized format
+     */
+    public Mono<Map<String, Object>> getLatestAirQualityRaw(String district) {
+        String entityType = "airQualityObserved";
+        String query = String.format("stationName==\"%s\"", district);
+
+        log.debug("Querying air quality data (RAW): type={}, q={}", entityType, query);
+
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", entityType)
+                        .queryParam("q", query)
+                        .queryParam("limit", "1")
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class)
+                .flatMap(entities -> {
+                    if (entities == null || entities.isEmpty()) {
+                        log.warn("No air quality data found for district: {}", district);
+                        return Mono.empty();
+                    }
+                    Map<String, Object> entity = (Map<String, Object>) entities.get(0);
+                    log.info("Fetched raw air quality data for district: {}", district);
+                    return Mono.just(entity);
+                })
+                .onErrorResume(error -> {
+                    log.error("Error fetching raw air quality data from Orion-LD for district: {}", district, error);
+                    return Mono.empty();
+                });
+    }
+
+    /**
+     * Get all weather observations (RAW NGSI-LD format)
+     * For Open Data API - returns NGSI-LD normalized format
+     */
+    public Mono<List<Map<String, Object>>> getAllWeatherDataRaw() {
+        log.info("Client: Fetching ALL WeatherObserved entities (RAW)...");
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", "weatherObserved")
+                        .queryParam("limit", "1000")
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class)
+                .map(entities -> {
+                    List<Map<String, Object>> weatherData = (List<Map<String, Object>>) entities;
+                    log.info("Client: Fetched {} weatherObserved entities (RAW).", weatherData.size());
+                    return weatherData;
+                })
+                .onErrorResume(error -> {
+                    log.error("Client: Error fetching WeatherObserved (RAW)", error);
+                    return Mono.just(List.of());
+                });
+    }
+
+    /**
+     * Get all air quality observations (RAW NGSI-LD format)
+     * For Open Data API - returns NGSI-LD normalized format
+     */
+    public Mono<List<Map<String, Object>>> getAllAirQualityDataRaw() {
+        log.info("Client: Fetching ALL AirQualityObserved entities (RAW)...");
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", "airQualityObserved")
+                        .queryParam("limit", "1000")
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class)
+                .map(entities -> {
+                    List<Map<String, Object>> airData = (List<Map<String, Object>>) entities;
+                    log.info("Client: Fetched {} airQualityObserved entities (RAW).", airData.size());
+                    return airData;
+                })
+                .onErrorResume(error -> {
+                    log.error("Client: Error fetching AirQualityObserved (RAW)", error);
+                    return Mono.just(List.of());
+                });
+    }
+
+    /**
+     * Get all platforms (RAW NGSI-LD format)
+     * For Open Data API - returns NGSI-LD normalized format
+     */
+    public Mono<List<Map<String, Object>>> getAllPlatformsRaw() {
+        log.info("Fetching all platforms (RAW)...");
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ngsi-ld/v1/entities")
+                        .queryParam("type", "Platform")
+                        .queryParam("limit", "1000")
+                        .build())
+                .retrieve()
+                .bodyToMono(List.class)
+                .map(entities -> {
+                    List<Map<String, Object>> platforms = (List<Map<String, Object>>) entities;
+                    log.info("Fetched {} platforms (RAW) from Orion-LD", platforms.size());
+                    return platforms;
+                })
+                .onErrorResume(error -> {
+                    log.error("Error fetching platforms (RAW) from Orion-LD", error);
+                    return Mono.just(List.of());
                 });
     }
 

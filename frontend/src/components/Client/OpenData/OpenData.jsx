@@ -21,10 +21,20 @@
 */
 
 const OpenData = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+
     return (
-        <div className="container py-5">
-            <h1>Dữ liệu mở</h1>
-            <p className="text-muted">Trang này đang được phát triển...</p>
+        <div className="open-data-page" style={{ width: "100%", height: "100vh", overflow: "hidden" }}>
+            <iframe
+                src={`${apiUrl}/swagger-ui/index.html`}
+                style={{
+                    width: "100%",
+                    height: "calc(100% + 70px)",
+                    border: "none",
+                    marginTop: "-70px"
+                }}
+                title="API Documentation"
+            />
         </div>
     );
 };
