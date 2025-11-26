@@ -141,7 +141,7 @@ public class NgsiTransformerService {
                 .stationName(extractStringValue(entity, "stationName"))
                 .stationCode(extractStringValue(entity, "stationCode"))
                 .district(extractDistrictFromId((String) entity.get("id")))
-                .observedAt(extractObservedAt(entity, "airQualityIndex"))
+                .observedAt(extractObservedAt(entity, "pm2_5"))
                 .location(extractLocation(entity))
 
                 // Air Quality Index

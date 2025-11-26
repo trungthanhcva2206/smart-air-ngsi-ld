@@ -94,29 +94,27 @@ public class QuantumLeapClient {
     // ============ Weather History ============
     public Mono<Map<String, Object>> getAggregatedAirQualityHistory(List<String> districts) {
         log.info("📊 Fetching aggregated air quality history for {} districts", districts.size());
-        
+
         // Fetch history for each district in parallel
         List<Mono<Map.Entry<String, Object>>> monos = districts.stream()
-            .map(district -> {
-                String entityId = String.format("urn:ngsi-ld:AirQualityObserved:Hanoi-%s", district);
-                
-                return getAirQualityHistory(district)
-                    .map(historyData -> Map.entry(district, (Object) historyData))
-                    .onErrorResume(error -> {
-                        log.warn("⚠️ Failed to fetch history for {}: {}", district, error.getMessage());
-                        return Mono.just(Map.entry(district, (Object) new HashMap<>()));
-                    });
-            })
-            .toList();
-        
+                .map(district -> {
+                    String entityId = String.format("urn:ngsi-ld:AirQualityObserved:Hanoi-%s", district);
+
+                    return getAirQualityHistory(district)
+                            .map(historyData -> Map.entry(district, (Object) historyData))
+                            .onErrorResume(error -> {
+                                log.warn("⚠️ Failed to fetch history for {}: {}", district, error.getMessage());
+                                return Mono.just(Map.entry(district, (Object) new HashMap<>()));
+                            });
+                })
+                .toList();
+
         // Combine all results into a single Map
         return Flux.merge(monos)
-            .collectMap(Map.Entry::getKey, Map.Entry::getValue)
-            .doOnSuccess(aggregated -> 
-                log.info("✅ Successfully aggregated history for {}/{} districts", 
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue)
+                .doOnSuccess(aggregated -> log.info("✅ Successfully aggregated history for {}/{} districts",
                         aggregated.size(), districts.size()))
-            .doOnError(error -> 
-                log.error("❌ Error aggregating history: {}", error.getMessage()));
+                .doOnError(error -> log.error("❌ Error aggregating history: {}", error.getMessage()));
     }
 
     /**
@@ -124,24 +122,22 @@ public class QuantumLeapClient {
      */
     public Mono<Map<String, Object>> getAggregatedWeatherHistory(List<String> districts) {
         log.info("📊 Fetching aggregated weather history for {} districts", districts.size());
-        
+
         List<Mono<Map.Entry<String, Object>>> monos = districts.stream()
-            .map(district -> 
-                getWeatherHistory(district)
-                    .map(historyData -> Map.entry(district, (Object) historyData))
-                    .onErrorResume(error -> {
-                        log.warn("⚠️ Failed to fetch weather history for {}: {}", district, error.getMessage());
-                        return Mono.just(Map.entry(district, (Object) new HashMap<>()));
-                    })
-            )
-            .toList();
-        
+                .map(district -> getWeatherHistory(district)
+                        .map(historyData -> Map.entry(district, (Object) historyData))
+                        .onErrorResume(error -> {
+                            log.warn("⚠️ Failed to fetch weather history for {}: {}", district, error.getMessage());
+                            return Mono.just(Map.entry(district, (Object) new HashMap<>()));
+                        }))
+                .toList();
+
         return Flux.merge(monos)
-            .collectMap(Map.Entry::getKey, Map.Entry::getValue)
-            .doOnSuccess(aggregated -> 
-                log.info("✅ Successfully aggregated weather history for {}/{} districts", 
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue)
+                .doOnSuccess(aggregated -> log.info("✅ Successfully aggregated weather history for {}/{} districts",
                         aggregated.size(), districts.size()));
     }
+
     public Mono<Map<String, Object>> getWeatherHistory(String district) {
         String entityId = buildWeatherEntityId(district);
 
@@ -238,9 +234,13 @@ public class QuantumLeapClient {
             String entityId, String attrName, String fromDate, String toDate,
             String aggrMethod, String aggrPeriod, Integer lastN) {
 
+        // Clean and validate input parameters
+        String cleanFromDate = fromDate != null ? fromDate.trim().replaceAll("^['\"]|['\"]$", "") : null;
+        String cleanToDate = toDate != null ? toDate.trim().replaceAll("^['\"]|['\"]$", "") : null;
+
         log.info(
                 "Querying QuantumLeap: {} attr: {} (fromDate: {}, toDate: {}, aggrMethod: {}, aggrPeriod: {}, lastN: {})",
-                entityId, attrName, fromDate, toDate, aggrMethod, aggrPeriod, lastN);
+                entityId, attrName, cleanFromDate, cleanToDate, aggrMethod, aggrPeriod, lastN);
 
         return webClient.get()
                 .uri(uriBuilder -> {
@@ -254,9 +254,9 @@ public class QuantumLeapClient {
                     if (aggrPeriod != null) {
                         builder.queryParam("aggrPeriod", aggrPeriod);
                     }
-                    if (fromDate != null && toDate != null) {
-                        builder.queryParam("fromDate", fromDate);
-                        builder.queryParam("toDate", toDate);
+                    if (cleanFromDate != null && cleanToDate != null) {
+                        builder.queryParam("fromDate", cleanFromDate);
+                        builder.queryParam("toDate", cleanToDate);
                     } else if (lastN != null) {
                         builder.queryParam("lastN", lastN);
                     } else {

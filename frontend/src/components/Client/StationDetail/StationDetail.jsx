@@ -66,6 +66,9 @@ const StationDetail = () => {
     // Chart data states
     const [airQualityChartData, setAirQualityChartData] = useState([]);
     const [weatherChartData, setWeatherChartData] = useState([]);
+    // Raw API response states for export
+    const [airQualityRawResponse, setAirQualityRawResponse] = useState(null);
+    const [weatherRawResponse, setWeatherRawResponse] = useState(null);
 
     // States cho Chart Card 2 và 3
     const [airQualityConfig, setAirQualityConfig] = useState({
@@ -246,6 +249,8 @@ const StationDetail = () => {
         // Call API to get air quality history
         const response = await getAirQualityHistory(district, selectedMetric, timeRange);
         if (response.EC === 0) {
+            // Store raw response for export
+            setAirQualityRawResponse(response.DT);
             // Transform API response to chart data
             const chartData = transformToChartData(response);
             setAirQualityChartData(chartData);
@@ -280,6 +285,8 @@ const StationDetail = () => {
         const response = await getWeatherHistory(district, selectedWeatherMetric, weatherTimeRange);
 
         if (response.EC === 0) {
+            // Store raw response for export
+            setWeatherRawResponse(response.DT);
             // Transform API response to chart data
             const chartData = transformToChartData(response);
             setWeatherChartData(chartData);
@@ -298,145 +305,36 @@ const StationDetail = () => {
         setWeatherChartLoading(false);
     };
 
-    // Convert chart data to NGSI-LD format
-    const convertToNGSILD = (chartData, metric, entityType, district) => {
-        const now = new Date().toISOString();
-        const entityId = `urn:ngsi-ld:${entityType}:Hanoi-${district}-Export-${Date.now()}`;
-
-        // Create NGSI-LD entity
-        const ngsiEntity = {
-            "id": entityId,
-            "type": entityType,
-            "@context": [
-                "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
-            ],
-            "location": {
-                "type": "GeoProperty",
-                "value": {
-                    "type": "Point",
-                    "coordinates": [
-                        platform?.location?.lon || 105.85,
-                        platform?.location?.lat || 20.98
-                    ]
-                }
-            },
-            "address": {
-                "type": "Property",
-                "value": {
-                    "addressLocality": district,
-                    "addressRegion": platform?.address?.addressRegion || "Hanoi",
-                    "addressCountry": platform?.address?.addressCountry || "VN",
-                    "type": "PostalAddress"
-                }
-            },
-            "dataProvider": {
-                "type": "Property",
-                "value": platform?.owner || "Hanoi Smart City Initiative"
-            },
-            "dateExported": {
-                "type": "Property",
-                "value": {
-                    "@type": "DateTime",
-                    "@value": now
-                }
-            },
-            "exportMetadata": {
-                "type": "Property",
-                "value": {
-                    "metric": metric,
-                    "timeRange": entityType === "AirQualityObserved" ? timeRange : weatherTimeRange,
-                    "chartType": entityType === "AirQualityObserved" ? chartType : weatherChartType,
-                    "dataPoints": chartData.length
-                }
-            },
-            "timeSeries": {
-                "type": "Property",
-                "value": chartData.map(point => {
-                    // Safe date parsing - point.time is already ISO string from API
-                    const observedAt = point.time || new Date().toISOString();
-                    return {
-                        "time": point.time,
-                        "value": point.value,
-                        "observedAt": observedAt
-                    };
-                })
-            }
-        };
-
-        // Add metric-specific property
-        if (chartData.length > 0) {
-            ngsiEntity[metric] = {
-                "type": "Property",
-                "value": chartData[chartData.length - 1].value,
-                "observedAt": now,
-                "unitCode": getUnitCode(metric)
-            };
+    const handleExport = () => {
+        if (!airQualityRawResponse) {
+            alert('Không có dữ liệu để xuất. Vui lòng nhấn Update trước.');
+            return;
         }
 
-        return ngsiEntity;
-    };
-
-    // Get unit code for metric
-    const getUnitCode = (metric) => {
-        const units = {
-            // Air Quality
-            'CO': 'GP',         // μg/m³
-            'NO': 'GP',
-            'NO2': 'GP',
-            'NOx': 'GP',
-            'O3': 'GP',
-            'SO2': 'GP',
-            'PM2.5': 'GP',
-            'PM10': 'GP',
-            'NH3': 'GP',
-            'airQualityIndex': 'C62',  // dimensionless
-            // Weather
-            'temperature': 'CEL',       // Celsius
-            'relativeHumidity': 'P1',   // Percentage
-            'atmosphericPressure': 'A97', // hPa
-            'windSpeed': 'MTS',         // m/s
-            'windDirection': 'DD',      // degree
-            'precipitation': 'MMT',     // mm
-            'visibility': 'MTR',        // meter
-            'illuminance': 'LUX'        // lux
-        };
-        return units[metric] || 'C62';
-    };
-
-    const handleExport = () => {
         const district = platform?.address?.addressLocality.replace(/\s+/g, '') || 'Unknown';
-        const ngsiData = convertToNGSILD(
-            airQualityChartData,
-            selectedMetric,
-            'AirQualityObserved',
-            district
-        );
-
-        const dataStr = JSON.stringify(ngsiData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/ld+json' });
+        const dataStr = JSON.stringify(airQualityRawResponse, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `air-quality-${selectedMetric}-${district}-${new Date().toISOString()}.jsonld`;
+        link.download = `air-quality-${selectedMetric}-${district}-${new Date().toISOString()}.json`;
         link.click();
         URL.revokeObjectURL(url);
     };
 
     const handleWeatherExport = () => {
-        const district = platform?.address?.addressLocality.replace(/\s+/g, '') || 'Unknown';
-        const ngsiData = convertToNGSILD(
-            weatherChartData,
-            selectedWeatherMetric,
-            'WeatherObserved',
-            district
-        );
+        if (!weatherRawResponse) {
+            alert('Không có dữ liệu để xuất. Vui lòng nhấn Update trước.');
+            return;
+        }
 
-        const dataStr = JSON.stringify(ngsiData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/ld+json' });
+        const district = platform?.address?.addressLocality.replace(/\s+/g, '') || 'Unknown';
+        const dataStr = JSON.stringify(weatherRawResponse, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `weather-${selectedWeatherMetric}-${district}-${new Date().toISOString()}.jsonld`;
+        link.download = `weather-${selectedWeatherMetric}-${district}-${new Date().toISOString()}.json`;
         link.click();
         URL.revokeObjectURL(url);
     };
