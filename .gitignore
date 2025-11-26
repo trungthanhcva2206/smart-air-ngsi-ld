@@ -37,4 +37,8 @@ dist/
 build/
 *.egg-info/
 
+# Mosquitto MQTT Broker
+mosquitto/data/*.db
+mosquitto/log/*.log
+
 route-finding/hanoi_road_network.graphml
