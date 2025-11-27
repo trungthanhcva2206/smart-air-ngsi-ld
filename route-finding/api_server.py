@@ -152,27 +152,34 @@ def handle_environment_data(spring_data):
         zone_names = zones_gdf["Tên đơn vị"].tolist()
         zone_name_mapping = {zone: normalize_zone_name(zone) for zone in zone_names}
         reverse_mapping = {v: k for k, v in zone_name_mapping.items()}
+
+        station_to_zone = {
+            "Hoang Mai Station": "Phường Hoàng Mai",
+            # Thêm các trạm khác nếu cần
+        }
         
         all_data = {}
         for spring_key, data in spring_data.items():
-            try:
+            all_data = {}
+        for spring_key, data in spring_data.items():
+            # Ưu tiên mapping từ station_to_zone
+            original_name = station_to_zone.get(spring_key)
+            if not original_name:
                 original_name = reverse_mapping.get(spring_key)
-                
-                if original_name:
-                    all_data[original_name] = {
-                        "NO": data.get('no', 0),
-                        "O3": data.get('o3', 0),
-                        "NO2": data.get('no2', 0),
-                        "NOx": data.get('nox', 0),
-                        "SO2": data.get('so2', 0),
-                        "pm2_5": data.get('pm2_5', 0),
-                        "pm10": data.get('pm10', 0),
-                        "nh3": data.get('nh3', 0),
-                        "windSpeed": data.get('windSpeed', 0),
-                    }
-                    logger.debug(f"✓ Mapped: '{spring_key}' -> '{original_name}'")
-            except Exception as e:
-                logger.warning(f"[SSE Handler] Lỗi xử lý key '{spring_key}': {e}")
+
+            if original_name:
+                all_data[original_name] = {
+                    "NO": data.get('no', 0),
+                    "O3": data.get('o3', 0),
+                    "NO2": data.get('no2', 0),
+                    "NOx": data.get('nox', 0),
+                    "SO2": data.get('so2', 0),
+                    "pm2_5": data.get('pm2_5', 0),
+                    "pm10": data.get('pm10', 0),
+                    "nh3": data.get('nh3', 0),
+                    "windSpeed": data.get('windSpeed', 0),
+                }
+                logger.debug(f"✓ Mapped: '{spring_key}' -> '{original_name}'")
         
         if not all_data:
             logger.warning("[SSE Handler] Không map được dữ liệu nào!")
@@ -321,12 +328,16 @@ def load_all_data():
     logger.info("✅ Hệ thống đã sẵn sàng!")
 
 @app.route("/api/get-env", methods=["GET"])
-def get_env_api():
+def get_env_data():
     """
-    Get current environment data
+    Trả về dữ liệu môi trường mới nhất cho từng phường/xã
+    Dữ liệu này đã được cập nhật từ SSE Spring Boot (bao gồm cả thiết bị thật)
     """
     global mock_env_data, data_lock
+
     with data_lock:
+        # Trả về dữ liệu mới nhất cho từng zone (phường/xã)
+        # Format: {zone_name: {NO, O3, NO2, NOx, SO2, pm2_5, pm10, nh3, windSpeed}}
         return jsonify(mock_env_data)
 
 @app.route("/api/find-route", methods=["POST"])
