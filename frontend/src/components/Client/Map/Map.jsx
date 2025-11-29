@@ -50,7 +50,8 @@ const Map = () => {
   const [error, setError] = useState('');
 
   const [directions, setDirections] = useState(null);
-  const [mode, setMode] = useState('wind');
+  const [routeOptions, setRouteOptions] = useState([]); // [{ id:'wind'|'short', title, distance_m, time_min, pm25_avg, geojson }]
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(null);
   const [colorMode, setColorMode] = useState('pm2_5');
 
   const [is3D, setIs3D] = useState(false);
@@ -247,16 +248,19 @@ const Map = () => {
     }
   };
 
+  // ...existing code...
   const handleFindRoute = async () => {
     if (!startAddress || !endAddress) {
       setError('Vui lòng nhập cả điểm đi và điểm đến.');
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
     setCleanRoute(null);
     setDirections(null);
+    setRouteOptions([]);
+    setSelectedRouteIndex(null);
 
     let startCoords = startPoint;
     let endCoords = endPoint;
@@ -282,35 +286,63 @@ const Map = () => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/find-route`, {
+      const response = await fetch(`${API_URL}/api/find-both-routes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start: [startCoords.lng, startCoords.lat], end: [endCoords.lng, endCoords.lat] })
+      });
+      const j = await response.json();
+      if (!response.ok) throw new Error(j.error || 'Lỗi server');
+      const wind = j.wind;
+      const short = j.short;
+
+      const opts = [
+        { id: 'wind', title: 'Sạch nhất', distance_m: wind.distance_m, time_min: wind.time_min, pm25_avg: wind.pm25_avg, geojson: wind.geojson },
+        { id: 'short', title: 'Nhanh nhất', distance_m: short.distance_m, time_min: short.time_min, pm25_avg: short.pm25_avg, geojson: short.geojson },
+      ];
+      setRouteOptions(opts);
+      // tự động chọn phương án đầu (có thể để null nếu muốn)
+      setSelectedRouteIndex(0);
+      // hiển thị đường đầu tiên tạm thời trên map
+      setCleanRoute(opts[0].geojson);
+      setDirections(null);
+    } catch (err) {
+      console.error('Lỗi tìm đường:', err);
+      setError(`Lỗi: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectRoute = async (idx) => {
+    const opt = routeOptions[idx];
+    if (!opt) return;
+    setSelectedRouteIndex(idx);
+    setCleanRoute(opt.geojson);
+    setDirections(null);
+    // lấy directions chi tiết từ endpoint /api/find-route (để có steps)
+    try {
+      const res = await fetch(`${API_URL}/api/find-route`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start: [startCoords.lng, startCoords.lat],
-          end: [endCoords.lng, endCoords.lat],
-          mode: mode,
-        }),
+          start: [startPoint.lng, startPoint.lat],
+          end: [endPoint.lng, endPoint.lat],
+          mode: opt.id === 'wind' ? 'wind' : 'short'
+        })
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Lỗi không xác định từ server');
+      const data = await res.json();
+      if (res.ok && data.directions) {
+        setDirections(data.directions);
+        // cập nhật route geo nếu server trả route (đồng bộ)
+        if (data.route_geojson) setCleanRoute(data.route_geojson);
+      } else {
+        setDirections([]);
       }
-
-      const routeData = await response.json();
-      
-      if (!routeData.route_geojson || !routeData.directions) {
-        throw new Error("Phản hồi từ server không đầy đủ.");
-      }
-
-      setCleanRoute(routeData.route_geojson);
-      setDirections(routeData.directions);
-      
-    } catch (error) {
-      console.error('Lỗi tìm đường:', error);
-      setError(`Lỗi: ${error.message}`);
+    } catch (e) {
+      console.warn('Không thể lấy chỉ dẫn chi tiết:', e);
+      setDirections([]);
     }
-    setIsLoading(false);
   };
 
   if (!geoData) return <div style={{padding: '20px'}}>Đang tải bản đồ và dữ liệu môi trường...</div>;
@@ -394,322 +426,141 @@ const Map = () => {
 
   const mapStyle = colorMode === 'none' ? STREETS_STYLE : POSITRON_STYLE;
 
+  // ...existing code...
   return (
     <div style={{ width: '100%', height: 'calc(100vh - 56px)', position: 'relative' }}>
       
-      {/* Bảng điều khiển */}
+
+      {/* Bảng điều khiển (đã gộp/clean - giữ 1 bản) */}
       <div style={{
-        position: 'absolute', top: 20, left: 20, zIndex: 1, 
-        backgroundColor: 'white', padding: '15px', borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontFamily: 'sans-serif', 
+        position: 'absolute', top: 20, left: 20, zIndex: 999, 
+        backgroundColor: 'white', padding: '14px', borderRadius: '12px',
+        boxShadow: '0 10px 30px rgba(20,20,50,0.08)', fontFamily: 'Inter, Roboto, Arial, sans-serif',
         minWidth: '320px', maxWidth: '400px'
       }}>
-        <h3 style={{margin: '0 0 15px 0', fontSize: '18px', color: '#333'}}>
-          🗺️ Tìm đường ít ô nhiễm - Hà Nội
-        </h3>
-        
-        {/* Input điểm đi với autocomplete */}
-        <div style={{ marginBottom: '12px', position: 'relative' }}>
-          <label style={{display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px'}}>
-            📍 Điểm đi:
-          </label>
-          <div style={{ position: 'relative' }}>
+        <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
+          <div style={{fontSize:20}}>🗺️</div>
+          <div style={{fontWeight:700, fontSize:16, color:'#0b3d91'}}>Tìm đường ít ô nhiễm</div>
+        </div>
+
+          {/* Inputs (start / end) */}
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <div style={{position:'relative'}}>
             <input
-              type="text"
-              placeholder="Nhập địa điểm xuất phát (tối thiểu 3 ký tự)..."
               value={startAddress}
-              onChange={(e) => handleStartAddressChange(e.target.value)}
-              onFocus={() => {
-                if (startSuggestions.length > 0) {
-                  setShowStartSuggestions(true);
-                }
-              }}
-              style={{ 
-                width: '100%', 
-                boxSizing: 'border-box',
-                padding: '10px 36px 10px 10px',
-                border: showStartSuggestions ? '2px solid #0A79DF' : '1px solid #ddd',
-                borderRadius: '6px',
-                fontSize: '14px',
-                transition: 'border 0.2s'
-              }}
+              onChange={(e)=>handleStartAddressChange(e.target.value)}
+              placeholder="Điểm đi (tối thiểu 3 ký tự)"
+              style={{padding:10, borderRadius:8, border:'1px solid #e6e9ee', width:'100%'}}
+              onFocus={()=>{ if (startSuggestions.length) setShowStartSuggestions(true); }}
             />
-            {isSearchingStart && (
+            {showStartSuggestions && startSuggestions.length > 0 && (
               <div style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                animation: 'spin 1s linear infinite'
+                position:'absolute',
+                top:'44px',
+                left:0,
+                right:0,
+                background:'#fff',
+                border:'1px solid #e6e9ee',
+                borderRadius:8,
+                maxHeight:200,
+                overflowY:'auto',
+                zIndex: 1000,
+                boxShadow:'0 8px 20px rgba(0,0,0,0.08)'
               }}>
-                <span style={{ fontSize: '16px' }}>⏳</span>
+                {startSuggestions.map((s, i) => (
+                  <div key={i}
+                       onMouseDown={(ev)=>{ ev.preventDefault(); handleSelectSuggestion(s, true); }}
+                       style={{padding:8, cursor:'pointer', fontSize:13, borderBottom: i < startSuggestions.length-1 ? '1px solid #f2f2f2' : 'none'}}>
+                    {s.display_name}
+                  </div>
+                ))}
               </div>
             )}
-            {!isSearchingStart && startPoint && (
-              <span style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: '16px',
-                color: '#4caf50'
-              }}>✓</span>
-            )}
           </div>
-          
-          {/* Danh sách gợi ý điểm đi */}
-          {showStartSuggestions && startSuggestions.length > 0 && (
-            <div 
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 4px)',
-                left: 0,
-                right: 0,
-                backgroundColor: 'white',
-                border: '1px solid #0A79DF',
-                borderRadius: '6px',
-                maxHeight: '240px',
-                overflowY: 'auto',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
-                zIndex: 100
-              }}
-              onMouseLeave={() => setShowStartSuggestions(false)}
-            >
-              {startSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleSelectSuggestion(suggestion, true)}
-                  style={{
-                    padding: '12px 14px',
-                    cursor: 'pointer',
-                    borderBottom: index < startSuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
-                    fontSize: '13px',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#e3f2fd';
-                    e.target.style.paddingLeft = '18px';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'white';
-                    e.target.style.paddingLeft = '14px';
-                  }}
-                >
-                  <span style={{ fontSize: '16px' }}>📍</span>
-                  <span style={{ flex: 1, lineHeight: '1.4' }}>{suggestion.display_name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {!isSearchingStart && startAddress.length >= 3 && startSuggestions.length === 0 && !startPoint && (
-            <div style={{
-              fontSize: '12px',
-              color: '#ff9800',
-              marginTop: '4px',
-              padding: '6px',
-              backgroundColor: '#fff3e0',
-              borderRadius: '4px'
-            }}>
-              ⚠️ Không tìm thấy kết quả phù hợp
-            </div>
-          )}
-        </div>
-        
-        {/* Input điểm đến với autocomplete */}
-        <div style={{ marginBottom: '12px', position: 'relative' }}>
-          <label style={{display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px'}}>
-            🎯 Điểm đến:
-          </label>
-          <div style={{ position: 'relative' }}>
+
+          <div style={{position:'relative'}}>
             <input
-              type="text"
-              placeholder="Nhập điểm đến (tối thiểu 3 ký tự)..."
               value={endAddress}
-              onChange={(e) => handleEndAddressChange(e.target.value)}
-              onFocus={() => {
-                if (endSuggestions.length > 0) {
-                  setShowEndSuggestions(true);
-                }
-              }}
-              style={{ 
-                width: '100%', 
-                boxSizing: 'border-box',
-                padding: '10px 36px 10px 10px',
-                border: showEndSuggestions ? '2px solid #0A79DF' : '1px solid #ddd',
-                borderRadius: '6px',
-                fontSize: '14px',
-                transition: 'border 0.2s'
-              }}
+              onChange={(e)=>handleEndAddressChange(e.target.value)}
+              placeholder="Điểm đến (tối thiểu 3 ký tự)"
+              style={{padding:10, borderRadius:8, border:'1px solid #e6e9ee', width:'100%'}}
+              onFocus={()=>{ if (endSuggestions.length) setShowEndSuggestions(true); }}
             />
-            {isSearchingEnd && (
+            {showEndSuggestions && endSuggestions.length > 0 && (
               <div style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                animation: 'spin 1s linear infinite'
+                position:'absolute',
+                top:'44px',
+                left:0,
+                right:0,
+                background:'#fff',
+                border:'1px solid #e6e9ee',
+                borderRadius:8,
+                maxHeight:200,
+                overflowY:'auto',
+                zIndex: 1000,
+                boxShadow:'0 8px 20px rgba(0,0,0,0.08)'
               }}>
-                <span style={{ fontSize: '16px' }}>⏳</span>
+                {endSuggestions.map((s, i) => (
+                  <div key={i}
+                       onMouseDown={(ev)=>{ ev.preventDefault(); handleSelectSuggestion(s, false); }}
+                       style={{padding:8, cursor:'pointer', fontSize:13, borderBottom: i < endSuggestions.length-1 ? '1px solid #f2f2f2' : 'none'}}>
+                    {s.display_name}
+                  </div>
+                ))}
               </div>
             )}
-            {!isSearchingEnd && endPoint && (
-              <span style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: '16px',
-                color: '#4caf50'
-              }}>✓</span>
-            )}
           </div>
-          
-          {/* Danh sách gợi ý điểm đến */}
-          {showEndSuggestions && endSuggestions.length > 0 && (
-            <div 
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 4px)',
-                left: 0,
-                right: 0,
-                backgroundColor: 'white',
-                border: '1px solid #0A79DF',
-                borderRadius: '6px',
-                maxHeight: '240px',
-                overflowY: 'auto',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
-                zIndex: 100
-              }}
-              onMouseLeave={() => setShowEndSuggestions(false)}
-            >
-              {endSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleSelectSuggestion(suggestion, false)}
-                  style={{
-                    padding: '12px 14px',
-                    cursor: 'pointer',
-                    borderBottom: index < endSuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
-                    fontSize: '13px',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#e3f2fd';
-                    e.target.style.paddingLeft = '18px';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'white';
-                    e.target.style.paddingLeft = '14px';
-                  }}
-                >
-                  <span style={{ fontSize: '16px' }}>🎯</span>
-                  <span style={{ flex: 1, lineHeight: '1.4' }}>{suggestion.display_name}</span>
+
+          <button onClick={handleFindRoute} disabled={isLoading} style={{padding:10, borderRadius:10, background:'#0A79DF', color:'#fff', fontWeight:700, border:0, cursor:isLoading?'not-allowed':'pointer'}}>
+            {isLoading ? '🔍 Đang tìm...' : '🔍 Tìm lộ trình tối ưu'}
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && <div style={{marginTop:10, padding:8, background:'#ffebee', color:'#d32f2f', borderRadius:6}}>{error}</div>}
+
+        {/* Route options */}
+        <div style={{marginTop:12}}>
+          <div style={{fontSize:13, color:'#6b7280', fontWeight:600, marginBottom:8}}>Chọn lộ trình:</div>
+          <div style={{display:'flex', flexDirection:'column', gap:8}}>
+            {routeOptions.length === 0 && <div style={{color:'#777', fontSize:13}}>Chưa có lộ trình — bấm "Tìm lộ trình tối ưu".</div>}
+            {routeOptions.map((opt, idx) => (
+              <div key={opt.id} onClick={()=>handleSelectRoute(idx)} style={{
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                padding:10, borderRadius:10, border: selectedRouteIndex===idx ? '2px solid #27ae60' : '1px solid #eef2f7',
+                background: selectedRouteIndex===idx ? '#f0fdf4' : '#fff', cursor:'pointer'
+              }}>
+                <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                  <div style={{fontSize:18}}>{opt.id==='wind' ? '🍃' : '🚀'}</div>
+                  <div>
+                    <div style={{fontWeight:600}}>{opt.title}</div>
+                    <div style={{fontSize:12, color:'#6b7280'}}>PM2.5 (TB): {(opt.pm25_avg!=null)?opt.pm25_avg.toFixed(1):'—'} µg/m³ • ~{opt.time_min?Math.round(opt.time_min):'—'} phút</div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-          
-          {!isSearchingEnd && endAddress.length >= 3 && endSuggestions.length === 0 && !endPoint && (
-            <div style={{
-              fontSize: '12px',
-              color: '#ff9800',
-              marginTop: '4px',
-              padding: '6px',
-              backgroundColor: '#fff3e0',
-              borderRadius: '4px'
-            }}>
-              ⚠️ Không tìm thấy kết quả phù hợp
-            </div>
-          )}
+                <div style={{fontWeight:700}}>{opt.distance_m? (opt.distance_m/1000).toFixed(1)+' km' : '—'}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        
-        <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-          <label style={{ fontWeight: '600', fontSize: '14px', display: 'block', marginBottom: '8px' }}>
-            ⚙️ Chế độ tìm đường:
-          </label>
-          <label style={{ marginRight: '15px', cursor: 'pointer', fontSize: '13px' }}>
-            <input
-              type="radio"
-              name="mode"
-              value="wind"
-              checked={mode === 'wind'}
-              onChange={() => setMode('wind')}
-              style={{marginRight: '5px'}}
-            /> 
-            🌬️ Ưu tiên giảm ô nhiễm
-          </label>
-          <label style={{cursor: 'pointer', fontSize: '13px'}}>
-            <input
-              type="radio"
-              name="mode"
-              value="short"
-              checked={mode === 'short'}
-              onChange={() => setMode('short')}
-              style={{marginRight: '5px'}}
-            /> 
-            🚀 Đường ngắn + sạch
-          </label>
-        </div>
-        
-        <button 
-          onClick={handleFindRoute} 
-          disabled={isLoading} 
-          style={{ 
-            width: '100%',
-            padding: '10px',
-            backgroundColor: isLoading ? '#ccc' : '#0A79DF',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: isLoading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isLoading ? '🔍 Đang tìm đường...' : '🚗 Tìm đường'}
-        </button>
-        
-        {error && (
-          <p style={{ 
-            color: '#d32f2f', 
-            margin: '10px 0 0 0',
-            padding: '8px',
-            backgroundColor: '#ffebee',
-            borderRadius: '4px',
-            fontSize: '13px'
-          }}>
-            ⚠️ {error}
-          </p>
-        )}
-        
-        {directions && directions.length > 0 && (
-          <div style={{ 
-            marginTop: '15px', 
-            maxHeight: '220px',
-            overflowY: 'auto', 
-            border: '1px solid #e0e0e0', 
-            padding: '10px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '4px'
-          }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0A79DF' }}>
-              📋 Lộ trình chi tiết:
-            </h4>
-            <ol style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
-              {directions.map((step, index) => (
-                <li key={index} style={{ marginBottom: '6px' }}>{step}</li>
-              ))}
+
+        {/* Selected route details & directions */}
+        {selectedRouteIndex !== null && routeOptions[selectedRouteIndex] && (
+          <div style={{marginTop:12, padding:10, borderRadius:8, background:'#f5f5f5', border:'1px solid #e0e0e0', maxHeight:220, overflowY:'auto'}}>
+            <div style={{fontSize:13, fontWeight:700, color:'#0A79DF', marginBottom:8}}>📋 Thông số lộ trình</div>
+            <div style={{fontSize:13, marginBottom:8}}>
+              <div><strong>{routeOptions[selectedRouteIndex].title}</strong></div>
+              <div>Độ dài: {routeOptions[selectedRouteIndex].distance_m ? (routeOptions[selectedRouteIndex].distance_m/1000).toFixed(2)+' km' : '—'}</div>
+              <div>Thời gian: {routeOptions[selectedRouteIndex].time_min ? Math.round(routeOptions[selectedRouteIndex].time_min)+' phút' : '—'}</div>
+              <div>PM2.5 (TB): {(routeOptions[selectedRouteIndex].pm25_avg!=null)?routeOptions[selectedRouteIndex].pm25_avg.toFixed(1)+' µg/m³':'—'}</div>
+            </div>
+            <div style={{fontSize:13, fontWeight:700, marginBottom:6}}>📋 Chỉ dẫn</div>
+            <ol style={{paddingLeft:18, margin:0, fontSize:13, lineHeight:1.6}}>
+              {directions && directions.length>0 ? directions.map((d,i)=> <li key={i}>{d}</li>) : <li>Chưa có chỉ dẫn chi tiết. Bấm vào lộ trình để tải chỉ dẫn.</li>}
             </ol>
           </div>
         )}
       </div>
+
 
       <MapGL
         ref={mapRef}

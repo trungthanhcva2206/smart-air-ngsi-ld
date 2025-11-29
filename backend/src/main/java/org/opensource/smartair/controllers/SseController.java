@@ -46,7 +46,6 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/sse")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Allow CORS for frontend
 public class SseController {
