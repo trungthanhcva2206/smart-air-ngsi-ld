@@ -154,8 +154,6 @@ def handle_environment_data(spring_data):
         reverse_mapping = {v: k for k, v in zone_name_mapping.items()}
 
         station_to_zone = {
-            "Hoang Mai Station": "Phường Hoàng Mai",
-            # Thêm các trạm khác nếu cần
         }
         
         all_data = {}
@@ -262,6 +260,20 @@ def precalculate_all_costs(road_graph, zones_gdf, env_df):
     logger.info("Đang gán thuộc tính chi phí vào đồ thị...")
     nx.set_edge_attributes(road_graph, cost_wind.to_dict(), 'cost_wind')
     nx.set_edge_attributes(road_graph, cost_short.to_dict(), 'cost_short')
+       # --- GÁN THUỘC TÍNH POLLUTANTS VÀ CÁC TRƯỜNG TIỆN ÍCH (để edges_gdf có dữ liệu) ---
+    try:
+        # trung bình 2 đầu (đã tính ở trên)
+        nx.set_edge_attributes(road_graph, avg_pm25.to_dict(), 'pm2_5')
+        nx.set_edge_attributes(road_graph, avg_pm10.to_dict(), 'pm10')
+        nx.set_edge_attributes(road_graph, avg_windspeed.to_dict(), 'windSpeed')
+
+        # giữ cả giá trị ở hai đầu nếu cần (u/v)
+        nx.set_edge_attributes(road_graph, edges_with_data['pm2_5_u'].to_dict(), 'pm2_5_u')
+        nx.set_edge_attributes(road_graph, edges_with_data['pm2_5_v'].to_dict(), 'pm2_5_v')
+        nx.set_edge_attributes(road_graph, edges_with_data['pm10_u'].to_dict(), 'pm10_u')
+        nx.set_edge_attributes(road_graph, edges_with_data['pm10_v'].to_dict(), 'pm10_v')
+    except Exception as e:
+        logger.warning(f"Không thể gán thuộc tính pollutants lên graph: {e}")
     logger.info("✅ Tính toán trước chi phí thành công!")
     return road_graph
 
@@ -471,6 +483,64 @@ def find_route_api():
         "directions": directions_text,
         "mode": mode
     })
+
+@app.route("/api/find-both-routes", methods=["POST"])
+def find_both_routes():
+    global G_main, data_lock, edges_gdf_main
+
+    data = request.json
+    start_coords = data.get("start")
+    end_coords = data.get("end")
+
+    if not start_coords or not end_coords:
+        return jsonify({"error": "Thiếu tọa độ"}), 400
+
+    with data_lock:
+        G = G_main
+        edges_gdf = edges_gdf_main
+
+    try:
+        start_node = ox.nearest_nodes(G, *start_coords)
+        end_node = ox.nearest_nodes(G, *end_coords)
+
+        # Tìm 2 tuyến
+        path_wind = find_route_classical(G, start_node, end_node, "cost_wind")
+        path_short = find_route_classical(G, start_node, end_node, "cost_short")
+
+        def build_route(path_nodes):
+            edge_pairs = list(zip(path_nodes[:-1], path_nodes[1:]))
+            r_edges = edges_gdf.loc[
+                edges_gdf.index.map(lambda idx: (idx[0], idx[1]) in edge_pairs)
+            ]
+            geo = r_edges.to_crs(epsg=4326).__geo_interface__
+
+            total_dist = r_edges["length"].sum()
+            if "pm2_5" in r_edges.columns:
+                avg_pm25 = float(r_edges["pm2_5"].mean() or 0.0)
+            elif all(c in r_edges.columns for c in ["pm2_5_u", "pm2_5_v"]):
+                avg_pm25 = float(r_edges[["pm2_5_u", "pm2_5_v"]].mean(axis=1).mean() or 0.0)
+            else:
+                avg_pm25 = 0.0
+            time_min = total_dist / 1000 / 30 * 60   # vận tốc 30km/h
+
+            return {
+                "geojson": geo,
+                "distance_m": float(total_dist),
+                "time_min": float(time_min),
+                "pm25_avg": float(avg_pm25),
+            }
+
+        result_wind = build_route(path_wind)
+        result_short = build_route(path_short)
+
+        return jsonify({
+            "wind": result_wind,
+            "short": result_short,
+        })
+
+    except Exception as e:
+        logger.error(f"Lỗi: {e}")
+        return jsonify({"error": "Lỗi xử lý"}), 500
 
 if __name__ == "__main__":
     load_all_data()
