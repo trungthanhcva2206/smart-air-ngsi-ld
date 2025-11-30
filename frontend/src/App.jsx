@@ -31,13 +31,13 @@ import About from './components/Client/About/About.jsx';
 import Map from './components/Client/Map/Map.jsx';
 import Analysis from './components/Client/Analysis/Analysis.jsx';
 import StationDetail from './components/Client/StationDetail/StationDetail.jsx';
-
 import Admin from './components/Admin/App.jsx';
 import AdminDashboard from './components/Admin/Dashboard/Dashboard.jsx';
 import StationManager from './components/Admin/StationManager/StationManager.jsx';
 import DeviceManager from './components/Admin/DeviceManager/DeviceManager.jsx';
 import AccountManager from './components/Admin/AccountManager/AccountManager.jsx';
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const App = () => {
   return (
     <>
@@ -59,6 +59,18 @@ const App = () => {
           <Route path="accounts" element={<AccountManager />} />
         </Route>
       </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
   )
 }

@@ -51,11 +51,11 @@ public class SseService {
     private final Map<String, Sinks.Many<SseEventDTO<DeviceDataDTO>>> deviceSinks = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<Map<String, Object>>> weatherHistorySinks = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<Map<String, Object>>> airQualityHistorySinks = new ConcurrentHashMap<>();
-    private final Sinks.Many<Map<String, Object>> aggregatedAirQualityHistorySink = 
-        Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<Map<String, Object>> aggregatedAirQualityHistorySink = Sinks.many().multicast()
+            .onBackpressureBuffer();
 
-    private final Sinks.Many<Map<String, Object>> aggregatedWeatherHistorySink = 
-        Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<Map<String, Object>> aggregatedWeatherHistorySink = Sinks.many().multicast()
+            .onBackpressureBuffer();
 
     // Global sink for broadcasting ALL platform updates to map view
     private final Sinks.Many<SseEventDTO<PlatformDataDTO>> allPlatformsSink = Sinks.many().multicast()
@@ -63,6 +63,14 @@ public class SseService {
 
     private final Sinks.Many<Map<String, AirQualityDataDTO>> allEnvironmentSink = Sinks.many().multicast()
             .onBackpressureBuffer();
+
+    /**
+     * Global sink for broadcasting air quality ALERTS (AQI >= 4)
+     * Single stream cho tất cả các district - tránh mở 126 kết nối
+     */
+    private final Sinks.Many<SseEventDTO<AirQualityDataDTO>> airQualityAlertSink = Sinks.many().multicast()
+            .onBackpressureBuffer();
+
     // ============ Weather Streams ============
 
     /**
@@ -109,7 +117,7 @@ public class SseService {
     // ✅ NEW: Subscribe to Aggregated Weather History
     public Flux<Map<String, Object>> subscribeAggregatedWeatherHistory() {
         log.info("Client subscribed to aggregated weather history stream");
-        
+
         return aggregatedWeatherHistorySink.asFlux()
                 .onBackpressureBuffer(100)
                 .doOnCancel(() -> log.info("Client unsubscribed from aggregated weather history"));
@@ -119,7 +127,7 @@ public class SseService {
     public void broadcastAggregatedWeatherHistoryUpdate(Map<String, Object> aggregatedData) {
         int subscriberCount = aggregatedWeatherHistorySink.currentSubscriberCount();
         log.info("📊 Broadcasting aggregated weather history update to {} subscribers", subscriberCount);
-        
+
         if (subscriberCount > 0) {
             try {
                 aggregatedWeatherHistorySink.tryEmitNext(aggregatedData);
@@ -134,22 +142,23 @@ public class SseService {
 
     public Flux<Map<String, Object>> subscribeAggregatedAirQualityHistory() {
         log.info("Client subscribed to aggregated air quality history stream");
-        
+
         return aggregatedAirQualityHistorySink.asFlux()
                 .onBackpressureBuffer(100)
                 .doOnCancel(() -> log.info("Client unsubscribed from aggregated air quality history"));
     }
 
     public void broadcastAggregatedAirQualityHistoryUpdate(Map<String, Object> aggregatedData) {
-        log.debug("Broadcasting aggregated air quality history update to {} subscribers", 
-                 aggregatedAirQualityHistorySink.currentSubscriberCount());
-        
+        log.debug("Broadcasting aggregated air quality history update to {} subscribers",
+                aggregatedAirQualityHistorySink.currentSubscriberCount());
+
         try {
             aggregatedAirQualityHistorySink.tryEmitNext(aggregatedData);
         } catch (Exception e) {
             log.error("Error broadcasting aggregated air quality history: {}", e.getMessage());
         }
     }
+
     public Flux<Map<String, Object>> subscribeWeatherHistory(String district) {
         String key = "weather-history:" + district;
 
@@ -339,6 +348,61 @@ public class SseService {
         } else {
             log.debug("No subscribers for air quality updates in district: {}", district);
         }
+
+        if (shouldBroadcastAlert(data)) {
+            broadcastAirQualityAlert(data);
+        }
+    }
+
+    /**
+     * Kiểm tra có nên broadcast alert không
+     * CHỈ broadcast khi AQI >= 4 (poor hoặc very poor)
+     */
+    private boolean shouldBroadcastAlert(AirQualityDataDTO data) {
+        Integer aqi = data.getAirQualityIndex();
+        if (aqi != null && aqi >= 4) {
+            return true;
+        }
+
+        String level = data.getAirQualityLevel();
+        if (level != null) {
+            String lowerLevel = level.toLowerCase();
+            return lowerLevel.equals("poor") || lowerLevel.equals("very poor");
+        }
+
+        return false;
+    }
+
+    /**
+     * Broadcast air quality ALERT tới tất cả clients đang subscribe alert stream
+     * Chỉ gửi khi AQI >= 4
+     */
+    private void broadcastAirQualityAlert(AirQualityDataDTO data) {
+        SseEventDTO<AirQualityDataDTO> alertEvent = SseEventDTO.<AirQualityDataDTO>builder()
+                .eventType("airquality.alert")
+                .district(data.getDistrict())
+                .timestamp(data.getObservedAt())
+                .data(data)
+                .build();
+
+        Sinks.EmitResult result = airQualityAlertSink.tryEmitNext(alertEvent);
+        if (result.isSuccess()) {
+            log.info("Broadcasted air quality ALERT for {} (AQI: {}, Level: {})",
+                    data.getDistrict(), data.getAirQualityIndex(), data.getAirQualityLevel());
+        } else {
+            log.warn("Failed to broadcast air quality alert: {}", result);
+        }
+    }
+
+    /**
+     * Subscribe tới GLOBAL air quality alert stream
+     * Client chỉ cần MỘT kết nối để nhận alerts từ TẤT CẢ các district
+     * 
+     * @return Flux emitting alert events khi có district nào có AQI >= 4
+     */
+    public Flux<SseEventDTO<AirQualityDataDTO>> subscribeAirQualityAlerts() {
+        log.info("Client subscribed to GLOBAL air quality alerts stream");
+        return airQualityAlertSink.asFlux();
     }
 
     // ============ Platform Streams ============
@@ -564,7 +628,8 @@ public class SseService {
         counts.put("weatherHistory", weatherHistorySinks.size());
         counts.put("airQualityHistory", airQualityHistorySinks.size());
         counts.put("aggregatedAirQualityHistory", aggregatedAirQualityHistorySink.currentSubscriberCount());
-        counts.put("aggregatedWeatherHistory", aggregatedWeatherHistorySink.currentSubscriberCount()); // ✅ NEW
+        counts.put("aggregatedWeatherHistory", aggregatedWeatherHistorySink.currentSubscriberCount());
+        counts.put("airQualityAlerts", airQualityAlertSink.currentSubscriberCount());
         return counts;
     }
 }
