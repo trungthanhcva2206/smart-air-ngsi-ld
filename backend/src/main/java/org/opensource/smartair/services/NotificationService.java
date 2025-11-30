@@ -26,10 +26,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.AirQualityDataDTO;
 import org.opensource.smartair.models.Resident;
 import org.opensource.smartair.repositories.ResidentRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service xử lý logic gửi thông báo
@@ -43,8 +47,23 @@ public class NotificationService {
     private final EmailService emailService;
 
     /**
+     * Cache để lưu thời điểm gửi email cuối cùng cho mỗi district
+     * Key: district name
+     * Value: LocalDateTime của lần gửi cuối
+     */
+    private final Map<String, LocalDateTime> lastAlertTimestamps = new ConcurrentHashMap<>();
+
+    /**
+     * Khoảng thời gian tối thiểu giữa 2 lần gửi email (mặc định: 180 phút)
+     * Đọc từ application.properties: notification.alert.throttle.minutes
+     */
+    @Value("${notification.alert.throttle.minutes:180}")
+    private int throttleMinutes;
+
+    /**
      * Gửi cảnh báo chất lượng không khí đến tất cả residents
      * CHỈ gửi khi AQI ở mức poor (4) hoặc very poor (5)
+     * VÀ chỉ gửi 1 lần trong khoảng THROTTLE_MINUTES (mặc định 180 phút)
      */
     @Async
     public void sendAirQualityAlert(AirQualityDataDTO airQuality) {
@@ -52,6 +71,17 @@ public class NotificationService {
         if (!shouldSendAlert(airQuality)) {
             log.debug("Air quality level is acceptable ({}), no alert needed",
                     airQuality.getAirQualityLevel());
+            return;
+        }
+
+        String district = airQuality.getDistrict() != null ? airQuality.getDistrict() : airQuality.getStationName();
+
+        // KIỂM TRA RATE LIMITING: Chỉ gửi nếu đã qua đủ thời gian throttle
+        if (isThrottled(district)) {
+            LocalDateTime lastAlert = lastAlertTimestamps.get(district);
+            long minutesSinceLastAlert = java.time.Duration.between(lastAlert, LocalDateTime.now()).toMinutes();
+            log.info("Alert throttled for {} - last alert sent {} minutes ago (threshold: {} minutes)",
+                    district, minutesSinceLastAlert, throttleMinutes);
             return;
         }
 
@@ -63,23 +93,49 @@ public class NotificationService {
             return;
         }
 
-        String district = airQuality.getDistrict() != null ? airQuality.getDistrict() : airQuality.getStationName();
         log.info("Sending air quality alert for {} (AQI: {}, Level: {}) to {} residents",
                 district, airQuality.getAirQualityIndex(), airQuality.getAirQualityLevel(), recipients.size());
 
         // Gửi email đến từng resident
+        int successCount = 0;
         for (Resident resident : recipients) {
             try {
                 emailService.sendAirQualityAlert(
                         resident.getEmail(),
                         resident.getFullName(),
                         airQuality);
+                successCount++;
             } catch (Exception e) {
                 log.error("Failed to send alert to resident: {}", resident.getEmail(), e);
             }
         }
 
-        log.info("Successfully sent air quality alerts to {} residents", recipients.size());
+        // CẬP NHẬT timestamp của lần gửi cuối
+        lastAlertTimestamps.put(district, LocalDateTime.now());
+
+        log.info("Successfully sent air quality alerts to {}/{} residents for {}",
+                successCount, recipients.size(), district);
+    }
+
+    /**
+     * Kiểm tra xem district có bị throttle không (đã gửi email gần đây)
+     * 
+     * @param district Tên quận/phường
+     * @return true nếu bị throttle (không được gửi), false nếu được phép gửi
+     */
+    private boolean isThrottled(String district) {
+        LocalDateTime lastAlert = lastAlertTimestamps.get(district);
+
+        if (lastAlert == null) {
+            // Chưa từng gửi email cho district này
+            return false;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        long minutesSinceLastAlert = java.time.Duration.between(lastAlert, now).toMinutes();
+
+        // Nếu chưa đủ throttleMinutes thì bị throttle
+        return minutesSinceLastAlert < throttleMinutes;
     }
 
     /**
