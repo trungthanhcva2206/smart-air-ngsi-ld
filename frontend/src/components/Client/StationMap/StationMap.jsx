@@ -28,6 +28,7 @@ import { BsSearch } from 'react-icons/bs';
 import StationInfo from '../StationInfo/StationInfo';
 import { usePlatformsSSE } from '../../../hooks/usePlatformSSE';
 import { useDistrictSSE } from '../../../hooks/useDistrictSSE';
+import { useAirQualityMonitor } from '../../../hooks/useAirQualityMonitor';
 
 
 // Component to handle map fly to selected station
@@ -50,6 +51,9 @@ const StationMap = () => {
 
     // Stream all platforms via SSE
     const { platforms, loading: platformsLoading, error: platformsError } = usePlatformsSSE();
+
+    // Monitor air quality alerts (AQI >= 4) - Single SSE connection for all districts
+    useAirQualityMonitor(15);
 
     // Get district name from selected station
     const selectedDistrict = selectedStation?.platform?.address?.addressLocality
