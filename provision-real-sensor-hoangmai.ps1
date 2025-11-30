@@ -38,45 +38,27 @@ function Create-DustSensorEntity {
         }
         deviceCategory = @{
             type = "Property"
-            value = @("sensor")
+            value = ,@("sensor")
         }
         controlledProperty = @{
             type = "Property"
-            value = @("pm2_5")
+            value = ,@("PM2.5")
         }
         sensorType = @{
             type = "Property"
-            value = "DustSensor"
+            value = "AirQualityMonitor"
+        }
+        observes = @{
+            type = "Relationship"
+            object = @("urn:ngsi-ld:ObservableProperty:ParticulateMatter2.5")
+        }
+        isHostedBy = @{
+            type = "Relationship"
+            object = "urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoangMai"
         }
         serialNumber = @{
             type = "Property"
             value = $SerialNumber
-        }
-        deviceState = @{
-            type = "Property"
-            value = "active"
-        }
-        dateInstalled = @{
-            type = "Property"
-            value = @{
-                "@type" = "DateTime"
-                "@value" = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-            }
-        }
-        dateFirstUsed = @{
-            type = "Property"
-            value = @{
-                "@type" = "DateTime"
-                "@value" = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-            }
-        }
-        owner = @{
-            type = "Property"
-            value = @("Trung Thanh IoT Project")
-        }
-        supportedProtocol = @{
-            type = "Property"
-            value = @("mqtt")
         }
         hardwareVersion = @{
             type = "Property"
@@ -92,21 +74,41 @@ function Create-DustSensorEntity {
         }
         brandName = @{
             type = "Property"
-            value = "ESP32"
+            value = "Sharp"
         }
         modelName = @{
             type = "Property"
             value = "GP2Y1010AU0F Dust Sensor"
+        }
+        deviceState = @{
+            type = "Property"
+            value = "active"
+        }
+        dateInstalled = @{
+            type = "Property"
+            value = "2025-12-01T00:00:00Z"
+        }
+        dateFirstUsed = @{
+            type = "Property"
+            value = "2025-12-01T00:00:00Z"
+        }
+        dataProvider = @{
+            type = "Property"
+            value = "Hanoi Smart City Initiative"
+        }
+        owner = @{
+            type = "Property"
+            value = "Hanoi Department of Environment"
+        }
+        supportedProtocol = @{
+            type = "Property"
+            value = @("mqtt")
         }
         configuration = @{
             type = "Property"
             value = @{
                 publishInterval = 300
             }
-        }
-        dataProvider = @{
-            type = "Property"
-            value = "Tuan Anh IoT Project"
         }
         location = @{
             type = "GeoProperty"
@@ -171,45 +173,27 @@ function Create-WeatherSensorEntity {
         }
         deviceCategory = @{
             type = "Property"
-            value = @("sensor")
+            value = ,@("sensor")
         }
         controlledProperty = @{
             type = "Property"
-            value = @("temperature", "humidity")
+            value = @("temperature", "relativeHumidity")
         }
         sensorType = @{
             type = "Property"
-            value = "WeatherSensor"
+            value = "WeatherStation"
+        }
+        observes = @{
+            type = "Relationship"
+            object = @("urn:ngsi-ld:ObservableProperty:Temperature", "urn:ngsi-ld:ObservableProperty:RelativeHumidity")
+        }
+        isHostedBy = @{
+            type = "Relationship"
+            object = "urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoangMai"
         }
         serialNumber = @{
             type = "Property"
             value = $SerialNumber
-        }
-        deviceState = @{
-            type = "Property"
-            value = "active"
-        }
-        dateInstalled = @{
-            type = "Property"
-            value = @{
-                "@type" = "DateTime"
-                "@value" = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-            }
-        }
-        dateFirstUsed = @{
-            type = "Property"
-            value = @{
-                "@type" = "DateTime"
-                "@value" = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-            }
-        }
-        owner = @{
-            type = "Property"
-            value = @("Trung Thanh IoT Project")
-        }
-        supportedProtocol = @{
-            type = "Property"
-            value = @("mqtt")
         }
         hardwareVersion = @{
             type = "Property"
@@ -225,21 +209,41 @@ function Create-WeatherSensorEntity {
         }
         brandName = @{
             type = "Property"
-            value = "ESP32"
+            value = "Aosong"
         }
         modelName = @{
             type = "Property"
             value = "DHT11 Temperature & Humidity Sensor"
+        }
+        deviceState = @{
+            type = "Property"
+            value = "active"
+        }
+        dateInstalled = @{
+            type = "Property"
+            value = "2025-12-01T00:00:00Z"
+        }
+        dateFirstUsed = @{
+            type = "Property"
+            value = "2025-12-01T00:00:00Z"
+        }
+        dataProvider = @{
+            type = "Property"
+            value = "Hanoi Smart City Initiative"
+        }
+        owner = @{
+            type = "Property"
+            value = "Hanoi Department of Environment"
+        }
+        supportedProtocol = @{
+            type = "Property"
+            value = @("mqtt")
         }
         configuration = @{
             type = "Property"
             value = @{
                 publishInterval = 300
             }
-        }
-        dataProvider = @{
-            type = "Property"
-            value = "Tuan Anh IoT Project"
         }
         location = @{
             type = "GeoProperty"

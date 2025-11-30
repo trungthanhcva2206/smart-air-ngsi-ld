@@ -38,8 +38,8 @@ const StationDetail = () => {
 
     // Device states
     const [devices, setDevices] = useState([]);
-    const [weatherDevice, setWeatherDevice] = useState(null);
-    const [airQualityDevice, setAirQualityDevice] = useState(null);
+    const [weatherDevices, setWeatherDevices] = useState([]);
+    const [airQualityDevices, setAirQualityDevices] = useState([]);
     const [devicesLoading, setDevicesLoading] = useState(true);
     const [devicesError, setDevicesError] = useState(null);
 
@@ -106,38 +106,34 @@ const StationDetail = () => {
                 const deviceList = response.DT || [];
                 setDevices(deviceList);
 
-                // Find specific devices
-                const weatherDev = findDeviceBySensorType(deviceList, 'WeatherStation');
-                const airQualityDev = findDeviceBySensorType(deviceList, 'AirQualityMonitor');
+                // Filter all devices by sensorType
+                const weatherDevs = deviceList.filter(d => d.sensorType === 'WeatherStation');
+                const airQualityDevs = deviceList.filter(d => d.sensorType === 'AirQualityMonitor');
 
-                setWeatherDevice(weatherDev);
-                setAirQualityDevice(airQualityDev);
+                setWeatherDevices(weatherDevs);
+                setAirQualityDevices(airQualityDevs);
 
-                // Set default selected metrics for old charts
-                if (airQualityDev && airQualityDev.controlledProperty?.length > 0) {
-                    setSelectedMetric(airQualityDev.controlledProperty[0]);
-                }
-                if (weatherDev && weatherDev.controlledProperty?.length > 0) {
-                    setSelectedWeatherMetric(weatherDev.controlledProperty[0]);
-                }
+                // Set default selected metrics from first device with controlledProperty
+                const firstAirQualityDev = airQualityDevs.find(d => d.controlledProperty?.length > 0);
+                const firstWeatherDev = weatherDevs.find(d => d.controlledProperty?.length > 0);
 
-                // Set default metrics for new chart cards
-                if (airQualityDev && airQualityDev.controlledProperty?.length > 0) {
+                if (firstAirQualityDev && firstAirQualityDev.controlledProperty?.length > 0) {
+                    setSelectedMetric(firstAirQualityDev.controlledProperty[0]);
                     setAirQualityConfig(prev => ({
                         ...prev,
-                        metric: airQualityDev.controlledProperty[0]
+                        metric: firstAirQualityDev.controlledProperty[0]
                     }));
-                }
-                if (weatherDev && weatherDev.controlledProperty?.length > 0) {
                     setCombinedConfig(prev => ({
                         ...prev,
-                        weatherMetric: weatherDev.controlledProperty[0]
+                        airQualityMetric: firstAirQualityDev.controlledProperty[0]
                     }));
                 }
-                if (airQualityDev && airQualityDev.controlledProperty?.length > 0) {
+
+                if (firstWeatherDev && firstWeatherDev.controlledProperty?.length > 0) {
+                    setSelectedWeatherMetric(firstWeatherDev.controlledProperty[0]);
                     setCombinedConfig(prev => ({
                         ...prev,
-                        airQualityMetric: airQualityDev.controlledProperty[0]
+                        weatherMetric: firstWeatherDev.controlledProperty[0]
                     }));
                 }
             } else {
@@ -156,9 +152,9 @@ const StationDetail = () => {
         { label: platform?.address?.addressLocality || 'Chi tiết trạm' }
     ];
 
-    // Build metrics options dynamically from device's controlledProperty
+    // Build metrics options dynamically from ALL air quality devices' controlledProperty
     const airQualityMetrics = useMemo(() => {
-        if (!airQualityDevice || !airQualityDevice.controlledProperty) return [];
+        if (!airQualityDevices || airQualityDevices.length === 0) return [];
 
         const metricLabels = {
             'CO': 'CO (μg/m³)',
@@ -173,15 +169,23 @@ const StationDetail = () => {
             'airQualityIndex': 'AQI'
         };
 
-        return airQualityDevice.controlledProperty.map(prop => ({
+        // Merge all controlledProperty from all air quality devices
+        const allProperties = new Set();
+        airQualityDevices.forEach(device => {
+            if (device.controlledProperty) {
+                device.controlledProperty.forEach(prop => allProperties.add(prop));
+            }
+        });
+
+        return Array.from(allProperties).map(prop => ({
             value: prop,
             label: metricLabels[prop] || prop
         }));
-    }, [airQualityDevice]);
+    }, [airQualityDevices]);
 
-    // Build weather metrics dynamically from device's controlledProperty
+    // Build weather metrics dynamically from ALL weather devices' controlledProperty
     const weatherMetrics = useMemo(() => {
-        if (!weatherDevice || !weatherDevice.controlledProperty) return [];
+        if (!weatherDevices || weatherDevices.length === 0) return [];
 
         const metricLabels = {
             'temperature': 'Nhiệt độ (°C)',
@@ -194,11 +198,19 @@ const StationDetail = () => {
             'illuminance': 'Độ sáng (lux)'
         };
 
-        return weatherDevice.controlledProperty.map(prop => ({
+        // Merge all controlledProperty from all weather devices
+        const allProperties = new Set();
+        weatherDevices.forEach(device => {
+            if (device.controlledProperty) {
+                device.controlledProperty.forEach(prop => allProperties.add(prop));
+            }
+        });
+
+        return Array.from(allProperties).map(prop => ({
             value: prop,
             label: metricLabels[prop] || prop
         }));
-    }, [weatherDevice]);
+    }, [weatherDevices]);
 
     const timeRangeOptions = [
         { value: '24h', label: '24h trước' },
@@ -483,71 +495,65 @@ const StationDetail = () => {
                                 </div>
                             </div>
 
-                            {/* Hàng 2: 2 Cảm biến */}
+                            {/* Hàng 2: Tất cả thiết bị */}
                             <div className="row g-4">
-                                {/* Cột 1: Cảm biến chất lượng không khí */}
-                                {airQualityDevice && (
-                                    <div className="col-md-6">
+                                {/* Air Quality Devices */}
+                                {airQualityDevices.map((device, index) => (
+                                    <div key={device.entityId} className="col-md-4">
                                         <div className="info-section">
                                             <div className="section-header">
                                                 <BsWind className="me-2 text-info" />
-                                                <h5 className="mb-0">Cảm biến chất lượng không khí</h5>
+                                                <h5 className="mb-0">{device.name}</h5>
                                             </div>
                                             <div className="section-content">
                                                 <div className="row g-3">
                                                     <div className="col-md-6">
                                                         <div className="info-item">
-                                                            <label>Tên thiết bị:</label>
-                                                            <span>{airQualityDevice.name}</span>
+                                                            <label>Loại:</label>
+                                                            <span className="badge bg-info">{device.sensorType}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
-                                                            <label>Số serial:</label>
-                                                            <span>{airQualityDevice.serialNumber || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="info-item">
-                                                            <label>Loại cảm biến:</label>
-                                                            <span>{airQualityDevice.sensorType}</span>
+                                                            <label>Serial:</label>
+                                                            <span>{device.serialNumber || 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
                                                             <label>Thương hiệu:</label>
-                                                            <span>{airQualityDevice.brandName || 'N/A'}</span>
+                                                            <span>{device.brandName || 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
                                                             <label>Model:</label>
-                                                            <span>{airQualityDevice.modelName || 'N/A'}</span>
+                                                            <span>{device.modelName || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
+                                                    <div className="col-md-4">
                                                         <div className="info-item">
-                                                            <label>Phiên bản phần cứng:</label>
-                                                            <span>{airQualityDevice.hardwareVersion || 'N/A'}</span>
+                                                            <label>H/W:</label>
+                                                            <span>{device.hardwareVersion || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
+                                                    <div className="col-md-4">
                                                         <div className="info-item">
-                                                            <label>Phiên bản phần mềm:</label>
-                                                            <span>{airQualityDevice.softwareVersion || 'N/A'}</span>
+                                                            <label>S/W:</label>
+                                                            <span>{device.softwareVersion || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
+                                                    <div className="col-md-4">
                                                         <div className="info-item">
                                                             <label>Firmware:</label>
-                                                            <span>{airQualityDevice.firmwareVersion || 'N/A'}</span>
+                                                            <span>{device.firmwareVersion || 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
-                                                            <label>Trạng thái thiết bị:</label>
-                                                            <span className={`badge ${airQualityDevice.deviceState === 'active' ? 'bg-success' : 'bg-secondary'}`}>
-                                                                {airQualityDevice.deviceState === 'active' ? 'Active' : airQualityDevice.deviceState || 'N/A'}
+                                                            <label>Trạng thái:</label>
+                                                            <span className={`badge ${device.deviceState === 'active' ? 'bg-success' : 'bg-secondary'}`}>
+                                                                {device.deviceState === 'active' ? 'Hoạt động' : device.deviceState || 'N/A'}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -555,8 +561,8 @@ const StationDetail = () => {
                                                         <div className="info-item">
                                                             <label>Ngày cài đặt:</label>
                                                             <span>
-                                                                {airQualityDevice.dateInstalled
-                                                                    ? new Date(airQualityDevice.dateInstalled).toLocaleDateString('vi-VN')
+                                                                {device.dateInstalled
+                                                                    ? new Date(device.dateInstalled).toLocaleDateString('vi-VN')
                                                                     : 'N/A'}
                                                             </span>
                                                         </div>
@@ -564,88 +570,84 @@ const StationDetail = () => {
                                                     <div className="col-12">
                                                         <div className="info-item">
                                                             <label>Mô tả:</label>
-                                                            <span>{airQualityDevice.description || 'N/A'}</span>
+                                                            <span className="text-muted small">{device.description || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-12">
-                                                        <div className="info-item">
-                                                            <label>Thuộc tính quan trắc:</label>
-                                                            <span className="d-flex flex-wrap gap-1">
-                                                                {airQualityDevice.controlledProperty?.map((prop, idx) => (
-                                                                    <span key={idx} className="badge bg-secondary">{getPropertyLabel(prop)}</span>
-                                                                ))}
-                                                            </span>
+                                                    {device.controlledProperty && device.controlledProperty.length > 0 && (
+                                                        <div className="col-12">
+                                                            <div className="info-item">
+                                                                <label>Thuộc tính quan trắc:</label>
+                                                                <span className="d-flex flex-wrap gap-1">
+                                                                    {device.controlledProperty.map((prop, idx) => (
+                                                                        <span key={idx} className="badge bg-secondary">{getPropertyLabel(prop)}</span>
+                                                                    ))}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                )}
+                                ))}
 
-                                {/* Cột 2: Cảm biến thời tiết */}
-                                {weatherDevice && (
-                                    <div className="col-md-6">
+                                {/* Weather Devices */}
+                                {weatherDevices.map((device, index) => (
+                                    <div key={device.entityId} className="col-md-4">
                                         <div className="info-section">
                                             <div className="section-header">
                                                 <BsCloudRain className="me-2 text-primary" />
-                                                <h5 className="mb-0">Cảm biến thời tiết</h5>
+                                                <h5 className="mb-0">{device.name}</h5>
                                             </div>
                                             <div className="section-content">
                                                 <div className="row g-3">
                                                     <div className="col-md-6">
                                                         <div className="info-item">
-                                                            <label>Tên thiết bị:</label>
-                                                            <span>{weatherDevice.name}</span>
+                                                            <label>Loại:</label>
+                                                            <span className="badge bg-primary">{device.sensorType}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
-                                                            <label>Số serial:</label>
-                                                            <span>{weatherDevice.serialNumber || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <div className="info-item">
-                                                            <label>Loại cảm biến:</label>
-                                                            <span>{weatherDevice.sensorType}</span>
+                                                            <label>Serial:</label>
+                                                            <span>{device.serialNumber || 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
                                                             <label>Thương hiệu:</label>
-                                                            <span>{weatherDevice.brandName || 'N/A'}</span>
+                                                            <span>{device.brandName || 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
                                                             <label>Model:</label>
-                                                            <span>{weatherDevice.modelName || 'N/A'}</span>
+                                                            <span>{device.modelName || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
+                                                    <div className="col-md-4">
                                                         <div className="info-item">
-                                                            <label>Phiên bản phần cứng:</label>
-                                                            <span>{weatherDevice.hardwareVersion || 'N/A'}</span>
+                                                            <label>H/W:</label>
+                                                            <span>{device.hardwareVersion || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
+                                                    <div className="col-md-4">
                                                         <div className="info-item">
-                                                            <label>Phiên bản phần mềm:</label>
-                                                            <span>{weatherDevice.softwareVersion || 'N/A'}</span>
+                                                            <label>S/W:</label>
+                                                            <span>{device.softwareVersion || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-md-6">
+                                                    <div className="col-md-4">
                                                         <div className="info-item">
                                                             <label>Firmware:</label>
-                                                            <span>{weatherDevice.firmwareVersion || 'N/A'}</span>
+                                                            <span>{device.firmwareVersion || 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
                                                         <div className="info-item">
-                                                            <label>Trạng thái thiết bị:</label>
-                                                            <span className={`badge ${weatherDevice.deviceState === 'active' ? 'bg-success' : 'bg-secondary'}`}>
-                                                                {weatherDevice.deviceState === 'active' ? 'Active' : weatherDevice.deviceState || 'N/A'}
+                                                            <label>Trạng thái:</label>
+                                                            <span className={`badge ${device.deviceState === 'active' ? 'bg-success' : 'bg-secondary'}`}>
+                                                                {device.deviceState === 'active' ? 'Hoạt động' : device.deviceState || 'N/A'}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -653,8 +655,8 @@ const StationDetail = () => {
                                                         <div className="info-item">
                                                             <label>Ngày cài đặt:</label>
                                                             <span>
-                                                                {weatherDevice.dateInstalled
-                                                                    ? new Date(weatherDevice.dateInstalled).toLocaleDateString('vi-VN')
+                                                                {device.dateInstalled
+                                                                    ? new Date(device.dateInstalled).toLocaleDateString('vi-VN')
                                                                     : 'N/A'}
                                                             </span>
                                                         </div>
@@ -662,24 +664,26 @@ const StationDetail = () => {
                                                     <div className="col-12">
                                                         <div className="info-item">
                                                             <label>Mô tả:</label>
-                                                            <span>{weatherDevice.description || 'N/A'}</span>
+                                                            <span className="text-muted small">{device.description || 'N/A'}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="col-12">
-                                                        <div className="info-item">
-                                                            <label>Thuộc tính quan trắc:</label>
-                                                            <span className="d-flex flex-wrap gap-1">
-                                                                {weatherDevice.controlledProperty?.map((prop, idx) => (
-                                                                    <span key={idx} className="badge bg-secondary">{getPropertyLabel(prop)}</span>
-                                                                ))}
-                                                            </span>
+                                                    {device.controlledProperty && device.controlledProperty.length > 0 && (
+                                                        <div className="col-12">
+                                                            <div className="info-item">
+                                                                <label>Thuộc tính quan trắc:</label>
+                                                                <span className="d-flex flex-wrap gap-1">
+                                                                    {device.controlledProperty.map((prop, idx) => (
+                                                                        <span key={idx} className="badge bg-secondary">{getPropertyLabel(prop)}</span>
+                                                                    ))}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                )}
+                                ))}
                             </div>
                         </div>
                     </div>
