@@ -1,0 +1,80 @@
+.station-manager {
+    .card {
+        border-radius: 12px;
+    }
+
+    .input-group {
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+
+            &:focus {
+                background-color: #fff;
+                box-shadow: none;
+                border-color: #86b7fe;
+            }
+        }
+    }
+
+    .table {
+        th {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background-color: #f8f9fa;
+        }
+
+        td {
+            vertical-align: middle;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .btn-light {
+            background-color: #f8f9fa;
+            border: 1px solid transparent;
+
+            &:hover {
+                border-color: #dee2e6;
+                background-color: #e9ecef;
+            }
+        }
+    }
+
+    .pagination {
+        .page-link {
+            color: #6c757d;
+            background-color: transparent;
+            min-width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+
+            &:hover {
+                background-color: #e9ecef;
+                color: #0d6efd;
+            }
+
+            &:focus {
+                box-shadow: none;
+            }
+        }
+
+        .page-item.active .page-link {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .page-item.disabled .page-link {
+            color: #adb5bd;
+            background-color: transparent;
+        }
+    }
+}
