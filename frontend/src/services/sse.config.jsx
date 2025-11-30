@@ -31,6 +31,9 @@ export const SSE_ENDPOINTS = {
     // Stream weather + air quality for a district
     DISTRICT: (district) => `${API_BASE_URL}/api/sse/district/${district}`,
 
+    // Global air quality alerts (AQI >= 4)
+    AIR_QUALITY_ALERTS: `${API_BASE_URL}/api/sse/airquality/alerts`,
+
     // Optional: Individual streams
     WEATHER: (district) => `${API_BASE_URL}/api/sse/weather/${district}`,
     AIR_QUALITY: (district) => `${API_BASE_URL}/api/sse/airquality/${district}`,
@@ -48,6 +51,7 @@ export const SSE_EVENTS = {
 
     // Air Quality events
     AIR_QUALITY_UPDATE: 'airquality.update',
+    AIR_QUALITY_ALERT: 'airquality.alert',
 
     // Device events
     DEVICE_UPDATE: 'device.update',

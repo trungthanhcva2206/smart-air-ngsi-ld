@@ -31,7 +31,8 @@ import About from './components/Client/About/About.jsx';
 import Map from './components/Client/Map/Map.jsx';
 import Analysis from './components/Client/Analysis/Analysis.jsx';
 import StationDetail from './components/Client/StationDetail/StationDetail.jsx';
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const App = () => {
   return (
     <>
@@ -46,6 +47,18 @@ const App = () => {
           <Route path="analysis" element={<Analysis />} />
         </Route>
       </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
   )
 }
