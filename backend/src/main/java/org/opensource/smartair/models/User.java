@@ -29,54 +29,44 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Model Resident - Profile information cho cư dân
- * CHỈ dành cho users có role = RESIDENT
+ * Model User - Authentication & Authorization cho tất cả users
+ * Bảng chính cho login/register (RESIDENT và ADMIN)
  */
 @Entity
-@Table(name = "residents")
+@Table(name = "users")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Resident {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
     /**
-     * One-to-One relationship với User
+     * Password hash (BCrypt)
+     * JsonIgnore để không trả về trong API response
      */
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
     @JsonIgnore
-    private User user;
+    @Column(nullable = false)
+    private String password;
 
     /**
-     * Danh sách subscriptions (trạm quan trắc)
+     * Role: RESIDENT hoặc ADMIN
      */
-    @OneToMany(mappedBy = "resident", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Builder.Default
-    @JsonIgnore
-    private List<ResidentStation> stations = new ArrayList<>();
-
-    /**
-     * Trạng thái xác thực email (true = đã verify email)
-     */
-    @Column(name = "is_verified", nullable = false)
-    @Builder.Default
-    private Boolean isVerified = false;
-
-    /**
-     * Bật/tắt nhận thông báo email
-     */
-    @Column(name = "notification_enabled", nullable = false)
-    @Builder.Default
-    private Boolean notificationEnabled = true;
+    private UserRole role = UserRole.RESIDENT;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -93,5 +83,21 @@ public class Resident {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    // ============ Helper Methods ============
+
+    /**
+     * Kiểm tra có phải RESIDENT không
+     */
+    public boolean isResident() {
+        return this.role == UserRole.RESIDENT;
+    }
+
+    /**
+     * Kiểm tra có phải ADMIN không
+     */
+    public boolean isAdmin() {
+        return this.role == UserRole.ADMIN;
     }
 }

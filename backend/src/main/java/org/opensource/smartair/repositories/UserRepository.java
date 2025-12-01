@@ -21,36 +21,26 @@
  */
 package org.opensource.smartair.repositories;
 
-import org.opensource.smartair.models.Resident;
+import org.opensource.smartair.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository cho Resident entity
+ * Repository cho User entity
+ * Dùng cho Authentication & Authorization
  */
 @Repository
-public interface ResidentRepository extends JpaRepository<Resident, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * Tìm resident theo user ID
+     * Tìm user theo email (dùng cho login)
      */
-    Optional<Resident> findByUserId(Long userId);
+    Optional<User> findByEmail(String email);
 
     /**
-     * Kiểm tra resident đã tồn tại với user ID chưa
+     * Kiểm tra email đã tồn tại chưa (dùng cho registration validation)
      */
-    boolean existsByUserId(Long userId);
-
-    /**
-     * Tìm tất cả residents đã verified và bật notification
-     * Eager fetch User để tránh N+1 queries
-     */
-    @Query("SELECT r FROM Resident r " +
-            "JOIN FETCH r.user u " +
-            "WHERE r.isVerified = true AND r.notificationEnabled = true")
-    List<Resident> findVerifiedResidentsWithNotificationEnabled();
+    boolean existsByEmail(String email);
 }

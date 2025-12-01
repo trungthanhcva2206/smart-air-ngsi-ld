@@ -23,7 +23,7 @@ package org.opensource.smartair.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opensource.smartair.dtos.ApiResponse;
+import org.opensource.smartair.dtos.ApiResponseDTO;
 import org.opensource.smartair.services.QuantumLeapClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,13 +53,13 @@ public class WeatherHistoryController {
      * @param aggrMethod Aggregation: avg, sum, min, max, count (optional)
      * @param aggrPeriod Period: hour, day, week, month (optional)
      * @param lastN      Number of data points (optional, fallback)
-     * @return ApiResponse with time-series data
+     * @return ApiResponseDTO with time-series data
      * 
      *         Example: GET
      *         /api/weather/PhuongBaDinh/attrs/temperature/history?aggrMethod=avg&aggrPeriod=hour&fromDate=2025-11-01T00:00:00Z&toDate=2025-11-13T23:59:59Z
      */
     @GetMapping("/{district}/attrs/{attrName}/history")
-    public Mono<ResponseEntity<ApiResponse<Map<String, Object>>>> getWeatherAttributeHistory(
+    public Mono<ResponseEntity<ApiResponseDTO<Map<String, Object>>>> getWeatherAttributeHistory(
             @PathVariable String district,
             @PathVariable String attrName,
             @RequestParam(required = false) String fromDate,
@@ -77,17 +77,17 @@ public class WeatherHistoryController {
                     if (historyData.isEmpty()) {
                         log.warn("No weather {} data found for {}", attrName, district);
                         return ResponseEntity.ok(
-                                ApiResponse.<Map<String, Object>>success("No historical data found", historyData));
+                                ApiResponseDTO.<Map<String, Object>>success("No historical data found", historyData));
                     }
                     log.info("Successfully retrieved weather {} history for {}", attrName, district);
                     return ResponseEntity.ok(
-                            ApiResponse.success("Successfully retrieved weather attribute history", historyData));
+                            ApiResponseDTO.success("Successfully retrieved weather attribute history", historyData));
                 })
                 .onErrorResume(e -> {
                     log.error("Error fetching weather {} history for {}: {}", attrName, district, e.getMessage());
                     return Mono.just(
                             ResponseEntity.ok(
-                                    ApiResponse.<Map<String, Object>>error(
+                                    ApiResponseDTO.<Map<String, Object>>error(
                                             "Failed to retrieve weather history: " + e.getMessage())));
                 });
     }
@@ -99,7 +99,7 @@ public class WeatherHistoryController {
      * /api/weather/PhuongBaDinh/history?attrName=temperature&aggrMethod=avg&aggrPeriod=hour&fromDate=2025-11-01T00:00:00Z&toDate=2025-11-13T23:59:59Z
      */
     @GetMapping("/{district}/history")
-    public Mono<ResponseEntity<ApiResponse<Map<String, Object>>>> getWeatherHistoryQuery(
+    public Mono<ResponseEntity<ApiResponseDTO<Map<String, Object>>>> getWeatherHistoryQuery(
             @PathVariable String district,
             @RequestParam String attrName,
             @RequestParam(required = false) String fromDate,
