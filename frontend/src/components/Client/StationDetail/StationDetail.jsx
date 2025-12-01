@@ -499,7 +499,7 @@ const StationDetail = () => {
                             <div className="row g-4">
                                 {/* Air Quality Devices */}
                                 {airQualityDevices.map((device, index) => (
-                                    <div key={device.entityId} className="col-md-4">
+                                    <div key={device.entityId} className="col-md-6">
                                         <div className="info-section">
                                             <div className="section-header">
                                                 <BsWind className="me-2 text-info" />
@@ -593,7 +593,7 @@ const StationDetail = () => {
 
                                 {/* Weather Devices */}
                                 {weatherDevices.map((device, index) => (
-                                    <div key={device.entityId} className="col-md-4">
+                                    <div key={device.entityId} className="col-md-6">
                                         <div className="info-section">
                                             <div className="section-header">
                                                 <BsCloudRain className="me-2 text-primary" />

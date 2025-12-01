@@ -23,7 +23,7 @@ package org.opensource.smartair.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opensource.smartair.dtos.ApiResponse;
+import org.opensource.smartair.dtos.ApiResponseDTO;
 import org.opensource.smartair.dtos.DeviceDataDTO;
 import org.opensource.smartair.services.OrionLdClient;
 import org.springframework.http.ResponseEntity;
@@ -48,13 +48,13 @@ public class PlatformController {
      * 
      * @param platformId Platform entity ID (e.g.,
      *                   "urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoanKiem")
-     * @return ApiResponse with list of devices
+     * @return ApiResponseDTO with list of devices
      * 
      *         Example: GET
      *         /api/platforms/urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoanKiem/devices
      */
     @GetMapping("/{platformId}/devices")
-    public Mono<ResponseEntity<ApiResponse<List<DeviceDataDTO>>>> getDevicesByPlatform(
+    public Mono<ResponseEntity<ApiResponseDTO<List<DeviceDataDTO>>>> getDevicesByPlatform(
             @PathVariable String platformId) {
 
         log.info("Fetching devices for platform: {}", platformId);
@@ -63,13 +63,13 @@ public class PlatformController {
                 .map(devices -> {
                     log.info("Found {} devices for platform: {}", devices.size(), platformId);
                     return ResponseEntity.ok(
-                            ApiResponse.success("Successfully retrieved devices", devices));
+                            ApiResponseDTO.success("Successfully retrieved devices", devices));
                 })
                 .onErrorResume(e -> {
                     log.error("Error fetching devices for platform: {}", platformId, e);
                     return Mono.just(
                             ResponseEntity.ok(
-                                    ApiResponse.error("Failed to retrieve devices: " + e.getMessage())));
+                                    ApiResponseDTO.error("Failed to retrieve devices: " + e.getMessage())));
                 });
     }
 
@@ -77,13 +77,13 @@ public class PlatformController {
      * Get all devices hosted by a platform (using query parameter)
      * 
      * @param platformId Platform entity ID
-     * @return ApiResponse with list of devices
+     * @return ApiResponseDTO with list of devices
      * 
      *         Example: GET
      *         /api/platforms/devices?platformId=urn:ngsi-ld:Platform:EnvironmentStation-PhuongHoanKiem
      */
     @GetMapping("/devices")
-    public Mono<ResponseEntity<ApiResponse<List<DeviceDataDTO>>>> getDevicesByPlatformQuery(
+    public Mono<ResponseEntity<ApiResponseDTO<List<DeviceDataDTO>>>> getDevicesByPlatformQuery(
             @RequestParam String platformId) {
 
         return getDevicesByPlatform(platformId);

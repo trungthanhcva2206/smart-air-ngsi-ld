@@ -29,69 +29,64 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
 /**
- * Model Resident - Profile information cho cư dân
- * CHỈ dành cho users có role = RESIDENT
+ * Model ResidentStation - Quan hệ Many-to-Many giữa Resident và District
+ * Lưu thông tin subscription của cư dân cho các trạm quan trắc
  */
 @Entity
-@Table(name = "residents")
+@Table(name = "resident_stations")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Resident {
+public class ResidentStation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * One-to-One relationship với User
+     * Many-to-One relationship với Resident
      */
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resident_id", nullable = false)
     @JsonIgnore
-    private User user;
+    private Resident resident;
 
     /**
-     * Danh sách subscriptions (trạm quan trắc)
+     * Tên district/trạm (VD: "PhuongHoanKiem", "PhuongBaDinh")
+     * Khớp với field `stationName` hoặc `district` trong
+     * WeatherObserved/AirQualityObserved
      */
-    @OneToMany(mappedBy = "resident", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
-    @JsonIgnore
-    private List<ResidentStation> stations = new ArrayList<>();
+    @Column(nullable = false)
+    private String district;
 
     /**
-     * Trạng thái xác thực email (true = đã verify email)
+     * Thời điểm đăng ký
      */
-    @Column(name = "is_verified", nullable = false)
-    @Builder.Default
-    private Boolean isVerified = false;
-
-    /**
-     * Bật/tắt nhận thông báo email
-     */
-    @Column(name = "notification_enabled", nullable = false)
-    @Builder.Default
-    private Boolean notificationEnabled = true;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "subscribed_at", nullable = false, updatable = false)
+    private LocalDateTime subscribedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        subscribedAt = LocalDateTime.now();
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof ResidentStation))
+            return false;
+        ResidentStation that = (ResidentStation) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(district, that.district);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, district);
     }
 }

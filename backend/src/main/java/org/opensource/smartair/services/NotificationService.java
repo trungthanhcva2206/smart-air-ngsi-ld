@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Service xử lý logic gửi thông báo
+ * Service xử lý logic gửi thông báo (BLOCKING JPA)
  */
 @Slf4j
 @Service
@@ -64,6 +64,8 @@ public class NotificationService {
      * Gửi cảnh báo chất lượng không khí đến tất cả residents
      * CHỈ gửi khi AQI ở mức poor (4) hoặc very poor (5)
      * VÀ chỉ gửi 1 lần trong khoảng THROTTLE_MINUTES (mặc định 180 phút)
+     * 
+     * @Async để không block notification thread
      */
     @Async
     public void sendAirQualityAlert(AirQualityDataDTO airQuality) {
@@ -85,28 +87,29 @@ public class NotificationService {
             return;
         }
 
-        // Lấy tất cả residents đã verify và bật notification
-        List<Resident> recipients = residentRepository.findByIsVerifiedTrueAndNotificationEnabledTrue();
+        // Lấy tất cả residents đã verify và bật notification (JPA với JOIN FETCH)
+        List<Resident> residents = residentRepository.findVerifiedResidentsWithNotificationEnabled();
 
-        if (recipients.isEmpty()) {
+        if (residents.isEmpty()) {
             log.warn("No residents found to send air quality alert");
             return;
         }
 
         log.info("Sending air quality alert for {} (AQI: {}, Level: {}) to {} residents",
-                district, airQuality.getAirQualityIndex(), airQuality.getAirQualityLevel(), recipients.size());
+                district, airQuality.getAirQualityIndex(), airQuality.getAirQualityLevel(),
+                residents.size());
 
         // Gửi email đến từng resident
         int successCount = 0;
-        for (Resident resident : recipients) {
+        for (Resident resident : residents) {
             try {
                 emailService.sendAirQualityAlert(
-                        resident.getEmail(),
-                        resident.getFullName(),
+                        resident.getUser().getEmail(),
+                        resident.getUser().getFullName(),
                         airQuality);
                 successCount++;
             } catch (Exception e) {
-                log.error("Failed to send alert to resident: {}", resident.getEmail(), e);
+                log.error("Failed to send alert to resident: {}", resident.getUser().getEmail(), e);
             }
         }
 
@@ -114,7 +117,7 @@ public class NotificationService {
         lastAlertTimestamps.put(district, LocalDateTime.now());
 
         log.info("Successfully sent air quality alerts to {}/{} residents for {}",
-                successCount, recipients.size(), district);
+                successCount, residents.size(), district);
     }
 
     /**

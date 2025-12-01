@@ -23,7 +23,7 @@ package org.opensource.smartair.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opensource.smartair.dtos.ApiResponse;
+import org.opensource.smartair.dtos.ApiResponseDTO;
 import org.opensource.smartair.services.QuantumLeapClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,13 +53,13 @@ public class AirQualityHistoryController {
          * @param aggrMethod Aggregation: avg, sum, min, max, count (optional)
          * @param aggrPeriod Period: hour, day, week, month (optional)
          * @param lastN      Number of data points (optional, fallback)
-         * @return ApiResponse with time-series data
+         * @return ApiResponseDTO with time-series data
          * 
          *         Example: GET
          *         /api/airquality/PhuongBaDinh/attrs/pm2_5/history?aggrMethod=avg&aggrPeriod=hour&fromDate=2025-11-01T00:00:00Z&toDate=2025-11-13T23:59:59Z
          */
         @GetMapping("/{district}/attrs/{attrName}/history")
-        public Mono<ResponseEntity<ApiResponse<Map<String, Object>>>> getAirQualityAttributeHistory(
+        public Mono<ResponseEntity<ApiResponseDTO<Map<String, Object>>>> getAirQualityAttributeHistory(
                         @PathVariable String district,
                         @PathVariable String attrName,
                         @RequestParam(required = false) String fromDate,
@@ -79,14 +79,14 @@ public class AirQualityHistoryController {
                                         if (historyData.isEmpty()) {
                                                 log.warn("No air quality {} data found for {}", attrName, district);
                                                 return ResponseEntity.ok(
-                                                                ApiResponse.<Map<String, Object>>success(
+                                                                ApiResponseDTO.<Map<String, Object>>success(
                                                                                 "No historical data found",
                                                                                 historyData));
                                         }
                                         log.info("Successfully retrieved air quality {} history for {}", attrName,
                                                         district);
                                         return ResponseEntity.ok(
-                                                        ApiResponse.success(
+                                                        ApiResponseDTO.success(
                                                                         "Successfully retrieved air quality attribute history",
                                                                         historyData));
                                 })
@@ -95,7 +95,7 @@ public class AirQualityHistoryController {
                                                         district, e.getMessage());
                                         return Mono.just(
                                                         ResponseEntity.ok(
-                                                                        ApiResponse.<Map<String, Object>>error(
+                                                                        ApiResponseDTO.<Map<String, Object>>error(
                                                                                         "Failed to retrieve air quality history: "
                                                                                                         + e.getMessage())));
                                 });
@@ -108,7 +108,7 @@ public class AirQualityHistoryController {
          * /api/airquality/PhuongBaDinh/history?attrName=pm2_5&aggrMethod=avg&aggrPeriod=hour&fromDate=2025-11-01T00:00:00Z&toDate=2025-11-13T23:59:59Z
          */
         @GetMapping("/{district}/history")
-        public Mono<ResponseEntity<ApiResponse<Map<String, Object>>>> getAirQualityHistoryQuery(
+        public Mono<ResponseEntity<ApiResponseDTO<Map<String, Object>>>> getAirQualityHistoryQuery(
                         @PathVariable String district,
                         @RequestParam String attrName,
                         @RequestParam(required = false) String fromDate,
