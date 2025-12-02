@@ -137,7 +137,7 @@ Giao diện web hiển thị và quản lý dữ liệu.
 ### Routefinding Service
 Dịch vụ tìm đường tối ưu dựa trên chất lượng không khí.
 
-👉 [Xem hướng dẫn cài đặt Routefinding](./routefinding/README.md)
+👉 [Xem hướng dẫn cài đặt Routefinding](./route-finding/README.md)
 
 
 ## 🛠️ Công nghệ sử dụng
@@ -270,4 +270,5 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 <p align="center">
   <a href="#giới-thiệu">Về đầu trang ↑</a>
 </p>
+
 
