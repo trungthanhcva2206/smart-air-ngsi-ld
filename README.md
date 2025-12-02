@@ -31,6 +31,7 @@ Smart Air NGSI-LD là giải pháp toàn diện để thu thập, lưu trữ và
 Dữ liệu được mô hình hóa theo chuẩn ontology **SOSA/SSN** (Sensor, Observation, Sample, and Actuator / Semantic Sensor Network), đảm bảo tính tương thích và khả năng mở rộng cao.
 
 ## 🏗️ Kiến trúc hệ thống
+<a id="kiến-trúc-hệ-thống"></a>
 
 ![Smart Air Architecture](./assets/architecture.drawio.svg)
 
@@ -120,6 +121,7 @@ Dịch vụ tìm đường tối ưu dựa trên chất lượng không khí.
 
 
 ## 🛠️ Công nghệ sử dụng
+<a id="công-nghệ-sử-dụng"></a>
 
 ### Core Technologies
 - **NGSI-LD**: Context Information Management API
@@ -250,6 +252,7 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 <p align="center">
   <a href="#giới-thiệu">Về đầu trang ↑</a>
 </p>
+
 
 
 
