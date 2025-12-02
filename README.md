@@ -98,7 +98,6 @@ Data is modeled according to the **SOSA/SSN** (Sensor, Observation, Sample, and 
       - Integration with QuantumLeap for time-series data
 
 ### Frontend
-
 - **React 19**: UI framework with Hooks
 - **Vite 7**: Build tool and dev server
 - **React Router v7**: Client-side routing

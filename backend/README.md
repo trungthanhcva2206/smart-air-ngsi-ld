@@ -14,10 +14,10 @@ Backend processing real-time data based on NGSI-LD, receiving notifications from
 - ✔️ **SSE streaming** for real-time dashboard
 - ✔️ **JWT Authentication & Authorization** (RESIDENT/ADMIN roles)
 - ✔️ **Resident Management**: profile, districts subscription
--   ✔️ **Email Alerts**: air quality alert (poor/very poor)
--   ✔️ **Rate Limiting**: throttle alerts (default 3 hours/district)
--   ✔️ OpenAPI documentation, CORS config, error handling
--   ✔️ MySQL 8.0 (production) or H2 (dev mode)
+- ✔️ **Email Alerts**: air quality alert (poor/very poor)
+- ✔️ **Rate Limiting**: throttle alerts (default 3 hours/district)
+- ✔️ OpenAPI documentation, CORS config, error handling
+- ✔️ MySQL 8.0 (production) or H2 (dev mode)
 
 ------------------------------------------------------------------------
 

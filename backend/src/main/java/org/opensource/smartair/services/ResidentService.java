@@ -101,6 +101,9 @@ public class ResidentService {
             }
         }
 
+        // 4. Force update updatedAt timestamp
+        resident.setUpdatedAt(LocalDateTime.now());
+
         Resident saved = residentRepository.save(resident);
         return mapToDTO(saved);
     }

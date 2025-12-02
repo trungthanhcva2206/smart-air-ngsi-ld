@@ -86,6 +86,91 @@
                 color: white;
             }
         }
+
+        .user-dropdown-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            color: #212529;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+
+            &::after {
+                display: none; // Hide Bootstrap's default dropdown arrow
+            }
+
+            .user-icon {
+                font-size: 1.5rem;
+                color: #6a5cd8;
+            }
+
+            .user-greeting {
+                font-weight: 500;
+                color: #212529;
+            }
+
+            .chevron-icon {
+                font-size: 0.8rem;
+                color: #6c757d;
+                transition: transform 0.2s ease;
+            }
+
+            &:hover {
+                background: #f8f9fa;
+                border-color: #6a5cd8;
+                color: #212529;
+
+                .chevron-icon {
+                    color: #6a5cd8;
+                }
+            }
+
+            &[aria-expanded="true"] {
+                .chevron-icon {
+                    transform: rotate(180deg);
+                }
+            }
+        }
+
+        .dropdown-menu {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            min-width: 200px;
+            overflow: hidden;
+
+            .dropdown-item {
+                padding: 0.75rem 1.5rem;
+                font-size: 0.95rem;
+                color: #212529;
+                transition: all 0.2s ease;
+                border: none;
+                background: white;
+                width: 100%;
+                text-align: left;
+                cursor: pointer;
+
+                &:hover {
+                    background-color: #f8f9fa;
+                    color: #6a5cd8;
+                }
+
+                &:active {
+                    background-color: #6a5cd8;
+                    color: white;
+                }
+            }
+
+            .dropdown-divider {
+                margin: 0;
+            }
+        }
     }
 
     .navbar-brand {
