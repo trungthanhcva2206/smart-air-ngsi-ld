@@ -23,10 +23,19 @@ Hệ thống theo dõi và quản lý dữ liệu chất lượng không khí d�
 
 Smart Air NGSI-LD là giải pháp toàn diện để thu thập, lưu trữ và phân tích dữ liệu chất lượng không khí theo chuẩn NGSI-LD (Next Generation Service Interfaces - Linked Data). Hệ thống hỗ trợ theo dõi các thông số:
 
+**Chất lượng không khí:**
 - 🌫️ PM2.5 và PM10 (Bụi mịn)
-- 💨 CO₂ (Carbon Dioxide)
-- 🌡️ Nhiệt độ
+- 💨 CO, NO, NO₂, NOₓ, O₃, SO₂, NH₃ (Các khí gây ô nhiễm)
+- 📊 AQI (Air Quality Index - Chỉ số chất lượng không khí)
+
+**Thời tiết:**
+- 🌡️ Nhiệt độ và cảm giác nhiệt độ
 - 💧 Độ ẩm
+- 🌬️ Tốc độ và hướng gió
+- 🌧️ Lượng mưa
+- ☁️ Độ mây, tầm nhìn xa
+- 🔆 Độ sáng (Illuminance)
+- ⏲️ Áp suất khí quyển
 
 Dữ liệu được mô hình hóa theo chuẩn ontology **SOSA/SSN** (Sensor, Observation, Sample, and Actuator / Semantic Sensor Network), đảm bảo tính tương thích và khả năng mở rộng cao.
 
@@ -35,15 +44,73 @@ Dữ liệu được mô hình hóa theo chuẩn ontology **SOSA/SSN** (Sensor, 
 
 ![Smart Air Architecture](./assets/architecture.drawio.svg)
 
+## 🛠️ Công nghệ sử dụng
+<a id="công-nghệ-sử-dụng"></a>
+
+### Core Technologies
+- **NGSI-LD**: Context Information Management API
+- **JSON-LD**: Linked Data format
+- **SOSA/SSN Ontology**: Sensor network ontology
+
+### Infrastructure
+- **Docker & Docker Compose**: Container orchestration
+- **MongoDB**: Document database cho Orion-LD và IoT Agent
+- **TimescaleDB**: Time-series database tối ưu cho dữ liệu chuỗi thời gian
+- **Redis**: Caching layer cho QuantumLeap
+
+### FIWARE Components
+- **Orion-LD Context Broker**: 
+  - NGSI-LD API endpoint cho entity management
+  - Real-time context data storage và subscription
+  - Multi-tenancy support (tenant: `hanoi`)
+  - Integration với MongoDB backend
+- **IoT Agent JSON**:
+  - Protocol translation MQTT ↔ NGSI-LD
+  - Device provisioning và attribute mapping
+  - Southbound: MQTT protocol via Mosquitto
+  - Northbound: NGSI-LD entities tới Orion-LD
+- **Eclipse Mosquitto**:
+  - MQTT Broker cho IoT devices (ESP32)
+  - Support MQTT protocol (port 1883) và WebSocket (port 9001)
+  - Allow anonymous connections cho development
+- **QuantumLeap**:
+  - Time-series data API theo chuẩn FIWARE
+  - Automatic subscription tới Orion-LD notifications
+  - Storage backend: TimescaleDB với Redis caching
+  - RESTful API cho historical data queries
+
+### Backend
+- **Python**: 
+  - ETL pipeline xử lý dữ liệu OpenWeather API
+  - MQTT publisher gửi dữ liệu tới IoT Agent
+  - NGSI-LD entity creation theo chuẩn SOSA/SSN
+  - Data transformation và validation
+- **Spring Boot**: 
+  - RESTful API endpoints (Platform, Weather, Air Quality history)
+  - JWT Authentication & Authorization
+  - Email notification service cho air quality alerts
+  - SSE (Server-Sent Events) cho real-time data streaming
+  - Integration với FIWARE Orion-LD Context Broker
+  - Integration với QuantumLeap cho time-series data
+
+### Frontend
+- **React 18**: UI framework với Hooks
+- **React Router**: Client-side routing
+- **React Leaflet**: Interactive maps
+- **Recharts**: Data visualization
+- **React Toastify**: Real-time notifications
+- **Axios**: HTTP client
+- **SCSS**: Styling
+
 ## ✨ Tính năng
 
-- **Thu thập dữ liệu thời gian thực**: Nhận dữ liệu từ nhiều nguồn cảm biến khác nhau
-- **Chuẩn hóa NGSI-LD**: Chuyển đổi dữ liệu thô thành định dạng JSON-LD chuẩn
-- **Quản lý entity**: Hỗ trợ các entity như Sensor, Observation, ObservedProperty, FeatureOfInterest
-- **Lưu trữ Time Series**: Tối ưu hóa cho dữ liệu chuỗi thời gian
-- **Dashboard trực quan**: Giao diện web hiển thị dữ liệu và phân tích
-- **Tìm đường tối ưu**: Tính toán lộ trình dựa trên chất lượng không khí
-- **RESTful API**: Cung cấp API để tích hợp với hệ thống khác
+- **Thu thập dữ liệu thời gian thực**: Streaming data từ cảm biến thật (ESP32) và API nguồn mở (OpenWeather)
+- **Chuẩn hóa NGSI-LD**: ETL pipeline chuyển đổi dữ liệu thô sang NGSI-LD theo chuẩn FIWARE
+- **Quản lý entity**: CRUD operations cho Platform, Device, WeatherObserved, AirQualityObserved
+- **Lưu trữ Time Series**: QuantumLeap + TimescaleDB tối ưu cho dữ liệu chuỗi thời gian
+- **Dashboard trực quan**: Real-time SSE streaming, interactive charts, air quality alerts
+- **Tìm đường tối ưu**: Thuật toán A* routing tránh vùng ô nhiễm cao
+- **Cổng dữ liệu mở**: OpenAPI 3.0 endpoints 
 
 ## 💻 Yêu cầu hệ thống
 
@@ -118,33 +185,6 @@ Giao diện web hiển thị và quản lý dữ liệu.
 Dịch vụ tìm đường tối ưu dựa trên chất lượng không khí.
 
 👉 [Xem hướng dẫn cài đặt Routefinding](./route-finding/README.md)
-
-
-## 🛠️ Công nghệ sử dụng
-<a id="công-nghệ-sử-dụng"></a>
-
-### Core Technologies
-- **NGSI-LD**: Context Information Management API
-- **JSON-LD**: Linked Data format
-- **SOSA/SSN Ontology**: Sensor network ontology
-
-### Infrastructure
-- **Docker & Docker Compose**: Container orchestration
-- **MongoDB**: Document database
-- **TimescaleDB**: Time-series database
-- **Redis**: Caching layer
-
-### Backend
-- **Python**: ETL pipeline, data processing
-- **Spring Boot**: 
-  - RESTful API endpoints for data access
-  - Business logic and service layer
-  - Integration with NGSI-LD Context Broker
-  - Real-time data processing and validation
-
-### Frontend
-- **React**: UI framework
-- **TypeScript**: Type-safe JavaScript
 
 ## 📝 Lịch sử thay đổi
 
@@ -230,14 +270,14 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 
 ### Team Members
 
-- **Trung Thành** - Project Lead
+- **Trung Thành**
   - Email: [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
   - GitHub: [@trungthanhcva2206](https://github.com/trungthanhcva2206)
 
-- **Tadz** - Backend Developer
+- **Tankchoi** 
   - Email: [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
 
-- **Panh** - Frontend Developer
+- **Panh**
   - Email: [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
 
 ### Báo lỗi và đề xuất
