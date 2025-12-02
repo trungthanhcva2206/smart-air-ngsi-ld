@@ -55,7 +55,7 @@ Route Finding Service là một service Python tìm đường đi tối ưu gi�
 ### Bước 1: Cài đặt thư viện
 
 ```bash
-cd smart-air-ngsi-ld/route-finding
+cd smart-air-ngsi-ld
 
 pip install -r requirements.txt
 ```
@@ -843,5 +843,12 @@ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2
 - **TT** - [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
 - **Tankchoi** - [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
 - **Panh** - [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
+
+## 💡 Support
+
+Nếu gặp vấn đề, vui lòng:
+
+1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
+2. Liên hệ authors
 
 **Copyright © 2025 CHK. All rights reserved.**
