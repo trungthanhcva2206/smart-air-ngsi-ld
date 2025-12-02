@@ -1,0 +1,230 @@
+spring:
+  application:
+    name: smartair
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:docker}
+
+  # ========================================
+  # Database Configuration
+  # ========================================
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+    # HikariCP Connection Pool
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  # ========================================
+  # JPA/Hibernate Configuration
+  # ========================================
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+  # ========================================
+  # Redis Cache
+  # ========================================
+  data:
+    redis:
+      host: ${REDIS_HOST:redis-cache}
+      port: ${REDIS_PORT:6379}
+      timeout: 60000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000  # 1 hour
+
+  # ========================================
+  # Email Configuration
+  # ========================================
+  mail:
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+    default-encoding: UTF-8
+  reactor:
+    netty:
+      pool:
+        max-connections: 50
+        max-idle-time: 20s
+
+backend:
+  url: ${BACKEND_URL:http://host.docker.internal:8123}
+# ========================================
+# Notification Configuration
+notification:
+  alert:
+    throttle:
+      minutes: ${NOTIFICATION_ALERT_THROTTLE_MINUTES:180}
+
+# ========================================
+# Swagger/OpenAPI Configuration
+# ========================================
+springdoc:
+  packages-to-scan: org.opensource.smartair.controllers
+  paths-to-match: /api/open/**
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /v3/api-docs
+    disable-swagger-default-url: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  servers:
+    - url: https://airtrack.pro.vn
+      description: Production Server
+    - url: https://api.airtrack.pro.vn
+      description: API Server
+    - url: http://localhost:8123
+      description: Local Development
+      
+# ========================================
+# Server Configuration
+# ========================================
+server:
+  port: ${SERVER_PORT:8123}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+  error:
+    include-message: always
+    include-stacktrace: on_param
+  servlet:
+    context-path: /
+
+# ========================================
+# Management Endpoints (Actuator)
+# ========================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+
+# ========================================
+# Application Configuration
+# ========================================
+app:
+  frontend:
+    url: ${FRONTEND_PUBLIC_URL:http://localhost:5137}
+  
+  fiware:
+    orion:
+      url: ${ORION_LD_URL:http://orion:1026}
+      tenant: ${ORION_LD_TENANT:hanoi}
+      service-path: ${ORION_SERVICE_PATH:/}
+    
+    quantumleap:
+      url: ${QUANTUMLEAP_EXTERNAL_URL:http://quantumleap:8668}
+      service: ${QUANTUMLEAP_FIWARE_SERVICE:hanoi}
+      query:
+        last-n: ${QUANTUMLEAP_QUERY_LASTN:720}
+        delay-seconds: ${QUANTUMLEAP_QUERY_DELAY_SECONDS:2}
+    
+    iot-agent:
+      url: ${IOT_AGENT_URL:http://iot-agent:4041}
+      api-key: ${FIWARE_API_KEY:hanoi}
+  
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration: 86400000  # 24 hours
+    
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  
+  email:
+    from-name: ${MAIL_FROM_NAME:Smart Air Quality Alert System}
+
+# ========================================
+# WebFlux/Reactor Configuration
+# ========================================
+spring.webflux:
+  client:
+    connect-timeout: ${SPRING_WEBFLUX_CLIENT_CONNECT_TIMEOUT:10000}
+    read-timeout: ${SPRING_WEBFLUX_CLIENT_READ_TIMEOUT:30000}
+    write-timeout: ${SPRING_WEBFLUX_CLIENT_WRITE_TIMEOUT:30000}
+
+# ========================================
+# Logging Configuration
+# ========================================
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    org.opensource.smartair: DEBUG
+    org.springframework.web: INFO
+    org.springframework.boot: INFO
+    org.springframework.security: DEBUG
+    org.hibernate: INFO
+    com.zaxxer.hikari: INFO
+    org.apache.catalina.connector: ERROR
+    org.apache.coyote.http11: ERROR
+    org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter: WARN
+  
+  file:
+    name: /app/logs/smartair-backend.log
+    max-size: 10MB
+    max-history: 30
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+quantumleap:
+  url: ${QUANTUMLEAP_EXTERNAL_URL:http://quantumleap:8668}
+  fiware-service: ${QUANTUMLEAP_FIWARE_SERVICE:hanoi}
+  query:
+    lastN: ${QUANTUMLEAP_QUERY_LASTN:720}
+    delay:
+      seconds: ${QUANTUMLEAP_QUERY_DELAY_SECONDS:2}
+
+orion:
+  url: ${ORION_LD_URL:http://orion:1026}
+  tenant: ${ORION_LD_TENANT:hanoi}
+  service-path: ${ORION_SERVICE_PATH:/}
