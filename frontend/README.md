@@ -92,4 +92,6 @@ Apache License 2.0
 Nếu gặp vấn đề, vui lòng:
 
 1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-2. Liên hệ authors
+2. Xem [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
+3. Trao đổi [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
+4. Liên hệ authors
