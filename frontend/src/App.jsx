@@ -36,13 +36,28 @@ import AdminDashboard from './components/Admin/Dashboard/Dashboard.jsx';
 import StationManager from './components/Admin/StationManager/StationManager.jsx';
 import DeviceManager from './components/Admin/DeviceManager/DeviceManager.jsx';
 import AccountManager from './components/Admin/AccountManager/AccountManager.jsx';
+import Login from './components/Client/Auth/Login.jsx';
+import Register from './components/Client/Auth/Register.jsx';
+import Profile from './components/Client/Auth/Profile.jsx';
+import PrivateRoute from './components/Client/Auth/PrivateRoute.jsx';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 const App = () => {
   return (
     <>
       <Routes>
+
+
+        {/* Client Routes */}
         <Route path="/" element={<Client />}>
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          } />
           <Route index element={<StationMap />} />
           <Route path="/:platformId" element={<StationDetail />} />
           <Route path="map" element={<Map />} />
@@ -52,6 +67,7 @@ const App = () => {
           <Route path="analysis" element={<Analysis />} />
         </Route>
 
+        {/* Admin Routes */}
         <Route path="/admin" element={<Admin />}>
           <Route index element={<AdminDashboard />} />
           <Route path="stations" element={<StationManager />} />

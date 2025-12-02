@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensource.smartair.dtos.ApiResponseDTO;
 import org.opensource.smartair.dtos.DeviceDataDTO;
+import org.opensource.smartair.dtos.PlatformDataDTO;
 import org.opensource.smartair.services.OrionLdClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +43,31 @@ import java.util.List;
 public class PlatformController {
 
     private final OrionLdClient orionLdClient;
+
+    /**
+     * Get all platforms (environment monitoring stations)
+     * 
+     * @return ApiResponseDTO with list of all platforms
+     * 
+     *         Example: GET /api/platforms
+     */
+    @GetMapping
+    public Mono<ResponseEntity<ApiResponseDTO<List<PlatformDataDTO>>>> getAllPlatforms() {
+        log.info("Fetching all platforms");
+
+        return orionLdClient.getAllPlatforms()
+                .map(platforms -> {
+                    log.info("Found {} platforms", platforms.size());
+                    return ResponseEntity.ok(
+                            ApiResponseDTO.success("Successfully retrieved platforms", platforms));
+                })
+                .onErrorResume(e -> {
+                    log.error("Error fetching platforms", e);
+                    return Mono.just(
+                            ResponseEntity.ok(
+                                    ApiResponseDTO.error("Failed to retrieve platforms: " + e.getMessage())));
+                });
+    }
 
     /**
      * Get all devices hosted by a platform

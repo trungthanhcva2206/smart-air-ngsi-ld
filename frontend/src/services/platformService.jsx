@@ -19,26 +19,23 @@
  * @Copyright (C) 2025 CHK. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { Provider } from 'react-redux'
-import { PersistGate } from 'redux-persist/integration/react'
-import { store, persistor } from './store/store.jsx'
-import './index.css'
-import App from './App.jsx'
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import 'nprogress/nprogress.css';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </PersistGate>
-    </Provider>
-  </StrictMode>,
-)
+import axios from '../utils/axiosCustomize';
+
+/**
+ * Get all platforms (one-time fetch, not SSE)
+ * Used for getting district list in Profile page
+ * @returns {Promise<{ec: number, em: string, dt: Array}>}
+ */
+export const getPlatforms = async () => {
+    try {
+        return await axios.get('/api/platforms');
+    } catch (error) {
+        console.error('Error fetching platforms:', error);
+        return {
+            EC: -1,
+            EM: error.message || 'Không thể tải danh sách platforms',
+            DT: []
+        };
+    }
+};

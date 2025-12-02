@@ -1,0 +1,362 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @Project AirTrack
+ * @Authors 
+ * - TT (trungthanhcva2206@gmail.com)
+ * - Tankchoi (tadzltv22082004@gmail.com)
+ * - Panh (panh812004.apn@gmail.com)
+ * @Copyright (C) 2025 CHK. All rights reserved
+ * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
+*/
+.profile-page {
+    min-height: calc(100vh - 80px);
+    background: #f8f9fa;
+    padding: 2rem 0;
+    width: 100%;
+
+    .btn-primary {
+        background-color: #6a5cd8;
+        border-color: #6a5cd8;
+
+        &:hover {
+            background-color: #5a4cc8;
+            border-color: #5a4cc8;
+        }
+
+        &:disabled {
+            background-color: #b8b0e8;
+            border-color: #b8b0e8;
+        }
+    }
+
+    .btn-outline-purple {
+        border-color: #6a5cd8;
+        color: #6a5cd8;
+        background-color: transparent;
+
+        &:hover {
+            background-color: #6a5cd8;
+            border-color: #6a5cd8;
+            color: white;
+        }
+
+        &:disabled {
+            border-color: #b8b0e8;
+            color: #b8b0e8;
+            background-color: transparent;
+        }
+    }
+}
+
+.profile-container {
+    max-width: 100%;
+    padding: 0 2rem;
+    margin: 0 auto;
+
+    @media (min-width: 1200px) {
+        max-width: 1140px;
+    }
+}
+
+.profile-header {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+
+    .avatar-icon {
+        font-size: 4rem;
+        color: #6a5cd8;
+    }
+
+    h2 {
+        flex: 1;
+        margin: 0;
+        color: #212529;
+    }
+}
+
+.profile-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: #212529;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+
+    .info-item {
+        label {
+            display: block;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .value-with-edit {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+
+            span {
+                color: #212529;
+                font-size: 1rem;
+            }
+
+            .btn-edit {
+                background: none;
+                border: none;
+                color: #6a5cd8;
+                cursor: pointer;
+                padding: 0.25rem 0.5rem;
+                font-size: 1rem;
+                transition: color 0.3s;
+
+                &:hover {
+                    color: #5a4cc8;
+                }
+            }
+        }
+
+        .value-readonly {
+            span {
+                color: #212529;
+                font-size: 1rem;
+            }
+        }
+
+        .edit-field {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+
+            .form-control {
+                flex: 1;
+            }
+
+            .btn {
+                padding: 0.375rem 0.75rem;
+
+                &.btn-success {
+                    background-color: #6a5cd8;
+                    border-color: #6a5cd8;
+
+                    &:hover {
+                        background-color: #5a4cc8;
+                        border-color: #5a4cc8;
+                    }
+                }
+            }
+        }
+
+        .badge {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.8rem;
+        }
+    }
+}
+
+.notification-setting {
+    .form-check-input {
+        cursor: pointer;
+
+        &:checked {
+            background-color: #6a5cd8;
+            border-color: #6a5cd8;
+        }
+
+        &:focus {
+            border-color: #6a5cd8;
+            box-shadow: 0 0 0 0.25rem rgba(106, 92, 216, 0.25);
+        }
+    }
+
+    .notification-desc {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+}
+
+.search-box {
+    input {
+        border: 1.5px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        transition: border-color 0.3s;
+
+        &:focus {
+            border-color: #6a5cd8;
+            box-shadow: 0 0 0 3px rgba(106, 92, 216, 0.1);
+        }
+    }
+}
+
+.districts-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+
+    .form-check {
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        transition: background 0.2s;
+        margin-bottom: 0;
+
+        &:hover {
+            background: #f8f9fa;
+        }
+
+        .form-check-input {
+            cursor: pointer;
+            width: 1.2rem;
+            height: 1.2rem;
+            margin-left: 0;
+            margin-top: 0;
+            float: none;
+
+            &:checked {
+                background-color: #6a5cd8;
+                border-color: #6a5cd8;
+            }
+
+            &:focus {
+                border-color: #6a5cd8;
+                box-shadow: 0 0 0 0.25rem rgba(106, 92, 216, 0.25);
+            }
+        }
+
+        .form-check-label {
+            cursor: pointer;
+            margin-left: 0.5rem;
+            font-size: 0.95rem;
+        }
+    }
+
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+
+        &:hover {
+            background: #a8a8a8;
+        }
+    }
+}
+
+.district-summary {
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0 2rem;
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s;
+
+        &.btn-primary {
+            background-color: #6a5cd8;
+            border-color: #6a5cd8;
+
+            &:hover:not(:disabled) {
+                background-color: #5a4cc8;
+                border-color: #5a4cc8;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(106, 92, 216, 0.3);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        &.btn-secondary {
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        &.btn-outline-secondary {
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+    }
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+
+        .avatar-icon {
+            font-size: 3rem;
+        }
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-actions {
+        padding: 0 1rem;
+
+        .btn {
+            width: 100%;
+        }
+    }
+}

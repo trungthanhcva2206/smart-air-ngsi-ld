@@ -67,21 +67,22 @@ public class OpenApiConfig {
                                                                                 ### 🔓 Open Data License
                                                                                 This API provides open access to environmental data under the following terms:
 
-                                                                                **Data Attribution:**
-                                                                                - Weather and Air Quality data © [OpenWeatherMap](https://openweathermap.org/)
-                                                                                - Licensed under [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+                                                                                **Data License:**
+                                                                                - Data is released under [Open Data Commons – Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1.0/)
+                                                                                - Weather and Air Quality data sourced from [OpenWeatherMap](https://openweathermap.org/)
                                                                                 - **Required Attribution**: "Weather data provided by OpenWeatherMap (https://openweathermap.org/)"
 
                                                                                 **API Code License:**
-                                                                                - API implementation © 2024 Smart Air Development Team
+                                                                                - API implementation © 2025 Smart Air Development Team
                                                                                 - Licensed under [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 
-                                                                                **Usage Terms:**
-                                                                                - ✅ Free for personal, educational, and commercial use
-                                                                                - ✅ No API key required for public endpoints
-                                                                                - ✅ No rate limiting (fair use policy applies)
-                                                                                - ⚠️ Attribution to OpenWeatherMap is required when using the data
-                                                                                - ⚠️ Data provided "as-is" without warranty
+                                                                                **Usage Terms (ODbL):**
+                                                                                - ✅ **Share**: Copy and distribute the data
+                                                                                - ✅ **Create**: Produce works from the data
+                                                                                - ✅ **Adapt**: Modify, transform and build upon the data
+                                                                                - ⚠️ **Attribution**: You must attribute the data source
+                                                                                - ⚠️ **Share-Alike**: If you adapt the data, you must distribute under the same license
+                                                                                - ⚠️ **Keep Open**: If you redistribute the data, you must keep the license intact
 
                                                                                 ### 🌐 NGSI-LD Compliance
                                                                                 This API follows [ETSI NGSI-LD specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.04.01_60/gs_cim009v010401p.pdf)
