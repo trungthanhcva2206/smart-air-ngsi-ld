@@ -8,12 +8,12 @@ Hệ thống theo dõi và quản lý dữ liệu chất lượng không khí d�
 ## 📋 Mục lục
 
 - [Giới thiệu](#-giới-thiệu)
-- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+- [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
 - [Tính năng](#-tính-năng)
 - [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
 - [Cài đặt nhanh](#-cài-đặt-nhanh)
 - [Cài đặt chi tiết](#-cài-đặt-chi-tiết)
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
 - [Lịch sử thay đổi](#-lịch-sử-thay-đổi)
 - [Đóng góp](#-đóng-góp)
 - [Giấy phép](#-giấy-phép)
@@ -252,6 +252,7 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 <p align="center">
   <a href="#giới-thiệu">Về đầu trang ↑</a>
 </p>
+
 
 
 
