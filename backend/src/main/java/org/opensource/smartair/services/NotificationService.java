@@ -61,7 +61,7 @@ public class NotificationService {
     private int throttleMinutes;
 
     /**
-     * Gửi cảnh báo chất lượng không khí đến tất cả residents
+     * Gửi cảnh báo chất lượng không khí đến residents theo dõi district đó
      * CHỈ gửi khi AQI ở mức poor (4) hoặc very poor (5)
      * VÀ chỉ gửi 1 lần trong khoảng THROTTLE_MINUTES (mặc định 180 phút)
      * 
@@ -88,20 +88,26 @@ public class NotificationService {
         }
 
         // Lấy tất cả residents đã verify và bật notification (JPA với JOIN FETCH)
-        List<Resident> residents = residentRepository.findVerifiedResidentsWithNotificationEnabled();
+        List<Resident> allResidents = residentRepository.findVerifiedResidentsWithNotificationEnabled();
 
-        if (residents.isEmpty()) {
-            log.warn("No residents found to send air quality alert");
+        // FILTER chỉ lấy residents subscribe district này
+        List<Resident> subscribedResidents = allResidents.stream()
+                .filter(resident -> resident.getStations().stream()
+                        .anyMatch(station -> station.getDistrict().equals(district)))
+                .toList();
+
+        if (subscribedResidents.isEmpty()) {
+            log.info("No residents subscribed to {} for air quality alert", district);
             return;
         }
 
         log.info("Sending air quality alert for {} (AQI: {}, Level: {}) to {} residents",
                 district, airQuality.getAirQualityIndex(), airQuality.getAirQualityLevel(),
-                residents.size());
+                subscribedResidents.size());
 
         // Gửi email đến từng resident
         int successCount = 0;
-        for (Resident resident : residents) {
+        for (Resident resident : subscribedResidents) {
             try {
                 emailService.sendAirQualityAlert(
                         resident.getUser().getEmail(),
@@ -117,7 +123,7 @@ public class NotificationService {
         lastAlertTimestamps.put(district, LocalDateTime.now());
 
         log.info("Successfully sent air quality alerts to {}/{} residents for {}",
-                successCount, residents.size(), district);
+                successCount, subscribedResidents.size(), district);
     }
 
     /**
