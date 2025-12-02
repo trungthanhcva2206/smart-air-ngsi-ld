@@ -260,6 +260,7 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 
 - Sử dụng [GitHub Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues) để báo lỗi
 - Tham gia [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions) để thảo luận
+- Để tìm hiểu sâu hơn về hệ thống, xem tài liệu đầy đủ trên Wiki: [Xem Wiki Documentation](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
 
 ---
 
@@ -270,5 +271,6 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 <p align="center">
   <a href="#giới-thiệu">Về đầu trang ↑</a>
 </p>
+
 
 
