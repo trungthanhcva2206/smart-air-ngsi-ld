@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.blynk
+.venv/
+venv/
+ENV/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Logs
+*.log
+etl.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Mosquitto MQTT Broker
+mosquitto/data/*.db
+mosquitto/log/*.log
+
+route-finding/hanoi_road_network.graphml

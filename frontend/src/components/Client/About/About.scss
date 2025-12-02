@@ -1,0 +1,62 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @Project AirTrack
+ * @Authors 
+ * - TT (trungthanhcva2206@gmail.com)
+ * - Tankchoi (tadzltv22082004@gmail.com)
+ * - Panh (panh812004.apn@gmail.com)
+ * @Copyright (C) 2025 CHK. All rights reserved
+ * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
+*/
+
+.about-page {
+    .feature-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+        .icon-wrapper {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        &:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+        }
+    }
+
+    .team-card {
+        transition: border-color 0.3s ease;
+
+        &:hover {
+            border: 1px solid var(--bs-primary) !important;
+        }
+
+        .avatar-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #6a5cd8 0%, #85dbd9 100%);
+        }
+
+        a:hover {
+            color: var(--bs-primary) !important;
+        }
+    }
+
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+}

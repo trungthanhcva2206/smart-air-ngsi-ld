@@ -1,0 +1,228 @@
+version: "3.8"
+
+services:
+  # MongoDB for Orion-LD and IoT Agent
+  mongo-db:
+    image: mongo:4.4
+    hostname: mongo-db
+    container_name: db-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-db-data:/data/db
+      - mongo-db-config:/data/configdb
+    environment:
+      - MONGO_INITDB_DATABASE=orion
+    command: --nojournal
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+  # Eclipse Mosquitto MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    hostname: mosquitto
+    container_name: mqtt-mosquitto
+    ports:
+      - "1883:1883"  # MQTT
+      - "9001:9001"  # WebSocket
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    command: mosquitto -c /mosquitto-no-auth.conf
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FIWARE IoT Agent JSON
+  iot-agent:
+    image: fiware/iotagent-json:latest
+    hostname: iot-agent
+    container_name: fiware-iot-agent
+    depends_on:
+      - mongo-db
+      - mosquitto
+      - orion
+    ports:
+      - "4041:4041"  # Northbound (provisioning API)
+      - "7896:7896"  # Southbound HTTP (device measurements)
+    environment:
+      - IOTA_CB_HOST=orion
+      - IOTA_CB_PORT=1026
+      - IOTA_CB_NGSI_VERSION=ld
+      - IOTA_NORTH_PORT=4041
+      - IOTA_REGISTRY_TYPE=mongodb
+      - IOTA_MONGO_HOST=mongo-db
+      - IOTA_MONGO_PORT=27017
+      - IOTA_MONGO_DB=iotagent
+      - IOTA_HTTP_PORT=7896
+      - IOTA_PROVIDER_URL=http://iot-agent:4041
+      - IOTA_MQTT_HOST=mosquitto
+      - IOTA_MQTT_PORT=1883
+      - IOTA_MQTT_PROTOCOL=mqtt
+      - IOTA_LOG_LEVEL=DEBUG
+      - IOTA_TIMESTAMP=true
+      - IOTA_AUTOCAST=true
+      - IOTA_DEFAULT_RESOURCE=/iot/json
+      - IOTA_JSON_LD_CONTEXT=https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld
+      - IOTA_FALLBACK_TENANT=hanoi
+    healthcheck:
+      test: curl --fail -s http://localhost:4041/iot/about || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Orion-LD Context Broker
+  orion:
+    image: fiware/orion-ld:latest
+    hostname: orion
+    container_name: fiware-orion
+    depends_on:
+      - mongo-db
+    ports:
+      - "1026:1026"
+    environment:
+      - ORIONLD_MONGO_HOST=mongo-db
+      - ORIONLD_MONGO_DB=orion
+      - ORIONLD_PORT=1026
+      - ORIONLD_MULTI_SERVICE=TRUE
+      - ORIONLD_DISABLE_FILE_LOG=TRUE
+      - ORIONLD_LOG_LEVEL=INFO
+    command: -dbhost mongo-db -logLevel INFO -forwarding
+    healthcheck:
+      test: curl --fail -s http://localhost:1026/version || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # QuantumLeap Time Series Data API
+  quantumleap:
+    image: orchestracities/quantumleap:1.0.0
+    hostname: quantumleap
+    container_name: fiware-quantumleap
+    depends_on:
+      - timescale-db
+      - redis-cache
+    ports:
+      - "8668:8668"
+    environment:
+      - QL_DEFAULT_DB=timescale
+      - POSTGRES_HOST=timescale-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=quantumleap
+      - POSTGRES_DB_USER=quantumleap
+      - POSTGRES_DB_PASS=quantumleap
+      - POSTGRES_USE_SSL=False
+      - USE_GEOCODING=False
+      - CACHE_QUERIES=True
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - LOGLEVEL=INFO
+    healthcheck:
+      test: curl --fail -s http://localhost:8668/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # TimescaleDB for Time Series Storage
+  timescale-db:
+    image: timescale/timescaledb-ha:pg15-latest
+    hostname: timescale-db
+    container_name: db-timescale
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=quantumleap
+      - POSTGRES_PASSWORD=quantumleap
+      - POSTGRES_DB=quantumleap
+    volumes:
+      - timescale-db-data:/var/lib/postgresql/data
+      - ./init-postgis.sh:/docker-entrypoint-initdb.d/01-init-postgis.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantumleap"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache for QuantumLeap
+  redis-cache:
+    image: redis:7-alpine
+    hostname: redis-cache
+    container_name: cache-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-cache-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana for Data Visualization
+  grafana:
+    image: grafana/grafana:10.2.2
+    hostname: grafana
+    container_name: grafana
+    depends_on:
+      - timescale-db
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  # MySQL Database for Spring Boot Backend
+  mysql-db:
+    image: mysql:8.0
+    hostname: mysql-db
+    container_name: db-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=smartair2024
+      - MYSQL_DATABASE=smartair_db
+      - MYSQL_USER=smartair
+      - MYSQL_PASSWORD=smartair2024
+    volumes:
+      - mysql-db-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psmartair2024"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongo-db-data:
+    driver: local
+  mongo-db-config:
+    driver: local
+  timescale-db-data:
+    driver: local
+  redis-cache-data:
+    driver: local
+  grafana-data:
+    driver: local
+  mysql-db-data:
+    driver: local
+
+networks:
+  default:
+    name: fiware-network
+    driver: bridge

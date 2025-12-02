@@ -1,0 +1,833 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @Project smart-air-ngsi-ld
+ * @Authors 
+ *    - TT (trungthanhcva2206@gmail.com)
+ *    - Tankchoi (tadzltv22082004@gmail.com)
+ *    - Panh (panh812004.apn@gmail.com)
+ * @Copyright (C) 2025 CHK. All rights reserved
+ * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
+*/
+import { Map as MapGL, Source, Layer, Marker } from '@vis.gl/react-maplibre';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import hanoiGeoJSONUrl from '../../../assets/ha_noi_with_latlon2.geojson?url';
+
+const hanoiCenter = [105.84, 21.035];
+const API_URL = import.meta.env.VITE_API_ROUTE_URL || 'http://127.0.0.1:5000';
+
+const Map = () => {
+  const [geoData, setGeoData] = useState(null);
+  const [hoveredFeature, setHoveredFeature] = useState(null);
+  
+  const [startAddress, setStartAddress] = useState('');
+  const [endAddress, setEndAddress] = useState('');
+  
+  // State cho autocomplete
+  const [startSuggestions, setStartSuggestions] = useState([]);
+  const [endSuggestions, setEndSuggestions] = useState([]);
+  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
+  const [showEndSuggestions, setShowEndSuggestions] = useState(false);
+  const [isSearchingStart, setIsSearchingStart] = useState(false);
+  const [isSearchingEnd, setIsSearchingEnd] = useState(false);
+  
+  const [startPoint, setStartPoint] = useState(null);
+  const [endPoint, setEndPoint] = useState(null);
+  
+  const [cleanRoute, setCleanRoute] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [directions, setDirections] = useState(null);
+  const [routeOptions, setRouteOptions] = useState([]); // [{ id:'wind'|'short', title, distance_m, time_min, pm25_avg, geojson }]
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(null);
+  const [colorMode, setColorMode] = useState('pm2_5');
+
+  const [is3D, setIs3D] = useState(false);
+  const mapRef = useRef(null);
+  
+  // Refs for debouncing
+  const startDebounceRef = useRef(null);
+  const endDebounceRef = useRef(null);
+
+  // Tải GeoJSON và dữ liệu môi trường
+  useEffect(() => {
+    const p1 = fetch(hanoiGeoJSONUrl).then((res) => res.json());
+    const p2 = fetch(`${API_URL}/api/get-env`).then((res) => res.json());
+
+    Promise.all([p1, p2])
+      .then(([geoData, envData]) => {
+        const dataWithEnv = {
+          ...geoData,
+          features: geoData.features.map((f) => {
+            const props = envData[f.properties['Tên đơn vị']] || { 
+              NO: 0, O3: 0, NO2: 0, NOx: 0, SO2: 0, pm2_5: 0, pm10: 0, nh3: 0, windSpeed: 0
+            };
+            return {
+              ...f,
+              properties: {
+                ...f.properties,
+                NO: props.NO || 0,
+                O3: props.O3 || 0,
+                NO2: props.NO2 || 0,
+                NOx: props.NOx || 0,
+                SO2: props.SO2 || 0,
+                pm2_5: props.pm2_5 || 0,
+                pm10: props.pm10 || 0,
+                nh3: props.nh3 || 0,
+                windSpeed: props.windSpeed || 0,
+              },
+            };
+          }),
+        };
+        setGeoData(dataWithEnv);
+      })
+      .catch((err) => console.error('Lỗi tải dữ liệu:', err));
+  }, []);
+
+  // Hàm tìm kiếm gợi ý địa điểm với useCallback
+  const searchAddressSuggestions = useCallback(async (query, setSuggestions, setShow, setSearching) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      setShow(false);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    const searchQuery = encodeURIComponent(`${query}, Hanoi, Vietnam`);
+    const url = `https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=5&addressdetails=1`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'SmartAirNGSI-LD/1.0'
+        }
+      });
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setSuggestions(data);
+        setShow(true);
+      } else {
+        setSuggestions([]);
+        setShow(false);
+      }
+    } catch (err) {
+      console.error('Lỗi tìm kiếm địa điểm:', err);
+      setSuggestions([]);
+      setShow(false);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  // Xử lý thay đổi input điểm đi với debouncing
+  const handleStartAddressChange = (value) => {
+    setStartAddress(value);
+    
+    // Xóa điểm và route nếu input trống
+    if (value.trim() === '') {
+      setStartPoint(null);
+      setCleanRoute(null);
+      setDirections(null);
+    } else {
+      setStartPoint(null);
+    }
+    
+    if (startDebounceRef.current) {
+      clearTimeout(startDebounceRef.current);
+    }
+
+    if (value.length >= 3) {
+      setIsSearchingStart(true);
+      startDebounceRef.current = setTimeout(() => {
+        searchAddressSuggestions(
+          value, 
+          setStartSuggestions, 
+          setShowStartSuggestions,
+          setIsSearchingStart
+        );
+      }, 300);
+    } else {
+      setStartSuggestions([]);
+      setShowStartSuggestions(false);
+      setIsSearchingStart(false);
+    }
+  };
+
+  // Xử lý thay đổi input điểm đến với debouncing
+  const handleEndAddressChange = (value) => {
+    setEndAddress(value);
+    
+    // Xóa điểm và route nếu input trống
+    if (value.trim() === '') {
+      setEndPoint(null);
+      setCleanRoute(null);
+      setDirections(null);
+    } else {
+      setEndPoint(null);
+    }
+    
+    if (endDebounceRef.current) {
+      clearTimeout(endDebounceRef.current);
+    }
+
+    if (value.length >= 3) {
+      setIsSearchingEnd(true);
+      endDebounceRef.current = setTimeout(() => {
+        searchAddressSuggestions(
+          value, 
+          setEndSuggestions, 
+          setShowEndSuggestions,
+          setIsSearchingEnd
+        );
+      }, 300);
+    } else {
+      setEndSuggestions([]);
+      setShowEndSuggestions(false);
+      setIsSearchingEnd(false);
+    }
+  };
+
+  // Cleanup debounce timers
+  useEffect(() => {
+    return () => {
+      if (startDebounceRef.current) clearTimeout(startDebounceRef.current);
+      if (endDebounceRef.current) clearTimeout(endDebounceRef.current);
+    };
+  }, []);
+
+  // Xử lý chọn gợi ý
+  const handleSelectSuggestion = (suggestion, isStart) => {
+    const displayName = suggestion.display_name;
+    if (isStart) {
+      setStartAddress(displayName);
+      setStartPoint({ lng: parseFloat(suggestion.lon), lat: parseFloat(suggestion.lat) });
+      setShowStartSuggestions(false);
+      setStartSuggestions([]);
+      setIsSearchingStart(false);
+    } else {
+      setEndAddress(displayName);
+      setEndPoint({ lng: parseFloat(suggestion.lon), lat: parseFloat(suggestion.lat) });
+      setShowEndSuggestions(false);
+      setEndSuggestions([]);
+      setIsSearchingEnd(false);
+    }
+  };
+
+  const geocodeAddress = async (address) => {
+    const query = encodeURIComponent(`${address}, Hanoi, Vietnam`);
+    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'SmartAirNGSI-LD/1.0'
+        }
+      });
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return { lng: parseFloat(data[0].lon), lat: parseFloat(data[0].lat) };
+      }
+      return null;
+    } catch (err) {
+      console.error('Lỗi Geocoding:', err);
+      return null;
+    }
+  };
+
+  // ...existing code...
+  const handleFindRoute = async () => {
+    if (!startAddress || !endAddress) {
+      setError('Vui lòng nhập cả điểm đi và điểm đến.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setCleanRoute(null);
+    setDirections(null);
+    setRouteOptions([]);
+    setSelectedRouteIndex(null);
+
+    let startCoords = startPoint;
+    let endCoords = endPoint;
+
+    if (!startCoords) {
+      startCoords = await geocodeAddress(startAddress);
+      if (!startCoords) {
+        setError(`Không tìm thấy địa chỉ: ${startAddress}`);
+        setIsLoading(false);
+        return;
+      }
+      setStartPoint(startCoords);
+    }
+
+    if (!endCoords) {
+      endCoords = await geocodeAddress(endAddress);
+      if (!endCoords) {
+        setError(`Không tìm thấy địa chỉ: ${endAddress}`);
+        setIsLoading(false);
+        return;
+      }
+      setEndPoint(endCoords);
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/find-both-routes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start: [startCoords.lng, startCoords.lat], end: [endCoords.lng, endCoords.lat] })
+      });
+      const j = await response.json();
+      if (!response.ok) throw new Error(j.error || 'Lỗi server');
+      const wind = j.wind;
+      const short = j.short;
+
+      const opts = [
+        { id: 'wind', title: 'Sạch nhất', distance_m: wind.distance_m, time_min: wind.time_min, pm25_avg: wind.pm25_avg, geojson: wind.geojson },
+        { id: 'short', title: 'Nhanh nhất', distance_m: short.distance_m, time_min: short.time_min, pm25_avg: short.pm25_avg, geojson: short.geojson },
+      ];
+      setRouteOptions(opts);
+      // tự động chọn phương án đầu (có thể để null nếu muốn)
+      setSelectedRouteIndex(0);
+      // hiển thị đường đầu tiên tạm thời trên map
+      setCleanRoute(opts[0].geojson);
+      setDirections(null);
+    } catch (err) {
+      console.error('Lỗi tìm đường:', err);
+      setError(`Lỗi: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectRoute = async (idx) => {
+    const opt = routeOptions[idx];
+    if (!opt) return;
+    setSelectedRouteIndex(idx);
+    setCleanRoute(opt.geojson);
+    setDirections(null);
+    // lấy directions chi tiết từ endpoint /api/find-route (để có steps)
+    try {
+      const res = await fetch(`${API_URL}/api/find-route`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: [startPoint.lng, startPoint.lat],
+          end: [endPoint.lng, endPoint.lat],
+          mode: opt.id === 'wind' ? 'wind' : 'short'
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.directions) {
+        setDirections(data.directions);
+        // cập nhật route geo nếu server trả route (đồng bộ)
+        if (data.route_geojson) setCleanRoute(data.route_geojson);
+      } else {
+        setDirections([]);
+      }
+    } catch (e) {
+      console.warn('Không thể lấy chỉ dẫn chi tiết:', e);
+      setDirections([]);
+    }
+  };
+
+  if (!geoData) return <div style={{padding: '20px'}}>Đang tải bản đồ và dữ liệu môi trường...</div>;
+
+  const colorConfigs = {
+    'none': {
+      stops: [],
+      colors: [],
+      label: 'Không phân vùng'
+    },
+    'pm2_5': {
+      stops: [0, 12, 25, 35, 50, 75],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'PM2.5 (Bụi mịn)'
+    },
+    'pm10': {
+      stops: [0, 25, 50, 75, 100, 150],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'PM10 (Bụi thô)'
+    },
+    'nh3': {
+      stops: [0, 50, 100, 150, 200, 300],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'NH3 (Amoniac)'
+    },
+    'windSpeed': {
+      stops: [0, 2, 4, 6, 8, 10],
+      colors: ['#d32f2f', '#ff5722', '#ff9800', '#ffeb3b', '#76ff03', '#00e676'],
+      label: 'Tốc độ gió (m/s)'
+    },
+    'NO2': {
+      stops: [0, 40, 80, 120, 160, 200],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'NO2'
+    },
+    'NO': {
+      stops: [0, 20, 40, 60, 80, 100],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'NO'
+    },
+    'O3': {
+      stops: [0, 50, 100, 150, 200, 250],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'O3 (Ozone)'
+    },
+    'NOx': {
+      stops: [0, 30, 60, 90, 120, 150],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'NOx'
+    },
+    'SO2': {
+      stops: [0, 20, 40, 60, 80, 100],
+      colors: ['#00e676', '#76ff03', '#ffeb3b', '#ff9800', '#ff5722', '#d32f2f'],
+      label: 'SO2'
+    }
+  };
+
+  const currentConfig = colorConfigs[colorMode];
+  
+  const fillColorExpression = 
+    colorMode === 'none'
+    ? 'transparent'
+    : [
+        'interpolate', 
+        ['linear'], 
+        ['get', colorMode],
+        ...currentConfig.stops.flatMap((stop, i) => [stop, currentConfig.colors[i]])
+      ];
+  
+  const extrusionHeightExpression = 
+    (colorMode === 'none' || !is3D)
+    ? 0
+    : [
+        'max',
+        0,
+        ['*', ['get', colorMode], 100]
+      ];
+
+  const POSITRON_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+  const STREETS_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+
+  const mapStyle = colorMode === 'none' ? STREETS_STYLE : POSITRON_STYLE;
+
+  // ...existing code...
+  return (
+    <div style={{ width: '100%', height: 'calc(100vh - 56px)', position: 'relative' }}>
+      
+
+      {/* Bảng điều khiển (đã gộp/clean - giữ 1 bản) */}
+      <div style={{
+        position: 'absolute', top: 20, left: 20, zIndex: 999, 
+        backgroundColor: 'white', padding: '14px', borderRadius: '12px',
+        boxShadow: '0 10px 30px rgba(20,20,50,0.08)', fontFamily: 'Inter, Roboto, Arial, sans-serif',
+        minWidth: '320px', maxWidth: '400px'
+      }}>
+        <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
+          <div style={{fontSize:20}}>🗺️</div>
+          <div style={{fontWeight:700, fontSize:16, color:'#0b3d91'}}>Tìm đường ít ô nhiễm</div>
+        </div>
+
+          {/* Inputs (start / end) */}
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <div style={{position:'relative'}}>
+            <input
+              value={startAddress}
+              onChange={(e)=>handleStartAddressChange(e.target.value)}
+              placeholder="Điểm đi (tối thiểu 3 ký tự)"
+              style={{padding:10, borderRadius:8, border:'1px solid #e6e9ee', width:'100%'}}
+              onFocus={()=>{ if (startSuggestions.length) setShowStartSuggestions(true); }}
+            />
+            {showStartSuggestions && startSuggestions.length > 0 && (
+              <div style={{
+                position:'absolute',
+                top:'44px',
+                left:0,
+                right:0,
+                background:'#fff',
+                border:'1px solid #e6e9ee',
+                borderRadius:8,
+                maxHeight:200,
+                overflowY:'auto',
+                zIndex: 1000,
+                boxShadow:'0 8px 20px rgba(0,0,0,0.08)'
+              }}>
+                {startSuggestions.map((s, i) => (
+                  <div key={i}
+                       onMouseDown={(ev)=>{ ev.preventDefault(); handleSelectSuggestion(s, true); }}
+                       style={{padding:8, cursor:'pointer', fontSize:13, borderBottom: i < startSuggestions.length-1 ? '1px solid #f2f2f2' : 'none'}}>
+                    {s.display_name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{position:'relative'}}>
+            <input
+              value={endAddress}
+              onChange={(e)=>handleEndAddressChange(e.target.value)}
+              placeholder="Điểm đến (tối thiểu 3 ký tự)"
+              style={{padding:10, borderRadius:8, border:'1px solid #e6e9ee', width:'100%'}}
+              onFocus={()=>{ if (endSuggestions.length) setShowEndSuggestions(true); }}
+            />
+            {showEndSuggestions && endSuggestions.length > 0 && (
+              <div style={{
+                position:'absolute',
+                top:'44px',
+                left:0,
+                right:0,
+                background:'#fff',
+                border:'1px solid #e6e9ee',
+                borderRadius:8,
+                maxHeight:200,
+                overflowY:'auto',
+                zIndex: 1000,
+                boxShadow:'0 8px 20px rgba(0,0,0,0.08)'
+              }}>
+                {endSuggestions.map((s, i) => (
+                  <div key={i}
+                       onMouseDown={(ev)=>{ ev.preventDefault(); handleSelectSuggestion(s, false); }}
+                       style={{padding:8, cursor:'pointer', fontSize:13, borderBottom: i < endSuggestions.length-1 ? '1px solid #f2f2f2' : 'none'}}>
+                    {s.display_name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button onClick={handleFindRoute} disabled={isLoading} style={{padding:10, borderRadius:10, background:'#0A79DF', color:'#fff', fontWeight:700, border:0, cursor:isLoading?'not-allowed':'pointer'}}>
+            {isLoading ? '🔍 Đang tìm...' : '🔍 Tìm lộ trình tối ưu'}
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && <div style={{marginTop:10, padding:8, background:'#ffebee', color:'#d32f2f', borderRadius:6}}>{error}</div>}
+
+        {/* Route options */}
+        <div style={{marginTop:12}}>
+          <div style={{fontSize:13, color:'#6b7280', fontWeight:600, marginBottom:8}}>Chọn lộ trình:</div>
+          <div style={{display:'flex', flexDirection:'column', gap:8}}>
+            {routeOptions.length === 0 && <div style={{color:'#777', fontSize:13}}>Chưa có lộ trình — bấm "Tìm lộ trình tối ưu".</div>}
+            {routeOptions.map((opt, idx) => (
+              <div key={opt.id} onClick={()=>handleSelectRoute(idx)} style={{
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                padding:10, borderRadius:10, border: selectedRouteIndex===idx ? '2px solid #27ae60' : '1px solid #eef2f7',
+                background: selectedRouteIndex===idx ? '#f0fdf4' : '#fff', cursor:'pointer'
+              }}>
+                <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                  <div style={{fontSize:18}}>{opt.id==='wind' ? '🍃' : '🚀'}</div>
+                  <div>
+                    <div style={{fontWeight:600}}>{opt.title}</div>
+                    <div style={{fontSize:12, color:'#6b7280'}}>PM2.5 (TB): {(opt.pm25_avg!=null)?opt.pm25_avg.toFixed(1):'—'} µg/m³ • ~{opt.time_min?Math.round(opt.time_min):'—'} phút</div>
+                  </div>
+                </div>
+                <div style={{fontWeight:700}}>{opt.distance_m? (opt.distance_m/1000).toFixed(1)+' km' : '—'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Selected route details & directions */}
+        {selectedRouteIndex !== null && routeOptions[selectedRouteIndex] && (
+          <div style={{marginTop:12, padding:10, borderRadius:8, background:'#f5f5f5', border:'1px solid #e0e0e0', maxHeight:220, overflowY:'auto'}}>
+            <div style={{fontSize:13, fontWeight:700, color:'#0A79DF', marginBottom:8}}>📋 Thông số lộ trình</div>
+            <div style={{fontSize:13, marginBottom:8}}>
+              <div><strong>{routeOptions[selectedRouteIndex].title}</strong></div>
+              <div>Độ dài: {routeOptions[selectedRouteIndex].distance_m ? (routeOptions[selectedRouteIndex].distance_m/1000).toFixed(2)+' km' : '—'}</div>
+              <div>Thời gian: {routeOptions[selectedRouteIndex].time_min ? Math.round(routeOptions[selectedRouteIndex].time_min)+' phút' : '—'}</div>
+              <div>PM2.5 (TB): {(routeOptions[selectedRouteIndex].pm25_avg!=null)?routeOptions[selectedRouteIndex].pm25_avg.toFixed(1)+' µg/m³':'—'}</div>
+            </div>
+            <div style={{fontSize:13, fontWeight:700, marginBottom:6}}>📋 Chỉ dẫn</div>
+            <ol style={{paddingLeft:18, margin:0, fontSize:13, lineHeight:1.6}}>
+              {directions && directions.length>0 ? directions.map((d,i)=> <li key={i}>{d}</li>) : <li>Chưa có chỉ dẫn chi tiết. Bấm vào lộ trình để tải chỉ dẫn.</li>}
+            </ol>
+          </div>
+        )}
+      </div>
+
+
+      <MapGL
+        ref={mapRef}
+        initialViewState={{
+          longitude: hanoiCenter[0],
+          latitude: hanoiCenter[1],
+          zoom: 12,
+          pitch: 0,
+          bearing: 0
+        }}
+        style={{ width: '100%', height: '100%' }}
+        mapStyle={mapStyle}
+        onMouseMove={(e) => {
+          if (!is3D && e.features && e.features.length > 0 && e.features[0].layer.id === 'hanoi-fill') {
+            setHoveredFeature(e.features[0]);
+          } else {
+            setHoveredFeature(null);
+          }
+        }}
+        interactiveLayerIds={['hanoi-fill']}
+      >
+        
+        <Source id="hanoi-zones" type="geojson" data={geoData}>
+          
+          <Layer
+            id="hanoi-fill"
+            type="fill"
+            paint={{
+              'fill-color': fillColorExpression,
+              'fill-opacity': (colorMode === 'none' || is3D) ? 0 : 0.6, 
+            }}
+          />
+
+          <Layer
+            id="hanoi-3d-extrusion"
+            type="fill-extrusion"
+            paint={{
+              'fill-extrusion-color': fillColorExpression,
+              'fill-extrusion-opacity': (colorMode === 'none' || !is3D) ? 0 : 0.7, 
+              'fill-extrusion-height': extrusionHeightExpression,
+              'fill-extrusion-base': 0,
+            }}
+          />
+
+          <Layer
+            id="hanoi-outline"
+            type="line"
+            paint={{ 
+              'line-color': '#1976d2', 
+              'line-width': 1,
+              'line-opacity': colorMode === 'none' ? 0 : 0.3,
+            }}
+          />
+        </Source>
+
+        {cleanRoute && (
+          <Source id="clean-route" type="geojson" data={cleanRoute}>
+            <Layer
+              id="route-line-layer"
+              type="line"
+              paint={{
+                'line-color': '#0A79DF',
+                'line-width': 5,
+                'line-opacity': 0.95,
+              }}
+            />
+          </Source>
+        )}
+        
+        {startPoint && <Marker longitude={startPoint.lng} latitude={startPoint.lat} color="green" />}
+        {endPoint && <Marker longitude={endPoint.lng} latitude={endPoint.lat} color="red" />}
+
+      </MapGL>
+
+      {/* CSS Animation cho spinner */}
+      <style>{`
+        @keyframes spin {
+          from { transform: translateY(-50%) rotate(0deg); }
+          to { transform: translateY(-50%) rotate(360deg); }
+        }
+      `}</style>
+
+      {/* Bộ chọn chế độ tô màu */}
+      <div style={{
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        zIndex: 1,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        padding: '12px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        minWidth: '200px',
+        fontFamily: 'sans-serif'
+      }}>
+        <div style={{
+          fontSize: '13px',
+          fontWeight: '600',
+          marginBottom: '10px',
+          color: '#333',
+          borderBottom: '2px solid #e3f2fd',
+          paddingBottom: '6px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>🎨 Chế độ hiển thị bản đồ</span>
+          <button
+            onClick={() => {
+              if (is3D) { 
+                mapRef.current?.easeTo({ pitch: 0, duration: 500 });
+              }
+              setIs3D(!is3D);
+            }}
+            style={{
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: '600',
+              backgroundColor: is3D ? '#0A79DF' : '#f0f0f0',
+              color: is3D ? 'white' : '#333',
+              border: is3D ? '1px solid #0A79DF' : '1px solid #ccc',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {is3D ? 'Tắt 3D' : 'Bật 3D'}
+          </button>
+        </div>
+
+        {is3D && (
+          <div style={{
+            fontSize: '11px', 
+            color: '#666', 
+            backgroundColor: '#e3f2fd', 
+            padding: '6px', 
+            borderRadius: '4px', 
+            marginBottom: '8px',
+            textAlign: 'center'
+          }}>
+            Giữ <strong>Ctrl (hoặc ⌘) + Kéo chuột</strong> để nghiêng bản đồ
+          </div>
+        )}
+        
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '12px'}}>
+          {Object.entries(colorConfigs).map(([key, config]) => (
+            <button
+              key={key}
+              onClick={() => setColorMode(key)}
+              style={{
+                padding: '8px 10px',
+                backgroundColor: colorMode === key ? '#0A79DF' : '#f5f5f5',
+                color: colorMode === key ? 'white' : '#333',
+                border: colorMode === key ? '2px solid #0A79DF' : '1px solid #ddd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: colorMode === key ? '600' : '400',
+                transition: 'all 0.2s',
+                textAlign: 'center'
+              }}
+            >
+              {config.label}
+            </button>
+          ))}
+        </div>
+
+        {colorMode !== 'none' && (
+          <div style={{marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #e0e0e0'}}>
+            <div style={{fontSize: '11px', fontWeight: '600', marginBottom: '6px', color: '#666'}}>
+              Thang màu: {currentConfig.label}
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+              <div style={{
+                flex: 1,
+                height: '20px',
+                borderRadius: '4px',
+                background: `linear-gradient(to right, ${currentConfig.colors.join(', ')})`
+              }}></div>
+            </div>
+            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666', marginTop: '4px'}}>
+              <span>Tốt</span>
+              <span>Xấu</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tooltip */}
+      {hoveredFeature && colorMode !== 'none' && !is3D && (
+        <div style={{
+          position: 'absolute', 
+          bottom: 20, 
+          left: 20, 
+          zIndex: 1,
+          backgroundColor: 'rgba(255,255,255,0.98)', 
+          padding: '16px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          maxWidth: '340px',
+          fontFamily: 'sans-serif'
+        }}>
+          <div style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            marginBottom: '12px',
+            color: '#1976d2',
+            borderBottom: '2px solid #e3f2fd',
+            paddingBottom: '8px'
+          }}>
+            📍 {hoveredFeature.properties['Tên đơn vị']}
+          </div>
+          
+          <div style={{marginBottom: '12px'}}>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#666',
+              marginBottom: '6px'
+            }}>
+              🌫️ Chất lượng không khí:
+            </div>
+            
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px'}}>
+              <div style={{padding: '6px', backgroundColor: '#e8f5e9', borderRadius: '4px'}}>
+                <strong>NO:</strong> {hoveredFeature.properties.NO?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#e1f5fe', borderRadius: '4px'}}>
+                <strong>O3:</strong> {hoveredFeature.properties.O3?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#fff3e0', borderRadius: '4px'}}>
+                <strong>NO2:</strong> {hoveredFeature.properties.NO2?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#fce4ec', borderRadius: '4px'}}>
+                <strong>NOx:</strong> {hoveredFeature.properties.NOx?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#f3e5f5', borderRadius: '4px'}}>
+                <strong>SO2:</strong> {hoveredFeature.properties.SO2?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#ffebee', borderRadius: '4px'}}>
+                <strong>PM2.5:</strong> {hoveredFeature.properties.pm2_5?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#ede7f6', borderRadius: '4px'}}>
+                <strong>PM10:</strong> {hoveredFeature.properties.pm10?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#e0f2f1', borderRadius: '4px'}}>
+                <strong>NH3:</strong> {hoveredFeature.properties.nh3?.toFixed(2) ?? 'N/A'} µg/m³
+              </div>
+              <div style={{padding: '6px', backgroundColor: '#e8eaf6', borderRadius: '4px'}}>
+                <strong>🌬️ Gió:</strong> {hoveredFeature.properties.windSpeed?.toFixed(2) ?? 'N/A'} m/s
+              </div>
+            </div>
+          </div>
+          
+          <div style={{
+            fontSize: '12px',
+            color: '#666',
+            paddingTop: '8px',
+            borderTop: '1px solid #e0e0e0'
+          }}>
+            👥 Dân số: {hoveredFeature.properties['Dân số']?.toLocaleString() || 'N/A'}<br/>
+            📏 Diện tích: {hoveredFeature.properties['Diện tích'] || 'N/A'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Map;
