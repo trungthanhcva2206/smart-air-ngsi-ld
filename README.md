@@ -122,7 +122,7 @@ Hệ thống Extract-Transform-Load để xử lý dữ liệu cảm biến.
 ### ByLink Integration
 Tích hợp với hệ thống ByLink để thu thập dữ liệu.
 
-👉 [Xem hướng dẫn cài đặt ByLink](./bylink/README.md)
+👉 [Xem hướng dẫn cài đặt ByLink](./BlynkNotification/README.md)
 
 ### Backend API
 RESTful API server xử lý logic nghiệp vụ.
@@ -270,3 +270,4 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 <p align="center">
   <a href="#giới-thiệu">Về đầu trang ↑</a>
 </p>
+
