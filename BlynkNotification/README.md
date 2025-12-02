@@ -62,7 +62,7 @@ BlynkNotification/
 ### 2. Cài Đặt Dependencies
 
 ```bash
-cd D:\smart-air-ngsi-ld\BlynkNotification
+cd D:\smart-air-ngsi-ld
 pip install -r requirements.txt
 ```
 
@@ -76,27 +76,10 @@ python-dotenv==1.0.0
 
 ### 3. Cấu Hình
 
-Tạo file `config/.env.blynk`:
+Tạo file `config/.env.blynk` từ `config/.env.blynk.example`:
 
 ```bash
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-
-# Blynk IoT
-BLYNK_TOKEN=your_blynk_token_here
-BLYNK_SERVER=blynk.cloud
-
-# Orion-LD
-ORION_LD_URL=http://localhost:1026
-ORION_LD_TENANT=hanoi
-
-# Webhook (Windows + Docker Desktop)
-WEBHOOK_HOST=0.0.0.0
-WEBHOOK_PORT=4999
-WEBHOOK_URL=http://host.docker.internal:4999
-
-# Logging
-LOG_LEVEL=INFO
+copy .env.blynk.example .env.blynk
 ```
 
 ### 4. Setup Orion-LD Subscriptions
@@ -356,21 +339,6 @@ curl "https://blynk.cloud/external/api/get?token=YOUR_TOKEN&pin=V1"
 
 ---
 
-## 🤝 Contributing
-
-### Development Setup
-
-```bash
-# Clone repo
-git clone https://github.com/trungthanhcva2206/smart-air-ngsi-ld.git
-cd smart-air-ngsi-ld/BlynkNotification
-
-# Install dev dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-pytest tests/
-```
 
 ### Code Style
 
@@ -384,7 +352,7 @@ pytest tests/
 
 ```
 Licensed under the Apache License, Version 2.0
-Copyright (C) 2024 CHK. All rights reserved
+Copyright (C) 2025 CHK. All rights reserved
 ```
 
 ---
@@ -399,7 +367,7 @@ Copyright (C) 2024 CHK. All rights reserved
 
 ## 🔗 Links
 
-- **GitHub**: [smart-air-ngsi-ld](https://github.com/trungthanhcva2206/smart-air-ngsi-ld)
+- **GitHub**: [smart-air-ngsi-ld](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/BlynkNotification)
 - **Blynk**: [blynk.io](https://blynk.io/)
 - **NGSI-LD**: [ETSI Spec](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_cim009v010801p.pdf)
 - **Telegram Bots**: [@BotFather](https://t.me/botfather)
@@ -410,12 +378,6 @@ Copyright (C) 2024 CHK. All rights reserved
 
 Nếu gặp vấn đề, vui lòng:
 
-1. Kiểm tra [Troubleshooting](#-troubleshooting)
-2. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-3. Liên hệ authors
+1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
+2. Liên hệ authors
 
----
-
-<div align="center">
-  <b>Made with ❤️ in Vietnam 🇻🇳</b>
-</div>
