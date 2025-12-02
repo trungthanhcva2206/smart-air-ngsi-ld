@@ -1,0 +1,57 @@
+All Smart Air NGSI-LD code is Copyright by Trung Thanh (trungthanhcva2206).
+Repository: https://github.com/trungthanhcva2206/smart-air-ngsi-ld
+
+This program is free software; you can redistribute it and/or modify it under the terms of the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the Apache License 2.0 for more details.
+
+You should have received a copy of the Apache License 2.0 along with this program as the file LICENSE.txt;
+if not, please see http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+Smart Air NGSI-LD includes works under other copyright notices and distributed according to the terms of their respective licenses:
+
+Name                     Version        License            Description                                                      
+--------------------------------------------------------------------------------
+Node.js                  20.x           MIT                JavaScript runtime built on Chrome's V8 engine
+Express                  4.x            MIT                Fast, unopinionated web framework for Node.js
+MongoDB                  6.x            SSPL               NoSQL database for modern applications
+Mongoose                 8.x            MIT                MongoDB object modeling for Node.js
+React                    18.x           MIT                JavaScript library for building user interfaces
+Axios                    1.x            MIT                Promise-based HTTP client for browser and Node.js
+dotenv                   16.x           BSD-2-Clause       Environment variable loader for Node.js
+CORS                     2.x            MIT                Node.js CORS middleware
+Body-parser              1.x            MIT                Node.js body parsing middleware
+JWT (jsonwebtoken)       9.x            MIT                JSON Web Token implementation
+Bcrypt                   5.x            MIT                Password hashing library
+Chart.js                 4.x            MIT                JavaScript charting library
+Bootstrap                5.x            MIT                CSS framework for responsive web design
+Leaflet                  1.x            BSD-2-Clause       Open-source JavaScript library for maps
+
+For detailed license information, please refer to each component's license file in the node_modules directory or their respective repositories.
+
+================================================================================
+FIWARE COMPONENTS
+================================================================================
+
+This project integrates with FIWARE NGSI-LD Context Broker:
+- FIWARE Orion-LD                      AGPL-3.0           Context Broker for NGSI-LD
+  https://github.com/FIWARE/context.Orion-LD
+
+================================================================================
+ADDITIONAL NOTES
+================================================================================
+
+See copyright and license information at the header of each source code file for specific details.
+
+For questions regarding licensing, please contact: trungthanhcva2206@github.com
