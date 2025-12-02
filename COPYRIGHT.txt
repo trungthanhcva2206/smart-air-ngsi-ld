@@ -1,0 +1,80 @@
+All Smart Air NGSI-LD code is Copyright by Trung Thanh (trungthanhcva2206).
+Repository: https://github.com/trungthanhcva2206/smart-air-ngsi-ld
+
+This program is free software; you can redistribute it and/or modify it under the terms of the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the Apache License 2.0 for more details.
+
+You should have received a copy of the Apache License 2.0 along with this program as the file LICENSE.txt;
+if not, please see http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+Smart Air NGSI-LD includes works under other copyright notices and distributed according to the terms of their respective licenses.
+
+--------------------------------------------------------------------------------
+1. BACKEND (Java / Spring Boot)
+--------------------------------------------------------------------------------
+Name                    Version       License         Description
+Spring Boot             3.5.x         Apache-2.0      Java-based framework for building web apps
+Spring Security         6.x           Apache-2.0      Authentication and access-control framework
+Spring Data JPA         3.x           Apache-2.0      JPA repositories for Spring
+MySQL Connector/J       8.x           GPLv2           JDBC Type 4 driver for MySQL
+JJWT (JJWT)             0.12.x        Apache-2.0      JSON Web Token support for the JVM
+Lombok                  1.18.x        MIT             Java library to reduce boilerplate code
+SpringDoc OpenAPI       2.6.x         Apache-2.0      Library to automate the generation of API documentation
+Jakarta Mail            2.x           EPL-2.0         Java API for sending email
+
+--------------------------------------------------------------------------------
+2. AI & DATA SERVICE (Python)
+--------------------------------------------------------------------------------
+Name                    Version       License         Description
+Python                  3.x           PSF             Programming language
+Flask                   3.0.x         BSD-3-Clause    Lightweight WSGI web application framework
+Pandas                  2.2.x         BSD-3-Clause    Data analysis and manipulation library
+NumPy                   1.26.x        BSD-3-Clause    Fundamental package for scientific computing
+GeoPandas               1.0.x         BSD-3-Clause    Python tools for working with geospatial data
+OSMnx                   1.9.x         MIT             Download and analyze street networks from OpenStreetMap
+Shapely                 2.0.x         BSD-3-Clause    Manipulation and analysis of planar geometric objects
+Paho-MQTT               1.6.x         EPL-2.0         MQTT client class
+Requests                2.32.x        Apache-2.0      Simple HTTP library for Python
+Python-Telegram-Bot     21.7          LGPL-3.0        Wrapper for the Telegram Bot API
+
+--------------------------------------------------------------------------------
+3. FRONTEND (React / Vite)
+--------------------------------------------------------------------------------
+Name                    Version       License         Description
+React                   19.x          MIT             JavaScript library for building user interfaces
+Vite                    7.x           MIT             Next generation frontend tooling
+Bootstrap               5.3.x         MIT             CSS framework for responsive web design
+MapLibre GL             5.12.x        BSD-3-Clause    Library for rendering interactive maps (WebGL)
+Leaflet                 1.9.x         BSD-2-Clause    JavaScript library for interactive maps
+Recharts                3.4.x         MIT             Composable charting library built on React components
+Axios                   1.13.x        MIT             Promise-based HTTP client
+React-Icons             5.5.x         MIT             Include popular icons in your React projects
+React-Router-Dom        7.9.x         MIT             DOM bindings for React Router
+
+================================================================================
+FIWARE COMPONENTS
+================================================================================
+
+This project integrates with FIWARE NGSI-LD Context Broker:
+- FIWARE Orion-LD                     AGPL-3.0        Context Broker for NGSI-LD
+  https://github.com/FIWARE/context.Orion-LD
+
+================================================================================
+ADDITIONAL NOTES
+================================================================================
+
+See copyright and license information at the header of each source code file for specific details.
+
+For questions regarding licensing, please contact: trungthanhcva2206@github.com
