@@ -155,8 +155,11 @@ Dịch vụ tìm đường tối ưu dựa trên chất lượng không khí.
 
 ### Backend
 - **Python**: ETL pipeline, data processing
-- **Node.js**: API server
-- **Express.js**: Web framework
+- **Spring Boot**: 
+  - RESTful API endpoints for data access
+  - Business logic and service layer
+  - Integration with NGSI-LD Context Broker
+  - Real-time data processing and validation
 
 ### Frontend
 - **React**: UI framework
@@ -271,6 +274,7 @@ Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để b
 <p align="center">
   <a href="#-mục-lục">Về đầu trang ↑</a>
 </p>
+
 
 
 
