@@ -1,5 +1,5 @@
 # Prevent GitHub from detecting COPYRIGHT.txt as a license file
-COPYRIGHT.txt linguist-documentation
+COPYRIGHT.txt linguist-documentation -linguist-detectable linguist-generated=false
 
 # Optional: You can also add other documentation files
 *.md linguist-documentation
