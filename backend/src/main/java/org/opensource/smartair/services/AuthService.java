@@ -121,6 +121,8 @@ public class AuthService {
                                 .role(user.getRole())
                                 .isVerified(resident.getIsVerified())
                                 .subscribedDistricts(districts)
+                                .createdAt(resident.getCreatedAt())
+                                .updatedAt(resident.getUpdatedAt())
                                 .build();
         }
 
@@ -168,7 +170,9 @@ public class AuthService {
 
                         responseBuilder
                                         .isVerified(resident.getIsVerified())
-                                        .subscribedDistricts(districts);
+                                        .subscribedDistricts(districts)
+                                        .createdAt(resident.getCreatedAt())
+                                        .updatedAt(resident.getUpdatedAt());
                 } else {
                         // ADMIN không có resident profile
                         responseBuilder

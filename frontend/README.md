@@ -6,20 +6,24 @@
 Giao diện được xây dựng bằng **React + Vite**, sử dụng **GeoJSON**, **SSE**, và **RESTful API** để kết nối với backend.
 
 ## Preview
-- Bản đồ tương tác (Leaflet / Mapbox-style)
-- Chart realtime/ history với Recharts
+- Bản đồ tương tác (Leaflet + MapLibre GL)
+- Chart realtime/history với Recharts
 - Dashboard tổng quan với dữ liệu SSE
+- Hệ thống xác thực (Login/Register/Profile)
 - Trang Admin quản lý trạm – thiết bị – tài khoản
 - Tích hợp OpenAPI docs (iframe)
 
 ## Tech Stack
-- React 18 + Vite  
-- React Router v6  
-- SSE via EventSource  
-- Leaflet / react-leaflet  
-- Recharts  
-- Axios (interceptors + nprogress)  
-- Bootstrap 5 + SCSS  
+- React 19 + Vite 7
+- React Router v7
+- Redux Toolkit + Redux Persist (Authentication)
+- React Hook Form (Form validation)
+- SSE via EventSource
+- Leaflet / react-leaflet + MapLibre GL
+- Recharts
+- Axios (interceptors + nprogress)
+- Bootstrap 5 + SCSS
+- React Toastify (Notifications)
 - Docker (optional)
 
 ## Yêu cầu
@@ -28,11 +32,10 @@ Giao diện được xây dựng bằng **React + Vite**, sử dụng **GeoJSON*
 - Backend chạy tại http://localhost:8081
 
 ## Cấu hình môi trường
-Tạo file .env:
+Tạo file `.env` (copy từ `.env.example`):
 
-```
+```env
 VITE_API_URL=http://localhost:8081
-VITE_API_ROUTE_URL=http://127.0.0.1:5000
 ```
 
 ## Cài đặt & Chạy Dev
@@ -58,21 +61,36 @@ npm run preview
   assets/
   components/
     Client/
-    Admin/
-  hooks/
-  services/
-  utils/
+      Auth/          # Login, Register, Profile
+      Header/        # Navigation
+      StationMap/    # Map with platforms
+      StationDetail/ # Platform detail page
+      StationInfo/   # Info panel
+      Chart/         # Weather/AirQuality charts
+      Analysis/      # Analytics dashboard
+      AirQuality/    # Air quality page
+      OpenData/      # Open data page
+      About/         # About page
+      Map/           # Route planning (optional)
+    Admin/           # Admin dashboard
+  hooks/             # Custom SSE hooks
+  services/          # API services (auth, platform)
+  store/             # Redux store + slices
+  utils/             # Axios config, helpers
   App.jsx
   main.jsx
 ```
 
 ## SSE Hooks
-- usePlatformsSSE
-- useDistrictSSE
-- useWeatherHistory
-- useAirQualityHistory
-- useAggregatedDistrictHistory
-- useAirQualityMonitor
+- `usePlatformSSE` - Real-time platform/station updates
+- `useDistrictSSE` - Weather + Air quality for specific district
+- `useHistoricalSSE` - Historical weather/air quality data
+- `useAnalysisHistorySSE` - Analytics historical data
+- `useAirQualityMonitor` - Air quality monitoring
+
+## API Services
+- `authService` - Login, Register, Update Profile
+- `platformService` - Get platforms/stations
 
 ## Troubleshooting
 - Kiểm tra event-stream 200 khi SSE lỗi

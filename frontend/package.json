@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.0",
     "@vis.gl/react-maplibre": "^8.1.0",
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
@@ -19,11 +20,13 @@
     "react": "^19.1.1",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.1",
+    "react-hook-form": "^7.67.0",
     "react-icons": "^5.5.0",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.9.5",
     "react-toastify": "^11.0.5",
-    "recharts": "^3.4.1"
+    "recharts": "^3.4.1",
+    "redux-persist": "^6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

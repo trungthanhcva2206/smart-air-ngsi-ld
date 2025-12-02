@@ -27,6 +27,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.opensource.smartair.models.UserRole;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 /**
@@ -78,4 +79,14 @@ public class AuthResponseDTO {
      * Danh sách district đã subscribe
      */
     private Set<String> subscribedDistricts;
+
+    /**
+     * Ngày tạo tài khoản
+     */
+    private LocalDateTime createdAt;
+
+    /**
+     * Ngày cập nhật lần cuối
+     */
+    private LocalDateTime updatedAt;
 }

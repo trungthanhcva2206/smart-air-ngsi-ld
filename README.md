@@ -94,13 +94,17 @@ Dữ liệu được mô hình hóa theo chuẩn ontology **SOSA/SSN** (Sensor, 
   - Integration với QuantumLeap cho time-series data
 
 ### Frontend
-- **React 18**: UI framework với Hooks
-- **React Router**: Client-side routing
-- **React Leaflet**: Interactive maps
+- **React 19**: UI framework với Hooks
+- **Vite 7**: Build tool và dev server
+- **React Router v7**: Client-side routing
+- **Redux Toolkit**: State management
+- **Redux Persist**: Persistent authentication state
+- **React Hook Form**: Form validation
+- **React Leaflet + MapLibre GL**: Interactive maps
 - **Recharts**: Data visualization
 - **React Toastify**: Real-time notifications
-- **Axios**: HTTP client
-- **SCSS**: Styling
+- **Axios**: HTTP client với interceptors
+- **Bootstrap 5 + SCSS**: Styling framework
 
 ## ✨ Tính năng
 

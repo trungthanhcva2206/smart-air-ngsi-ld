@@ -62,6 +62,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Allow CORS preflight requests (OPTIONS)
+                        .requestMatchers(request -> "OPTIONS".equals(request.getMethod())).permitAll()
+
                         // Public endpoints
                         .requestMatchers("/api/auth/**", "/api/open/**", "/api/notify/**", "/api/sse/**",
                                 "/api/platforms/**", "/api/weather/**", "/api/airquality/**",

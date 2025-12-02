@@ -19,10 +19,25 @@
  * @Copyright (C) 2025 CHK. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 */
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { logout } from '../../../store/slices/authSlice';
+import { BsPersonCircle, BsChevronDown } from 'react-icons/bs';
+import { toast } from 'react-toastify';
 import './Header.scss';
 
 const Header = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+    const handleLogout = () => {
+        dispatch(logout());
+        navigate('/login');
+        toast.info('Đã đăng xuất');
+    };
+
     return (
         <header className="header navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
             <div className="container-fluid">
@@ -50,8 +65,38 @@ const Header = () => {
                         <NavLink to="/about" className="nav-link">Về chúng tôi</NavLink>
                     </nav>
                     <div className="auth-links ms-0 ms-lg-4 d-flex gap-3 align-items-center">
-                        <NavLink to="/register" className="auth-link">Đăng ký</NavLink>
-                        <NavLink to="/login" className="btn btn-outline-primary btn-sm">Đăng nhập</NavLink>
+                        {isAuthenticated ? (
+                            <div className="dropdown">
+                                <button
+                                    className="btn dropdown-toggle user-dropdown-btn"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                >
+                                    <BsPersonCircle className="user-icon" />
+                                    <span className="user-greeting">Xin chào, {user?.fullName || 'User'}</span>
+                                    <BsChevronDown className="chevron-icon" />
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <Link className="dropdown-item" to="/profile">
+                                            Quản lý tài khoản
+                                        </Link>
+                                    </li>
+                                    <li><hr className="dropdown-divider" /></li>
+                                    <li>
+                                        <button className="dropdown-item" onClick={handleLogout}>
+                                            Đăng xuất
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        ) : (
+                            <>
+                                <Link to="/login" className="auth-link">Đăng nhập</Link>
+                                <Link to="/register" className="btn btn-outline-primary btn-sm">Đăng ký</Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
