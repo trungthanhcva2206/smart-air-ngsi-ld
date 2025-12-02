@@ -1,5 +1,3 @@
-# Smart Air NGSI-LD – License Notice
-
 All Smart Air NGSI-LD code is Copyright by Trung Thanh (trungthanhcva2206).
 Repository: https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 
