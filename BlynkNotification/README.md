@@ -374,7 +374,7 @@ Copyright (C) 2025 CHK. All rights reserved
 
 ## 🔗 Links
 
-  - **GitHub**: [air-track-ngsi-ld](https://www.google.com/search?q=https://github.com/trungthanhcva2206/air-track-ngsi-ld/BlynkNotification)
+  - **GitHub**: [air-track-ngsi-ld](https://github.com/trungthanhcva2206/air-track-ngsi-ld/BlynkNotification)
   - **Blynk**: [blynk.io](https://blynk.io/)
   - **NGSI-LD**: [ETSI Spec](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_cim009v010801p.pdf)
   - **Telegram Bots**: [@BotFather](https://t.me/botfather)
@@ -385,7 +385,7 @@ Copyright (C) 2025 CHK. All rights reserved
 
 If you encounter issues, please:
 
-1.  Check [Issues](https://www.google.com/search?q=https://github.com/trungthanhcva2206/air-track-ngsi-ld/issues)
-2.  View [Documentation Wiki](https://www.google.com/search?q=https://github.com/trungthanhcva2206/air-track-ngsi-ld/wiki)
-3.  Discuss in [Discussions](https://www.google.com/search?q=https://github.com/trungthanhcva2206/air-track-ngsi-ld/discussions)
+1.  Check [Issues](https://github.com/trungthanhcva2206/air-track-ngsi-ld/issues)
+2.  View [Documentation Wiki](https://github.com/trungthanhcva2206/air-track-ngsi-ld/wiki)
+3.  Discuss in [Discussions](https://github.com/trungthanhcva2206/air-track-ngsi-ld/discussions)
 4.  Contact authors
