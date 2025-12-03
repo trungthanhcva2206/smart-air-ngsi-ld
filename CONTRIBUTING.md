@@ -1,6 +1,6 @@
-# Contribution Guidelines - Smart Air NGSI-LD
+# Contribution Guidelines - Air Track NGSI-LD
 
-Thank you for your interest and desire to contribute to the **Smart Air NGSI-LD** project\!
+Thank you for your interest and desire to contribute to the **Air Track NGSI-LD** project\!
 
 This project always welcomes contributions from the community, including bug fixes, new features, documentation improvements, ETL optimization, ontology expansion, or NGSI-LD model improvements.
 
