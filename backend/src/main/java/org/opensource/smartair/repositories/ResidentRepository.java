@@ -47,10 +47,12 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
 
     /**
      * Tìm tất cả residents đã verified và bật notification
-     * Eager fetch User để tránh N+1 queries
+     * Eager fetch User và Stations để tránh N+1 queries và
+     * LazyInitializationException trong @Async
      */
-    @Query("SELECT r FROM Resident r " +
+    @Query("SELECT DISTINCT r FROM Resident r " +
             "JOIN FETCH r.user u " +
+            "LEFT JOIN FETCH r.stations s " +
             "WHERE r.isVerified = true AND r.notificationEnabled = true")
     List<Resident> findVerifiedResidentsWithNotificationEnabled();
 }
