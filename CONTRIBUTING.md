@@ -1,185 +1,194 @@
-# Hướng dẫn đóng góp - Smart Air NGSI-LD
+# Contribution Guidelines - Smart Air NGSI-LD
 
-Cảm ơn bạn đã quan tâm và muốn đóng góp vào dự án **Smart Air NGSI-LD**!
+Thank you for your interest and desire to contribute to the **Smart Air NGSI-LD** project\!
 
-Dự án luôn chào đón các đóng góp từ cộng đồng bao gồm sửa lỗi, thêm tính năng mới, cải thiện tài liệu, tối ưu ETL, mở rộng ontology hoặc cải thiện mô hình NGSI-LD.
+This project always welcomes contributions from the community, including bug fixes, new features, documentation improvements, ETL optimization, ontology expansion, or NGSI-LD model improvements.
 
----
+-----
 
-## 📋 Mục lục
+## 📋 Table of Contents
 
-- [Cách thức đóng góp](#-cách-thức-đóng-góp)
-- [Các loại đóng góp](#-các-loại-đóng-góp)
-- [Quy tắc viết code](#-quy-tắc-viết-code--cấu-trúc-dự-án)
-- [Kiểm tra trước khi gửi PR](#-kiểm-tra-trước-khi-gửi-pr)
-- [Gửi Pull Request](#-gửi-pull-request-pr)
-- [Quy tắc mở Issue](#-quy-tắc-mở-issue)
+- [How to Contribute](#-how-to-contribute)
+- [Contribution Types](#-contribution-types)
+- [Code Style & Project Structure](#-code-style--project-structure)
+- [Pre-PR Checklist](#-pre-pr-checklist)
+- [Submitting a Pull Request (PR)](#-submitting-a-pull-request-pr)
+- [Issue Guidelines](#-issue-guidelines)
 - [Development Setup](#-development-setup)
-- [Testing Guidelines](#-testing-guidelines)
 - [Code Review Process](#-code-review-process)
 
----
+-----
 
-## 🚀 Cách thức đóng góp
+## 🚀 How to Contribute
 
-### 1. Fork repository
+### 1\. Fork the repository
 
-Nhấn **Fork** ở góc trên bên phải để tạo bản sao của dự án vào tài khoản của bạn.
+Click **Fork** in the top right corner to create a copy of the project in your account.
 
-### 2. Clone về máy
+### 2\. Clone to your local machine
 
 ```bash
 git clone https://github.com/<your-username>/smart-air-ngsi-ld.git
 cd smart-air-ngsi-ld
 ```
 
-### 3. Thêm upstream remote
+### 3\. Add upstream remote
 
 ```bash
 git remote add upstream https://github.com/trungthanhcva2206/smart-air-ngsi-ld.git
 git fetch upstream
 ```
 
-### 4. Tạo branch mới cho mỗi thay đổi
+### 4\. Create a new branch for each change
 
-Tên branch nên rõ ràng theo chuẩn:
+Branch names should be clear and follow this standard:
 
-| Loại | Format | Ví dụ |
+| Type | Format | Example |
 |-------|--------|-------|
-| Tính năng mới | `feature/<tên-tính-năng>` | `feature/add-sensor-model` |
-| Sửa lỗi | `fix/<mô-tả-lỗi>` | `fix/context-mapping-observation` |
-| Cải thiện hiệu năng | `perf/<mô-tả>` | `perf/optimize-etl-pipeline` |
-| Tài liệu | `docs/<mô-tả>` | `docs/update-readme` |
-| Refactor | `refactor/<mô-tả>` | `refactor/restructure-backend` |
-| Test | `test/<mô-tả>` | `test/add-unit-tests` |
+| New Feature | `feature/<feature-name>` | `feature/add-sensor-model` |
+| Bug Fix | `fix/<bug-description>` | `fix/context-mapping-observation` |
+| Performance | `perf/<description>` | `perf/optimize-etl-pipeline` |
+| Documentation | `docs/<description>` | `docs/update-readme` |
+| Refactor | `refactor/<description>` | `refactor/restructure-backend` |
+| Test | `test/<description>` | `test/add-unit-tests` |
 
-**Ví dụ:**
+**Example:**
+
 ```bash
 git checkout -b feature/add-etl-converter
 ```
 
----
+-----
 
-## 🎯 Các loại đóng góp
+## 🎯 Contribution Types
 
-### 1. Backend Development (Spring Boot)
+### 1\. Backend Development (Spring Boot)
 
-**Khu vực:** `backend/`
+**Area:** `backend/`
 
-- Thêm REST API endpoints mới
-- Cải thiện xử lý NGSI-LD notifications
-- Tối ưu SSE streaming performance
-- Thêm notification channels (Email, Telegram, Blynk)
-- Cải thiện JWT authentication & authorization
-- Database schema migrations
-- Integration với FIWARE components (Orion-LD, QuantumLeap, IoT Agent)
+  - Add new REST API endpoints
+  - Improve NGSI-LD notification handling
+  - Optimize SSE streaming performance
+  - Add notification channels (Email, Telegram, Blynk)
+  - Improve JWT authentication & authorization
+  - Database schema migrations
+  - Integration with FIWARE components (Orion-LD, QuantumLeap, IoT Agent)
 
-**Skills cần có:**
-- Java 21+, Spring Boot 3.x
-- Spring WebFlux, Spring Data JPA
-- PostgreSQL, RESTful API design
-- NGSI-LD standard knowledge
+**Required Skills:**
 
-### 2. Frontend Development (React)
+  - Java 21+, Spring Boot 3.x
+  - Spring WebFlux, Spring Data JPA
+  - PostgreSQL, RESTful API design
+  - NGSI-LD standard knowledge
 
-**Khu vực:** `frontend/`
+### 2\. Frontend Development (React)
 
-- UI/UX improvements
-- Real-time data visualization với SSE
-- Dashboard components (weather, air quality)
-- Map integration (Leaflet, Mapbox)
-- Responsive design
-- Accessibility (a11y) improvements
-- State management optimization
-- Component testing
+**Area:** `frontend/`
 
-**Skills cần có:**
-- React 18+, TypeScript
-- Tailwind CSS, Chart libraries
-- SSE/WebSocket handling
-- Modern frontend tooling (Vite, ESLint)
+  - UI/UX improvements
+  - Real-time data visualization with SSE
+  - Dashboard components (weather, air quality)
+  - Map integration (Leaflet, Mapbox)
+  - Responsive design
+  - Accessibility (a11y) improvements
+  - State management optimization
+  - Component testing
 
-### 3. ETL Pipeline & Data Processing
+**Required Skills:**
 
-**Khu vực:** `etl/`, `scripts/`
+  - React 18+, TypeScript
+  - Tailwind CSS, Chart libraries
+  - SSE/WebSocket handling
+  - Modern frontend tooling (Vite, ESLint)
 
-- NGSI-LD entity converters
-- Data validation & transformation
-- CSV/JSON data parsers
-- Sensor data normalization
-- Historical data import scripts
-- Data quality checks
-- Performance optimization
+### 3\. ETL Pipeline & Data Processing
 
-**Skills cần có:**
-- Python 3.x, Pandas
-- JSON-LD, NGSI-LD context mapping
-- Data processing pipelines
-- API integration
+**Area:** `etl/`, `scripts/`
 
-### 4. FIWARE & Infrastructure
+  - NGSI-LD entity converters
+  - Data validation & transformation
+  - CSV/JSON data parsers
+  - Sensor data normalization
+  - Historical data import scripts
+  - Data quality checks
+  - Performance optimization
 
-**Khu vực:** `docker-compose/`, `config/`
+**Required Skills:**
 
-- Orion-LD configuration optimization
-- IoT Agent setup & device provisioning
-- QuantumLeap time-series configuration
-- Docker networking & volumes
-- Environment variables management
-- Security hardening
-- Monitoring setup (Prometheus, Grafana)
+  - Python 3.x, Pandas
+  - JSON-LD, NGSI-LD context mapping
+  - Data processing pipelines
+  - API integration
 
-**Skills cần có:**
-- Docker, Docker Compose
-- FIWARE architecture
-- Linux system administration
-- DevOps practices
+### 4\. FIWARE & Infrastructure
 
-### 5. Documentation
+**Area:** `docker-compose/`, `config/`
 
-**Khu vực:** `docs/`, `README.md`, API docs
+  - Orion-LD configuration optimization
+  - IoT Agent setup & device provisioning
+  - QuantumLeap time-series configuration
+  - Docker networking & volumes
+  - Environment variables management
+  - Security hardening
+  - Monitoring setup (Prometheus, Grafana)
 
-- API documentation (OpenAPI/Swagger)
-- Architecture diagrams
-- Deployment guides
-- Tutorial & examples
-- Troubleshooting guides
-- Translations (English/Vietnamese)
-- Video tutorials
+**Required Skills:**
 
-**Skills cần có:**
-- Technical writing
-- Markdown, Mermaid diagrams
-- Documentation tools
+  - Docker, Docker Compose
+  - FIWARE architecture
+  - Linux system administration
+  - DevOps practices
 
-### 6. Security & Performance
+### 5\. Documentation
 
-- Security audit & fixes
-- SQL injection prevention
-- XSS/CSRF protection
-- Rate limiting implementation
-- Caching strategies
-- Database query optimization
-- API response time improvements
-- Memory leak detection
+**Area:** `docs/`, `README.md`, API docs
 
-**Skills cần có:**
-- Security best practices
-- Performance profiling tools
-- Code analysis tools
+  - API documentation (OpenAPI/Swagger)
+  - Architecture diagrams
+  - Deployment guides
+  - Tutorials & examples
+  - Troubleshooting guides
+  - Translations (English/Vietnamese)
+  - Video tutorials
 
----
+**Required Skills:**
 
-## 🔍 Quy tắc viết code & cấu trúc dự án
+  - Technical writing
+  - Markdown, Mermaid diagrams
+  - Documentation tools
 
-### 1. Coding Style
+### 6\. Security & Performance
+
+  - Security audit & fixes
+  - SQL injection prevention
+  - XSS/CSRF protection
+  - Rate limiting implementation
+  - Caching strategies
+  - Database query optimization
+  - API response time improvements
+  - Memory leak detection
+
+**Required Skills:**
+
+  - Security best practices
+  - Performance profiling tools
+  - Code analysis tools
+
+-----
+
+## 🔍 Code Style & Project Structure
+
+### 1\. Coding Style
 
 #### Java (Backend)
-- Follow **Google Java Style Guide**
-- Use meaningful variable/method names
-- Add JavaDoc for public APIs
-- Maximum line length: 120 characters
-- Use Spring Boot best practices
+
+  - Follow **Google Java Style Guide**
+  - Use meaningful variable/method names
+  - Add JavaDoc for public APIs
+  - Maximum line length: 120 characters
+  - Use Spring Boot best practices
+
+<!-- end list -->
 
 ```java
 /**
@@ -195,10 +204,13 @@ public ResponseEntity<String> handleNotification(@RequestBody NgsiNotification n
 ```
 
 #### JavaScript/TypeScript (Frontend)
-- Follow **Airbnb JavaScript Style Guide**
-- Use TypeScript for type safety
-- ESLint + Prettier for formatting
-- Functional components with hooks
+
+  - Follow **Airbnb JavaScript Style Guide**
+  - Use TypeScript for type safety
+  - ESLint + Prettier for formatting
+  - Functional components with hooks
+
+<!-- end list -->
 
 ```typescript
 interface AirQualityData {
@@ -213,10 +225,13 @@ export const AirQualityCard: React.FC<{ data: AirQualityData }> = ({ data }) => 
 ```
 
 #### Python (ETL)
-- Follow **PEP 8**
-- Use type hints (Python 3.10+)
-- Docstrings for all functions
-- Black formatter
+
+  - Follow **PEP 8**
+  - Use type hints (Python 3.10+)
+  - Docstrings for all functions
+  - Black formatter
+
+<!-- end list -->
 
 ```python
 def convert_to_ngsi_ld(sensor_data: dict) -> dict:
@@ -233,9 +248,12 @@ def convert_to_ngsi_ld(sensor_data: dict) -> dict:
 ```
 
 #### JSON-LD & NGSI-LD
-- Format theo chuẩn NGSI-LD context
-- Validate với `@context`
-- Use consistent entity types
+
+  - Format according to NGSI-LD context standards
+  - Validate with `@context`
+  - Use consistent entity types
+
+<!-- end list -->
 
 ```json
 {
@@ -249,10 +267,13 @@ def convert_to_ngsi_ld(sensor_data: dict) -> dict:
 ```
 
 #### Docker & YAML
-- Docker files: chuẩn hóa version & variables
-- YAML: indent 2 spaces
-- Use multi-stage builds
-- Pin versions explicitly
+
+  - Docker files: Standardize versions & variables
+  - YAML: Indent with 2 spaces
+  - Use multi-stage builds
+  - Pin versions explicitly
+
+<!-- end list -->
 
 ```yaml
 services:
@@ -265,36 +286,38 @@ services:
       - postgres
 ```
 
-### 2. File Organization
+### 2\. File Organization
 
-**Không push các file sau:**
-- `.DS_Store` (macOS)
-- `.idea/`, `.vscode/` (IDE configs)
-- `__pycache__/`, `*.pyc` (Python)
-- `node_modules/` (Node.js)
-- `target/` (Maven)
-- `*.log` (Log files)
-- `.env` (Credentials)
+**Do not push the following files:**
 
-**Đảm bảo có `.gitignore` phù hợp!**
+  - `.DS_Store` (macOS)
+  - `.idea/`, `.vscode/` (IDE configs)
+  - `__pycache__/`, `*.pyc` (Python)
+  - `node_modules/` (Node.js)
+  - `target/` (Maven)
+  - `*.log` (Log files)
+  - `.env` (Credentials)
 
-### 3. Commit Message chuẩn
+**Ensure a suitable `.gitignore` exists\!**
 
-Sử dụng **Conventional Commits**:
+### 3\. Standard Commit Messages
 
-| Type | Ý nghĩa | Ví dụ |
+Use **Conventional Commits**:
+
+| Type | Meaning | Example |
 |------|---------|-------|
-| `feat:` | Tính năng mới | `feat(api): add air quality alerts endpoint` |
-| `fix:` | Sửa lỗi | `fix(sse): resolve connection timeout issue` |
-| `docs:` | Tài liệu | `docs: update deployment guide` |
-| `style:` | Format code, không đổi logic | `style: format with prettier` |
-| `refactor:` | Cải tổ lại code | `refactor(backend): simplify notification service` |
-| `perf:` | Tối ưu hiệu năng | `perf(etl): optimize data transformation` |
-| `test:` | Thêm/sửa test | `test: add unit tests for transformer` |
-| `chore:` | Công việc phụ trợ | `chore: update dependencies` |
+| `feat:` | New feature | `feat(api): add air quality alerts endpoint` |
+| `fix:` | Bug fix | `fix(sse): resolve connection timeout issue` |
+| `docs:` | Documentation | `docs: update deployment guide` |
+| `style:` | Formatting (no logic change) | `style: format with prettier` |
+| `refactor:` | Code restructuring | `refactor(backend): simplify notification service` |
+| `perf:` | Performance improvement | `perf(etl): optimize data transformation` |
+| `test:` | Add/edit tests | `test: add unit tests for transformer` |
+| `chore:` | Maintenance tasks | `chore: update dependencies` |
 | `ci:` | CI/CD changes | `ci: add GitHub Actions workflow` |
 
 **Format:**
+
 ```
 <type>(<scope>): <subject>
 
@@ -303,7 +326,8 @@ Sử dụng **Conventional Commits**:
 <footer>
 ```
 
-**Ví dụ commit tốt:**
+**Example of a good commit:**
+
 ```
 feat(etl): add NGSI-LD converter for PM2.5 sensor
 
@@ -314,78 +338,83 @@ feat(etl): add NGSI-LD converter for PM2.5 sensor
 Closes #123
 ```
 
-**Ví dụ commit không tốt:**
+**Example of a bad commit:**
+
 ```
 update code
 fix bug
 changes
 ```
 
----
+-----
 
-## 🧪 Kiểm tra trước khi gửi PR
+## 🧪 Pre-PR Checklist
 
 ### Backend Checklist
-- [ ] Code compile không lỗi (`mvn clean compile`)
-- [ ] All tests pass (`mvn test`)
-- [ ] No unused imports
-- [ ] JavaDoc đầy đủ cho public methods
-- [ ] Application starts successfully
-- [ ] REST endpoints hoạt động đúng
-- [ ] Database migrations chạy thành công
-- [ ] No security vulnerabilities (`mvn dependency-check:check`)
+
+  - [ ] Code compiles without errors (`mvn clean compile`)
+  - [ ] All tests pass (`mvn test`)
+  - [ ] No unused imports
+  - [ ] Complete JavaDoc for public methods
+  - [ ] Application starts successfully
+  - [ ] REST endpoints function correctly
+  - [ ] Database migrations run successfully
+  - [ ] No security vulnerabilities (`mvn dependency-check:check`)
 
 ### Frontend Checklist
-- [ ] No TypeScript errors (`npm run type-check`)
-- [ ] ESLint passes (`npm run lint`)
-- [ ] All tests pass (`npm test`)
-- [ ] Build successful (`npm run build`)
-- [ ] No console errors/warnings
-- [ ] Responsive design works on mobile
-- [ ] Accessibility checks pass
+
+  - [ ] No TypeScript errors (`npm run type-check`)
+  - [ ] ESLint passes (`npm run lint`)
+  - [ ] All tests pass (`npm test`)
+  - [ ] Build successful (`npm run build`)
+  - [ ] No console errors/warnings
+  - [ ] Responsive design works on mobile
+  - [ ] Accessibility checks pass
 
 ### ETL Checklist
-- [ ] Python code follows PEP 8
-- [ ] Type hints present
-- [ ] JSON-LD valid (`jsonld playground`)
-- [ ] Data transformation correct
-- [ ] Entity successfully created in Orion-LD
-- [ ] Error handling implemented
+
+  - [ ] Python code follows PEP 8
+  - [ ] Type hints present
+  - [ ] JSON-LD is valid (`jsonld playground`)
+  - [ ] Data transformation is correct
+  - [ ] Entity successfully created in Orion-LD
+  - [ ] Error handling implemented
 
 ### General Checklist
-- [ ] Docker Compose chạy ổn (`docker-compose up`)
-- [ ] No file rác trong commit
-- [ ] Documentation updated
-- [ ] CHANGELOG.md updated (for features)
-- [ ] Environment variables documented
-- [ ] No hardcoded secrets
 
----
+  - [ ] Docker Compose runs smoothly (`docker-compose up`)
+  - [ ] No garbage files in the commit
+  - [ ] Documentation updated
+  - [ ] CHANGELOG.md updated (for features)
+  - [ ] Environment variables documented
+  - [ ] No hardcoded secrets
 
-## 📤 Gửi Pull Request (PR)
+-----
 
-### 1. Update branch với upstream
+## 📤 Submitting a Pull Request (PR)
+
+### 1\. Update branch with upstream
 
 ```bash
 git fetch upstream
 git rebase upstream/develop
 ```
 
-### 2. Push branch lên repo cá nhân
+### 2\. Push branch to your personal repo
 
 ```bash
 git push origin feature/add-etl-converter
 ```
 
-### 3. Mở PR
+### 3\. Open PR
 
-Truy cập: https://github.com/trungthanhcva2206/smart-air-ngsi-ld/pulls
+Visit: [https://github.com/trungthanhcva2206/smart-air-ngsi-ld/pulls](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/pulls)
 
-### 4. PR Template
+### 4\. PR Template
 
 ```markdown
 ## Description
-Mô tả ngắn gọn về thay đổi
+Brief description of the changes
 
 ## Type of Change
 - [ ] Bug fix
@@ -417,30 +446,32 @@ Refs #456
 - [ ] No breaking changes (or documented)
 ```
 
-### 5. PR Review Process
+### 5\. PR Review Process
 
-1. **Automated Checks:** CI/CD pipeline chạy tests
-2. **Code Review:** Ít nhất 1 maintainer review
-3. **Discussion:** Resolve comments và feedback
-4. **Approval:** PR được approve
-5. **Merge:** Maintainer merge vào `develop`
+1.  **Automated Checks:** CI/CD pipeline runs tests
+2.  **Code Review:** At least 1 maintainer reviews the code
+3.  **Discussion:** Resolve comments and feedback
+4.  **Approval:** PR is approved
+5.  **Merge:** Maintainer merges into `develop`
 
-**Lưu ý:**
-- PR nên nhỏ và focused (< 500 lines thay đổi)
-- 1 PR = 1 feature/fix
-- Response feedback trong 48h
-- Squash commits trước khi merge
+**Notes:**
 
----
+  - PRs should be small and focused (\< 500 lines changed)
+  - 1 PR = 1 feature/fix
+  - Respond to feedback within 48h
+  - Squash commits before merging
 
-## 🗂 Quy tắc mở Issue
+-----
 
-### Báo lỗi (Bug Report)
+## 🗂 Issue Guidelines
+
+### Bug Report
 
 **Template:**
+
 ```markdown
 ## Bug Description
-Mô tả rõ ràng và ngắn gọn về lỗi
+Clear and concise description of the bug
 
 ## Environment
 - OS: [e.g. Windows 11, Ubuntu 22.04]
@@ -455,41 +486,44 @@ Mô tả rõ ràng và ngắn gọn về lỗi
 4. See error
 
 ## Expected Behavior
-Mô tả hành vi mong đợi
+Description of expected behavior
 
 ## Actual Behavior
-Mô tả hành vi thực tế
+Description of actual behavior
 
 ## Logs/Screenshots
 ```
+
 [paste logs here]
+
 ```
 
 ## Possible Fix
-(Optional) Gợi ý cách fix
+(Optional) Suggested fix
 ```
 
-### Đề xuất tính năng (Feature Request)
+### Feature Request
 
 **Template:**
+
 ```markdown
 ## Feature Description
-Mô tả tính năng muốn thêm
+Description of the feature you want to add
 
 ## Motivation
-Tại sao cần tính năng này? Giải quyết vấn đề gì?
+Why is this feature needed? What problem does it solve?
 
 ## Proposed Solution
-Đề xuất cách implement
+Proposed implementation approach
 
 ## Alternatives Considered
-Các giải pháp thay thế đã xem xét
+Alternative solutions considered
 
 ## Additional Context
-- Ảnh hưởng tới kiến trúc / entity
+- Impact on architecture / entity
 - Breaking changes
-- Dependencies mới
-- Mockup/wireframes (nếu có)
+- New dependencies
+- Mockup/wireframes (if any)
 
 ## Implementation Checklist
 - [ ] Backend changes
@@ -499,24 +533,25 @@ Các giải pháp thay thế đã xem xét
 - [ ] Tests
 ```
 
-### Câu hỏi/Thảo luận (Question/Discussion)
+### Question/Discussion
 
 **Template:**
+
 ```markdown
 ## Question
-Câu hỏi của bạn
+Your question
 
 ## Context
-Ngữ cảnh và thông tin liên quan
+Context and relevant information
 
 ## What I've Tried
-Những gì đã thử
+What steps you have already taken
 
 ## Additional Information
-Thông tin bổ sung
+Supplementary information
 ```
 
----
+-----
 
 ## 🛠 Development Setup
 
@@ -582,78 +617,80 @@ docker-compose down
 docker-compose down -v
 ```
 
----
-
+-----
 
 ## 👀 Code Review Process
 
 ### For Contributors
 
-- **Be responsive:** Reply to review comments trong 48h
-- **Be open:** Chấp nhận feedback và học hỏi
-- **Explain:** Giải thích decisions nếu cần
-- **Update:** Fix issues và push changes
+  - **Be responsive:** Reply to review comments within 48h
+  - **Be open:** Accept feedback and learn
+  - **Explain:** Explain decisions if necessary
+  - **Update:** Fix issues and push changes
 
 ### For Reviewers
 
-- **Be constructive:** Gợi ý cải thiện, không chỉ chỉ trích
-- **Be specific:** Point out exact lines/issues
-- **Be timely:** Review trong 48-72h
-- **Approve clearly:** Rõ ràng về approve/request changes
+  - **Be constructive:** Suggest improvements, don't just criticize
+  - **Be specific:** Point out exact lines/issues
+  - **Be timely:** Review within 48-72h
+  - **Approve clearly:** Be clear about approval/request changes
 
 ### Review Checklist
 
-- [ ] Code đúng với requirements
-- [ ] Tests adequate và pass
-- [ ] No security issues
-- [ ] Performance acceptable
-- [ ] Documentation updated
-- [ ] Follows style guide
-- [ ] No unnecessary changes
-- [ ] Commit messages clear
+  - [ ] Code meets requirements
+  - [ ] Tests are adequate and pass
+  - [ ] No security issues
+  - [ ] Performance is acceptable
+  - [ ] Documentation updated
+  - [ ] Follows style guide
+  - [ ] No unnecessary changes
+  - [ ] Commit messages are clear
 
----
+-----
 
 ## 📞 Communication Channels
 
-- **GitHub Issues:** Bug reports, feature requests
-- **GitHub Discussions:** Q&A, ideas, general discussion
-- **Pull Requests:** Code reviews, technical discussions
-- **Email:** Contact maintainers directly (xem README)
+  - **GitHub Issues:** Bug reports, feature requests
+  - **GitHub Discussions:** Q\&A, ideas, general discussion
+  - **Pull Requests:** Code reviews, technical discussions
+  - **Email:** Contact maintainers directly (see README)
 
----
+-----
 
 ## 🎖 Recognition
 
-Contributors sẽ được:
-- ✨ Tên trong CONTRIBUTORS.md
-- 🏆 GitHub contributor badge
-- 📢 Mention trong release notes
-- 💌 Cảm ơn từ maintainers
+Contributors will receive:
 
----
+  - ✨ Name in CONTRIBUTORS.md
+  - 🏆 GitHub contributor badge
+  - 📢 Mention in release notes
+  - 💌 Appreciation from maintainers
+
+-----
 
 ## 📚 Resources
 
 ### Learning Materials
-- [NGSI-LD Primer](https://fiware-datamodels.readthedocs.io/)
-- [Spring Boot Documentation](https://docs.spring.io/spring-boot/)
-- [React Documentation](https://react.dev/)
-- [FIWARE Academy](https://fiware-academy.readthedocs.io/)
+
+  - [NGSI-LD Primer](https://fiware-datamodels.readthedocs.io/)
+  - [Spring Boot Documentation](https://docs.spring.io/spring-boot/)
+  - [React Documentation](https://react.dev/)
+  - [FIWARE Academy](https://fiware-academy.readthedocs.io/)
 
 ### Tools
-- [JSON-LD Playground](https://json-ld.org/playground/)
-- [Postman Collections](./docs/postman/)
-- [Docker Hub Images](https://hub.docker.com/u/fiware)
 
----
+  - [JSON-LD Playground](https://json-ld.org/playground/)
+  - [Postman Collections](https://www.google.com/search?q=./docs/postman/)
+  - [Docker Hub Images](https://hub.docker.com/u/fiware)
 
-## ❤️ Cảm ơn
+-----
 
-Mọi đóng góp — dù nhỏ — đều rất quý giá và giúp dự án phát triển bền vững.
+## ❤️ Thank You
 
-**Happy Contributing! 🎉**
+Every contribution — no matter how small — is very valuable and helps the project grow sustainably.
 
----
+**Happy Contributing\! 🎉**
+
+-----
 
 *Last updated: December 2025*
