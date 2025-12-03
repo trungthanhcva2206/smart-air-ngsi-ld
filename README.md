@@ -99,13 +99,17 @@ Data is modeled according to the **SOSA/SSN** (Sensor, Observation, Sample, and 
 
 ### Frontend
 
-  - **React 18**: UI framework with Hooks
-  - **React Router**: Client-side routing
-  - **React Leaflet**: Interactive maps
-  - **Recharts**: Data visualization
-  - **React Toastify**: Real-time notifications
-  - **Axios**: HTTP client
-  - **SCSS**: Styling
+- **React 19**: UI framework with Hooks
+- **Vite 7**: Build tool and dev server
+- **React Router v7**: Client-side routing
+- **Redux Toolkit**: State management
+- **Redux Persist**: Persistent authentication state
+- **React Hook Form**: Form validation
+- **React Leaflet + MapLibre GL**: Interactive maps
+- **Recharts**: Data visualization
+- **React Toastify**: Real-time notifications
+- **Axios**: HTTP client with interceptors
+- **Bootstrap 5 + SCSS**: Styling framework
 
 ## ✨ Features
 
