@@ -1,194 +1,188 @@
-# 🌬️ Smart Air --- NGSI-LD Backend
+# 🌬️ Air Track --- NGSI-LD Backend
 
 **Orion-LD • Spring Boot • SSE • Open Data • Residents & Alerts**
 
-Backend xử lý dữ liệu thời gian thực dựa trên NGSI-LD, nhận
-notifications từ **Orion-LD**, stream qua **SSE**, cung cấp **Open Data
-API**, quản lý cư dân/residents và phát cảnh báo qua
-Email/Telegram/Blynk.
+Backend processing real-time data based on NGSI-LD, receiving notifications from **Orion-LD**, streaming via **SSE**, providing **Open Data API**, managing residents, and sending alerts via Email/Telegram/Blynk.
 
-------------------------------------------------------------------------
+-----
 
 ## ✨ Features
 
--   ✔️ Nhận & xử lý **NGSI-LD notifications** từ Orion-LD
--   ✔️ **Auto Subscriptions** vào Orion-LD khi khởi động
--   ✔️ **Open Data API**: weather, airquality, districts, platforms
--   ✔️ **SSE streaming** cho dashboard thời gian thực
--   ✔️ **JWT Authentication + RBAC** (Admin/User)
--   ✔️ Residents, stations, district mapping
--   ✔️ Cảnh báo qua **Email / Telegram / Blynk**
--   ✔️ Logging, OpenAPI, retry-policy, GeoJSON loader
--   ✔️ PostgreSQL hoặc H2 (dev mode)
+- ✔️ Receive & process **NGSI-LD notifications** from Orion-LD
+- ✔️ **Auto Subscriptions** to Orion-LD on startup
+- ✔️ **Open Data API**: weather, air quality, districts, platforms
+- ✔️ **SSE streaming** for real-time dashboard
+- ✔️ **JWT Authentication + RBAC** (Admin/User)
+- ✔️ Residents, stations, district mapping
+- ✔️ Alerts via **Email / Telegram / Blynk**
+- ✔️ Logging, OpenAPI, retry-policy, GeoJSON loader
+- ✔️ PostgreSQL or H2 (dev mode)
 
 ------------------------------------------------------------------------
 
-## 🏗️ Kiến trúc
-
-                       ┌──────────────────────────────────────┐
-                       │              Smart Air               │
-                       │            Backend API               │
-                       └──────────────────────────────────────┘
-                                     ▲                ▲
-                                     │                │ SSE Stream
-                                     │                │ (/api/sse/*)
-                             NGSI-LD Notifications    │
-                         (POST /api/notify/ngsi)      │
-                                     │                │
-     ┌──────────────┐     ┌─────────────────┐      ┌───────────────────┐
-     │   Orion-LD   │───▶ │  Transformer    │────▶│  NotificationSvc  │───▶ Email/Telegram/Blynk
-     └──────────────┘     └─────────────────┘      └───────────────────┘
-          ▲   │                             │
-          │   │  Subscriptions              ▼
-          │   └───────────────────────┐   SSE Emit
-          │                           │
-     ┌───────────────┐                │
-     │ QuantumLeap   │◀───────────────┘
-     └───────────────┘
-
+## 🏗️ Architecture
+```
+                       ┌──────────────────────────────────────┐
+                       │              Air Track               │
+                       │            Backend API               │
+                       └──────────────────────────────────────┘
+                                     ▲                ▲
+                                     │                │ SSE Stream
+                                     │                │ (/api/sse/\*)
+                             NGSI-LD Notifications    │
+                         (POST /api/notify/ngsi)      │
+                                     │                │
+     ┌──────────────┐     ┌─────────────────┐      ┌───────────────────┐
+     │   Orion-LD   │───▶ │  Transformer    │────▶│  NotificationSvc  │───▶ Email/Telegram/Blynk
+     └──────────────┘     └─────────────────┘      └───────────────────┘
+          ▲   │                             │
+          │   │  Subscriptions              ▼
+          │   └───────────────────────┐   SSE Emit
+          │                           │
+     ┌───────────────┐                │
+     │ QuantumLeap   │◀───────────────┘
+     └───────────────┘
+```
 ------------------------------------------------------------------------
 
 ## ⚙️ Tech stack
 
-  Layer       Technology
-  ----------- --------------------------
-  Framework   Spring Boot (Java 21+)
-  API         Spring MVC + WebFlux Mix
-  DB          PostgreSQL / H2
-  Realtime    Server-Sent Events (SSE)
-  NGSI-LD     Orion-LD, QuantumLeap
-  Auth        JWT + RBAC
-  Messaging   Email, Telegram, Blynk
+Layer      | Technology
+-----------|--------------------------
+Framework  | Spring Boot (Java 21+)
+API        | Spring MVC + WebFlux Mix
+DB         | PostgreSQL / H2
+Realtime   | Server-Sent Events (SSE)
+NGSI-LD    | Orion-LD, QuantumLeap
+Auth       | JWT + RBAC
+Messaging  | Email, Telegram, Blynk
 
-------------------------------------------------------------------------
+-----
 
-## 📁 Cấu trúc chính
+## 📁 Main Structure
+```
+    src/
+     ├─ api/
+     ├─ controller/
+     ├─ service/
+     │    ├─ NgsiTransformer
+     │    ├─ Notification
+     │    ├─ ResidentService
+     │    └─ OrionSubscriptionService
+     ├─ model/
+     ├─ config/
+     └─ repository/
+```
+-----
 
-    src/
-     ├─ api/
-     ├─ controller/
-     ├─ service/
-     │    ├─ NgsiTransformer
-     │    ├─ Notification
-     │    ├─ ResidentService
-     │    └─ OrionSubscriptionService
-     ├─ model/
-     ├─ config/
-     └─ repository/
+## 🔧 Installation
 
-------------------------------------------------------------------------
+### 1\. Clone repo
 
-## 🔧 Cài đặt
-
-### 1. Clone repo
-
-``` bash
-git clone https://github.com/trungthanhcva2206/smart-air-ngsi-ld.git
-cd smart-air-ngsi-ld
+```bash
+git clone https://github.com/trungthanhcva2206/air-track-ngsi-ld.git
+cd air-track-ngsi-ld
 ```
 
-### 2. Tạo file cấu hình
+### 2\. Create configuration file
 
-``` bash
-cp src/main/resources/application.example.properties    src/main/resources/application.properties
+```bash
+cp src/main/resources/application.example.properties    src/main/resources/application.properties
 ```
 
-### 3. Build
+### 3\. Build
 
-``` bash
+```bash
 mvn clean package -DskipTests
 ```
 
-### 4. Chạy app
+### 4\. Run app
 
-``` bash
+```bash
 java -jar target/*.jar
 ```
 
-> Nếu dùng Docker: Orion-LD không thể truy cập `localhost`; dùng
+> If using Docker: Orion-LD cannot access `localhost`; use
 > `http://host.docker.internal:8081`.
 
-------------------------------------------------------------------------
+-----
 
-## 🌐 API chính
+## 🌐 Main APIs
 
 ### Health
-
-    GET /actuator/health
-    GET /api/health
-
+```
+    GET /actuator/health
+    GET /api/health
+```
 ### Notifications (Orion-LD → Backend)
-
-    POST /api/notify/ngsi
-
+```
+    POST /api/notify/ngsi
+```
 ### Open Data
-
-    GET /api/open/weather/latest
-    GET /api/open/airquality/latest
-    GET /api/open/platforms
-    GET /api/open/districts
-
+```
+    GET /api/open/weather/latest
+    GET /api/open/airquality/latest
+    GET /api/open/platforms
+    GET /api/open/districts
+```
 ### SSE (Realtime)
-
-    GET /api/sse/weather/{district}
-    GET /api/sse/airquality/{district}
-    GET /api/sse/airquality/alerts
-
+```
+    GET /api/sse/weather/{district}
+    GET /api/sse/airquality/{district}
+    GET /api/sse/airquality/alerts
+```
 ### Auth
-
-    POST /api/auth/register
-    POST /api/auth/login
-
+```
+    POST /api/auth/register
+    POST /api/auth/login
+```
 ### Subscriptions
-
-    POST /api/subscriptions/create
-    GET  /api/subscriptions/list
-
-Ví dụ:
-
-``` bash
-curl -X POST http://localhost:8081/api/subscriptions/create   -H "Content-Type: application/json"   -d '{"type":"AirQuality","notificationUrl":"http://backend:8081/api/notify/ngsi"}'
+```
+    POST /api/subscriptions/create
+    GET  /api/subscriptions/list
+```
+Example:
+```bash
+curl -X POST http://localhost:8081/api/subscriptions/create   -H "Content-Type: application/json"   -d '{"type":"AirQuality","notificationUrl":"http://backend:8081/api/notify/ngsi"}'
 ```
 
 ------------------------------------------------------------------------
 
-## 🔄 Quy trình hoạt động
-
+## 🔄 Operational Workflow
+```
     Orion-LD → /api/notify/ngsi → NgsiTransformer →
     → NotificationService → SSE Emit → Frontend Dashboard
                                ↳ Alerts (Email/Telegram/Blynk)
-
+```
 ------------------------------------------------------------------------
 
 ## 🐞 Troubleshooting
 
--   Không nhận notifications → kiểm tra URL backend có reachable từ
-    container Orion
--   SSE không stream → kiểm tra headers + logs
--   Lỗi Dev trên Windows → đảm bảo file shell không có BOM, dùng UTF-8
-    LF
+- Not receiving notifications → check if backend URL is reachable from the Orion container
+- SSE not streaming → check headers + logs
+- Dev error on Windows → ensure shell files have no BOM, use UTF-8 LF
 
-------------------------------------------------------------------------
+-----
 
 ## 📜 License
 
-Apache 2.0 --- xem file `LICENSE`.
+Apache 2.0 --- see `LICENSE` file.
 
-------------------------------------------------------------------------
+-----
 
 ## 👥 Authors
 
--   **TT** --- trungthanhcva2206@gmail.com
--   **Tankchoi** --- tadzltv22082004@gmail.com
--   **Panh** --- panh812004.apn@gmail.com
+- **TT** --- trungthanhcva2206@gmail.com
+- **Tankchoi** --- tadzltv22082004@gmail.com
+- **Panh** --- panh812004.apn@gmail.com
 
-------------------------------------------------------------------------
+-----
 
 ## 💡 Support
 
-Nếu gặp vấn đề, vui lòng:
+If you encounter issues, please:
 
-1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-2. Xem [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
-3. Trao đổi [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
-4. Liên hệ authors
+1.  Check [Issues](https://github.com/trungthanhcva2206/air-track-ngsi-ld/issues)
+2.  View [Documentation Wiki](https://github.com/trungthanhcva2206/air-track-ngsi-ld/wiki)
+3.  Discuss in [Discussions](https://github.com/trungthanhcva2206/air-track-ngsi-ld/discussions)
+4.  Contact authors
