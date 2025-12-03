@@ -10,52 +10,63 @@ Backend processing real-time data based on NGSI-LD, receiving notifications from
 
 - ✔️ Receive & process **NGSI-LD notifications** from Orion-LD
 - ✔️ **Auto Subscriptions** to Orion-LD on startup
-- ✔️ **Open Data API**: weather, air quality, districts, platforms
+- ✔️ **Public API**: platforms, weather history, air quality history
 - ✔️ **SSE streaming** for real-time dashboard
-- ✔️ **JWT Authentication + RBAC** (Admin/User)
-- ✔️ Residents, stations, district mapping
-- ✔️ Alerts via **Email / Telegram / Blynk**
-- ✔️ Logging, OpenAPI, retry-policy, GeoJSON loader
-- ✔️ PostgreSQL or H2 (dev mode)
+- ✔️ **JWT Authentication & Authorization** (RESIDENT/ADMIN roles)
+- ✔️ **Resident Management**: profile, districts subscription
+-   ✔️ **Email Alerts**: air quality alert (poor/very poor)
+-   ✔️ **Rate Limiting**: throttle alerts (default 3 hours/district)
+-   ✔️ OpenAPI documentation, CORS config, error handling
+-   ✔️ MySQL 8.0 (production) or H2 (dev mode)
 
 ------------------------------------------------------------------------
 
 ## 🏗️ Architecture
 ```
-                       ┌──────────────────────────────────────┐
-                       │              Air Track               │
-                       │            Backend API               │
-                       └──────────────────────────────────────┘
-                                     ▲                ▲
-                                     │                │ SSE Stream
-                                     │                │ (/api/sse/\*)
-                             NGSI-LD Notifications    │
-                         (POST /api/notify/ngsi)      │
-                                     │                │
-     ┌──────────────┐     ┌─────────────────┐      ┌───────────────────┐
-     │   Orion-LD   │───▶ │  Transformer    │────▶│  NotificationSvc  │───▶ Email/Telegram/Blynk
-     └──────────────┘     └─────────────────┘      └───────────────────┘
-          ▲   │                             │
-          │   │  Subscriptions              ▼
-          │   └───────────────────────┐   SSE Emit
-          │                           │
-     ┌───────────────┐                │
-     │ QuantumLeap   │◀───────────────┘
-     └───────────────┘
+                ┌──────────────────────────────────────┐
+                       │         Air Track Backend            │
+                       │     (Spring Boot MVC + WebFlux)      │
+                       └──────────────────────────────────────┘
+                           ▲           ▲            ▲
+                           │           │            │
+                  NGSI-LD  │           │ SSE        │ REST API
+                  Notify   │           │ Stream     │ (JWT Auth)
+                           │           │            │
+     ┌──────────────┐      │      ┌────────┐   ┌──────────┐
+     │   Orion-LD   │──────┘      │ React  │   │ Residents│
+     │ Context      │             │   UI   │   │   CRUD   │
+     │   Broker     │             └────────┘   └──────────┘
+     └──────────────┘                  │             │
+          │   │                        ▼             ▼
+          │   │  Subscriptions    ┌─────────────────────┐
+          │   └──────────────────▶│   SSE Service       │
+          │                       │  (Weather/AirQual)  │
+     ┌───────────────┐            └─────────────────────┘
+     │ QuantumLeap   │                     │
+     │ (TimescaleDB) │                     ▼
+     └───────────────┘            ┌─────────────────────┐
+                                  │ Notification Service│
+                                  │   (Email Alerts)    │
+                                  └─────────────────────┘
+
+
 ```
 ------------------------------------------------------------------------
 
-## ⚙️ Tech stack
+## ⚙️ Tech Stack
 
-Layer      | Technology
------------|--------------------------
-Framework  | Spring Boot (Java 21+)
-API        | Spring MVC + WebFlux Mix
-DB         | PostgreSQL / H2
-Realtime   | Server-Sent Events (SSE)
-NGSI-LD    | Orion-LD, QuantumLeap
-Auth       | JWT + RBAC
-Messaging  | Email, Telegram, Blynk
+Layer          | Technology
+---------------| ---------------------------------
+Framework      | Spring Boot 3.5.7 (Java 21+)
+API            | Spring MVC (Blocking) + WebFlux (SSE)
+Database       | MySQL 8.0 / H2 (dev)
+ORM            | Spring Data JPA + Hibernate
+Authentication | JWT (jjwt 0.12.6) + Spring Security
+Authorization  | Role-based (RESIDENT, ADMIN)
+Realtime       | Server-Sent Events (SSE/WebFlux)
+NGSI-LD Client | Orion-LD, QuantumLeap (WebClient)
+Email          | JavaMailSender (SMTP)
+Validation     | Bean Validation (jakarta.validation)
 
 -----
 
@@ -87,7 +98,8 @@ cd air-track-ngsi-ld
 ### 2\. Create configuration file
 
 ```bash
-cp src/main/resources/application.example.properties    src/main/resources/application.properties
+cp src/main/resources/application.example.properties
+src/main/resources/application.properties
 ```
 
 ### 3\. Build
@@ -107,66 +119,144 @@ java -jar target/*.jar
 
 -----
 
-## 🌐 Main APIs
+## 🌐 API Endpoints
 
-### Health
-```
-    GET /actuator/health
-    GET /api/health
-```
-### Notifications (Orion-LD → Backend)
-```
-    POST /api/notify/ngsi
-```
-### Open Data
-```
-    GET /api/open/weather/latest
-    GET /api/open/airquality/latest
-    GET /api/open/platforms
-    GET /api/open/districts
-```
-### SSE (Realtime)
-```
-    GET /api/sse/weather/{district}
-    GET /api/sse/airquality/{district}
-    GET /api/sse/airquality/alerts
-```
-### Auth
-```
-    POST /api/auth/register
-    POST /api/auth/login
-```
-### Subscriptions
-```
-    POST /api/subscriptions/create
-    GET  /api/subscriptions/list
-```
-Example:
+### 1. Authentication (Public)
+
 ```bash
-curl -X POST http://localhost:8081/api/subscriptions/create   -H "Content-Type: application/json"   -d '{"type":"AirQuality","notificationUrl":"http://backend:8081/api/notify/ngsi"}'
+# Register new resident
+POST /api/auth/register
+Body: { "fullName", "email", "password", "notificationEnabled", "districts" }
+
+# Login
+POST /api/auth/login
+Body: { "email", "password" }
+Response: { "token", "user", "resident", "subscribedDistricts" }
+```
+
+### 2. Resident Management (Protected - JWT required)
+
+```bash
+# Update profile
+PUT /api/residents/me
+Headers: Authorization: Bearer <token>
+Body: { "fullName", "email", "notificationEnabled", "districts" }
+```
+
+### 3. Public Data APIs
+
+```bash
+# Get all platforms (environment monitoring stations)
+GET /api/platforms
+
+# Get devices by platform
+GET /api/platforms/{platformId}/devices
+
+# Get weather history
+GET /api/weather/history/{district}?limit=100
+
+# Get air quality history
+GET /api/airquality/history/{district}?limit=100
+```
+
+### 4. SSE Realtime Streaming (Public)
+
+```bash
+# Stream weather updates
+GET /api/sse/stream?type=weather&district=PhuongHoanKiem
+
+# Stream air quality updates
+GET /api/sse/stream?type=airquality&district=PhuongHoanKiem
+```
+
+### 5. NGSI-LD Notifications (Internal)
+
+```bash
+# Receive notifications from Orion-LD
+POST /api/notify/ngsi
+Headers: Fiware-Service: hanoi
+Body: NGSI-LD normalized format
+```
+
+### 6. Subscriptions Management (Internal)
+
+```bash
+# Create subscription to Orion-LD
+POST /api/subscriptions/create
+Body: { "entityType", "notificationUrl" }
+
+# List all subscriptions
+GET /api/subscriptions/list
 ```
 
 ------------------------------------------------------------------------
 
 ## 🔄 Operational Workflow
+
+### Data Flow (Realtime)
 ```
-    Orion-LD → /api/notify/ngsi → NgsiTransformer →
-    → NotificationService → SSE Emit → Frontend Dashboard
-                               ↳ Alerts (Email/Telegram/Blynk)
+Orion-LD → POST /api/notify/ngsi → NgsiTransformer
+    ↓
+WeatherDataDTO / AirQualityDataDTO
+    ↓
+    ├──▶ SSE Service → Broadcast to React clients
+    └──▶ NotificationService (if AQI >= 4)
+            ↓
+         Filter by subscribed districts
+            ↓
+         EmailService → Send alerts to residents
+```
+### Authentication Flow
+```
+1. User registers → POST /api/auth/register
+   - Create User (with encrypted password)
+   - Create Resident (linked to User)
+   - Create ResidentStation (subscribed districts)
+   - Return JWT token
+
+2. User login → POST /api/auth/login
+   - Validate credentials (Spring Security)
+   - Generate JWT token (userId, email, role, fullName)
+   - Load resident profile + subscribed districts
+   - Return token + user data
+
+3. Protected requests → PUT /api/residents/me
+   - Extract JWT from Authorization header
+   - Validate token & extract userId
+   - Check ownership (user can only edit own profile)
+   - Process request
 ```
 ------------------------------------------------------------------------
 
 ## 🐞 Troubleshooting
 
-- Not receiving notifications → check if backend URL is reachable from the Orion container
-- SSE not streaming → check headers + logs
-- Dev error on Windows → ensure shell files have no BOM, use UTF-8 LF
+### CORS Issues
+- **403 Forbidden from frontend**: Ensure origin (`http://localhost:5173`) is added to `CorsConfig.java`.
+- **OPTIONS preflight failed**: Check if `SecurityConfig.java` permits OPTIONS requests.
+
+### NGSI-LD Notifications
+- **Not receiving notifications**: Check if the backend URL is accessible from the Orion-LD container (use `host.docker.internal` if running in Docker).
+- **Subscription creation failed**: Verify Orion-LD URL and tenant name in `application.properties`.
+
+### SSE Streaming
+- **SSE not streaming**: Check CORS headers and WebFlux configuration.
+- **Connection timeout**: Increase `spring.webflux.timeout` in config.
+
+### Authentication
+- **401 Unauthorized**: JWT token expired or invalid, please login again.
+- **403 Forbidden**: User does not have permission to access the endpoint (check role).
+- **Email already exists**: The email has already been registered by another user.
+
+### Email Alerts
+- **Not receiving emails**: Check SMTP config in `application.properties`.
+- **Email spam**: Check email provider settings and whitelist the sender.
+- **Throttle alerts**: Alerts are sent at most once every 3 hours per district.
 
 -----
 
 ## 📜 License
 
-Apache 2.0 --- see `LICENSE` file.
+Apache 2.0 --- view `LICENSE` file.
 
 -----
 
@@ -175,6 +265,8 @@ Apache 2.0 --- see `LICENSE` file.
 - **TT** --- trungthanhcva2206@gmail.com
 - **Tankchoi** --- tadzltv22082004@gmail.com
 - **Panh** --- panh812004.apn@gmail.com
+
+Copyright © 2025 TAA. All rights reserved.
 
 -----
 
