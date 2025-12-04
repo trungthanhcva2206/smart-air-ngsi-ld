@@ -542,6 +542,48 @@ def find_both_routes():
         logger.error(f"Lỗi: {e}")
         return jsonify({"error": "Lỗi xử lý"}), 500
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """
+    Health check endpoint for Docker and load balancers
+    Returns service status and graph availability
+    """
+    global G_main, zones_gdf, mock_env_data
+    
+    try:
+        # Check if graph is loaded
+        graph_loaded = G_main is not None and zones_gdf is not None
+        
+        # Check if environment data is available
+        env_data_available = len(mock_env_data) > 0
+        
+        # Get data stats
+        num_zones = len(zones_gdf) if zones_gdf is not None else 0
+        num_nodes = G_main.number_of_nodes() if G_main is not None else 0
+        num_edges = G_main.number_of_edges() if G_main is not None else 0
+        
+        status = {
+            "status": "healthy" if graph_loaded else "initializing",
+            "service": "route-finding",
+            "graph_loaded": graph_loaded,
+            "env_data_available": env_data_available,
+            "stats": {
+                "zones": num_zones,
+                "nodes": num_nodes,
+                "edges": num_edges,
+                "env_data_points": len(mock_env_data)
+            }
+        }
+        
+        return jsonify(status), 200 if graph_loaded else 503
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 500
+
 if __name__ == "__main__":
     load_all_data()
     logger.info(f"✅ Máy chủ Backend đã sẵn sàng. http://{FLASK_HOST}:{FLASK_PORT}")

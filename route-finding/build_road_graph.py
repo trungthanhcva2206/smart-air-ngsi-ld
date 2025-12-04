@@ -17,19 +17,68 @@
  *    - TT (trungthanhcva2206@gmail.com)
  *    - Tankchoi (tadzltv22082004@gmail.com)
  *    - Panh (panh812004.apn@gmail.com)
- * @Copyright (C) 2025 CHK. All rights reserved
+ * @Copyright (C) 2025 TAA. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
  */
 """
-import osmnx as ox
-import networkx as nx
+import os
+import sys
+import logging
+from pathlib import Path
 
-# Tải mạng lưới đường đi (lái xe) của Hà Nội từ OpenStreetMap
-G_hanoi = ox.graph_from_place("Hanoi, Vietnam", network_type="drive")
+# Setup logging
+logging.basicConfig(
+    level=os.getenv('LOG_LEVEL', 'INFO'),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# G_hanoi bây giờ là một Graph networkx
-# có thể có > 50,000 nút (ngã tư) và > 80,000 cạnh (đoạn đường)
-print(f"Đã tải bản đồ: {G_hanoi.number_of_nodes()} nút, {G_hanoi.number_of_edges()} cạnh")
+def build_road_graph():
+    """Build road network graph for Hanoi"""
+    try:
+        graph_file = Path(os.getenv('GRAPH_FILE', 'hanoi_road_network.graphml'))
+        
+        # ✅ NẾU FILE ĐÃ TỒN TẠI, SKIP BUILD
+        if graph_file.exists():
+            file_size = graph_file.stat().st_size / (1024 * 1024)  # MB
+            logger.info(f"✅ Graph file '{graph_file}' already exists ({file_size:.2f} MB)")
+            logger.info("⏭️  Skipping build. Using existing graph.")
+            return True
+        
+        logger.info("❌ Graph file not found. Building new graph...")
+        logger.info("🔨 This may take 5-10 minutes. Please wait...")
+        
+        # Import osmnx (chỉ import khi cần build)
+        try:
+            import osmnx as ox
+        except ImportError:
+            logger.error("❌ osmnx not installed!")
+            logger.error("Install with: pip install osmnx")
+            return False
+        
+        # Tải mạng lưới đường đi (lái xe) của Hà Nội từ OpenStreetMap
+        logger.info("📡 Downloading road network from OpenStreetMap...")
+        G_hanoi = ox.graph_from_place("Hanoi, Vietnam", network_type="drive")
+        
+        # Log thông tin graph
+        num_nodes = G_hanoi.number_of_nodes()
+        num_edges = G_hanoi.number_of_edges()
+        logger.info(f"📊 Loaded map: {num_nodes:,} nodes, {num_edges:,} edges")
+        
+        # Lưu lại để dùng sau
+        logger.info(f"💾 Saving graph to {graph_file}...")
+        ox.save_graphml(G_hanoi, filepath=graph_file)
+        
+        logger.info(f"✅ Graph built successfully!")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Error building graph: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
-# Lưu lại để dùng sau
-ox.save_graphml(G_hanoi, "hanoi_road_network.graphml")
+if __name__ == '__main__':
+    success = build_road_graph()
+    sys.exit(0 if success else 1)
