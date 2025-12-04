@@ -1,101 +1,106 @@
-# Smart Air NGSI-LD
+# Air Track NGSI-LD
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![NGSI-LD](https://img.shields.io/badge/NGSI--LD-compatible-green.svg)](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_cim009v010801p.pdf)
 
-Hệ thống theo dõi và quản lý dữ liệu chất lượng không khí dựa trên NGSI-LD và Linked Data.
+Air quality data monitoring and management system based on NGSI-LD and Linked Data.
 
-## 📋 Mục lục
+## 📋 Table of Contents
 
-- [Giới thiệu](#-giới-thiệu)
-- [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
-- [Tính năng](#-tính-năng)
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Cài đặt nhanh](#-cài-đặt-nhanh)
-- [Cài đặt chi tiết](#-cài-đặt-chi-tiết)
-- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
-- [Lịch sử thay đổi](#-lịch-sử-thay-đổi)
-- [Đóng góp](#-đóng-góp)
-- [Giấy phép](#-giấy-phép)
-- [Liên hệ](#-liên-hệ)
+- [Introduction](#introduction)
+- [System Architecture](#system-architecture)
+- [Features](#features)
+- [System Requirements](#system-requirements)
+- [Quick Setup](#quick-setup)
+- [Detailed Setup](#detailed-setup)
+- [Technologies Used](#technologies-used)
+- [Changelog](#changelog)
+- [Contribution](#contribution)
+- [License](#license)
+- [Contact](#contact)
 
-## 🌟 Giới thiệu
+## 🌟 Introduction
 
-Smart Air NGSI-LD là giải pháp toàn diện để thu thập, lưu trữ và phân tích dữ liệu chất lượng không khí theo chuẩn NGSI-LD (Next Generation Service Interfaces - Linked Data). Hệ thống hỗ trợ theo dõi các thông số:
+Air Track NGSI-LD is a comprehensive solution for collecting, storing, and analyzing air quality data according to the **NGSI-LD** (Next Generation Service Interfaces - Linked Data) standard. The system supports monitoring the following parameters:
 
-**Chất lượng không khí:**
-- 🌫️ PM2.5 và PM10 (Bụi mịn)
-- 💨 CO, NO, NO₂, NOₓ, O₃, SO₂, NH₃ (Các khí gây ô nhiễm)
-- 📊 AQI (Air Quality Index - Chỉ số chất lượng không khí)
+**Air Quality:**
 
-**Thời tiết:**
-- 🌡️ Nhiệt độ và cảm giác nhiệt độ
-- 💧 Độ ẩm
-- 🌬️ Tốc độ và hướng gió
-- 🌧️ Lượng mưa
-- ☁️ Độ mây, tầm nhìn xa
-- 🔆 Độ sáng (Illuminance)
-- ⏲️ Áp suất khí quyển
+  - 🌫️ PM2.5 and PM10 (Fine particulate matter)
+  - 💨 CO, NO, NO₂, NOₓ, O₃, SO₂, NH₃ (Pollutant gases)
+  - 📊 AQI (Air Quality Index)
 
-Dữ liệu được mô hình hóa theo chuẩn ontology **SOSA/SSN** (Sensor, Observation, Sample, and Actuator / Semantic Sensor Network), đảm bảo tính tương thích và khả năng mở rộng cao.
+**Weather:**
 
-## 🏗️ Kiến trúc hệ thống
-<a id="kiến-trúc-hệ-thống"></a>
+  - 🌡️ Temperature and Feels-like temperature
+  - 💧 Humidity
+  - 🌬️ Wind speed and direction
+  - 🌧️ Rainfall
+  - ☁️ Cloudiness, Visibility
+  - 🔆 Illuminance
+  - ⏲️ Atmospheric pressure
 
-![Smart Air Architecture](./assets/architecture.drawio.svg)
+Data is modeled according to the **SOSA/SSN** (Sensor, Observation, Sample, and Actuator / Semantic Sensor Network) ontology standard, ensuring high compatibility and scalability.
 
-## 🛠️ Công nghệ sử dụng
-<a id="công-nghệ-sử-dụng"></a>
+## 🏗️ System Architecture
+
+![Air Track Architecture](./assets/architecture.drawio.svg)
+
+## 🛠️ Technologies Used
 
 ### Core Technologies
-- **NGSI-LD**: Context Information Management API
-- **JSON-LD**: Linked Data format
-- **SOSA/SSN Ontology**: Sensor network ontology
+
+  - **NGSI-LD**: Context Information Management API
+  - **JSON-LD**: Linked Data format
+  - **SOSA/SSN Ontology**: Sensor network ontology
 
 ### Infrastructure
-- **Docker & Docker Compose**: Container orchestration
-- **MongoDB**: Document database cho Orion-LD và IoT Agent
-- **TimescaleDB**: Time-series database tối ưu cho dữ liệu chuỗi thời gian
-- **Redis**: Caching layer cho QuantumLeap
+
+  - **Docker & Docker Compose**: Container orchestration
+  - **MongoDB**: Document database for Orion-LD and IoT Agent
+  - **TimescaleDB**: Time-series database optimized for time-series data
+  - **Redis**: Caching layer for QuantumLeap
 
 ### FIWARE Components
-- **Orion-LD Context Broker**: 
-  - NGSI-LD API endpoint cho entity management
-  - Real-time context data storage và subscription
-  - Multi-tenancy support (tenant: `hanoi`)
-  - Integration với MongoDB backend
-- **IoT Agent JSON**:
-  - Protocol translation MQTT ↔ NGSI-LD
-  - Device provisioning và attribute mapping
-  - Southbound: MQTT protocol via Mosquitto
-  - Northbound: NGSI-LD entities tới Orion-LD
-- **Eclipse Mosquitto**:
-  - MQTT Broker cho IoT devices (ESP32)
-  - Support MQTT protocol (port 1883) và WebSocket (port 9001)
-  - Allow anonymous connections cho development
-- **QuantumLeap**:
-  - Time-series data API theo chuẩn FIWARE
-  - Automatic subscription tới Orion-LD notifications
-  - Storage backend: TimescaleDB với Redis caching
-  - RESTful API cho historical data queries
+
+  - **Orion-LD Context Broker**:
+      - NGSI-LD API endpoint for entity management
+      - Real-time context data storage and subscription
+      - Multi-tenancy support (tenant: `hanoi`)
+      - Integration with MongoDB backend
+  - **IoT Agent JSON**:
+      - Protocol translation MQTT ↔ NGSI-LD
+      - Device provisioning and attribute mapping
+      - Southbound: MQTT protocol via Mosquitto
+      - Northbound: NGSI-LD entities to Orion-LD
+  - **Eclipse Mosquitto**:
+      - MQTT Broker for IoT devices (ESP32)
+      - Supports MQTT protocol (port 1883) and WebSocket (port 9001)
+      - Allows anonymous connections for development
+  - **QuantumLeap**:
+      - Time-series data API based on FIWARE standards
+      - Automatic subscription to Orion-LD notifications
+      - Storage backend: TimescaleDB with Redis caching
+      - RESTful API for historical data queries
 
 ### Backend
-- **Python**: 
-  - ETL pipeline xử lý dữ liệu OpenWeather API
-  - MQTT publisher gửi dữ liệu tới IoT Agent
-  - NGSI-LD entity creation theo chuẩn SOSA/SSN
-  - Data transformation và validation
-- **Spring Boot**: 
-  - RESTful API endpoints (Platform, Weather, Air Quality history)
-  - JWT Authentication & Authorization
-  - Email notification service cho air quality alerts
-  - SSE (Server-Sent Events) cho real-time data streaming
-  - Integration với FIWARE Orion-LD Context Broker
-  - Integration với QuantumLeap cho time-series data
+
+  - **Python**:
+      - ETL pipeline processing OpenWeather API data
+      - MQTT publisher sending data to IoT Agent
+      - NGSI-LD entity creation following SOSA/SSN standards
+      - Data transformation and validation
+  - **Spring Boot**:
+      - RESTful API endpoints (Platform, Weather, Air Quality history)
+      - JWT Authentication & Authorization
+      - Email notification service for air quality alerts
+      - SSE (Server-Sent Events) for real-time data streaming
+      - Integration with FIWARE Orion-LD Context Broker
+      - Integration with QuantumLeap for time-series data
 
 ### Frontend
-- **React 19**: UI framework với Hooks
-- **Vite 7**: Build tool và dev server
+
+- **React 19**: UI framework with Hooks
+- **Vite 7**: Build tool and dev server
 - **React Router v7**: Client-side routing
 - **Redux Toolkit**: State management
 - **Redux Persist**: Persistent authentication state
@@ -103,30 +108,30 @@ Dữ liệu được mô hình hóa theo chuẩn ontology **SOSA/SSN** (Sensor, 
 - **React Leaflet + MapLibre GL**: Interactive maps
 - **Recharts**: Data visualization
 - **React Toastify**: Real-time notifications
-- **Axios**: HTTP client với interceptors
+- **Axios**: HTTP client with interceptors
 - **Bootstrap 5 + SCSS**: Styling framework
 
-## ✨ Tính năng
+## ✨ Features
 
-- **Thu thập dữ liệu thời gian thực**: Streaming data từ cảm biến thật (ESP32) và API nguồn mở (OpenWeather)
-- **Chuẩn hóa NGSI-LD**: ETL pipeline chuyển đổi dữ liệu thô sang NGSI-LD theo chuẩn FIWARE
-- **Quản lý entity**: CRUD operations cho Platform, Device, WeatherObserved, AirQualityObserved
-- **Lưu trữ Time Series**: QuantumLeap + TimescaleDB tối ưu cho dữ liệu chuỗi thời gian
-- **Dashboard trực quan**: Real-time SSE streaming, interactive charts, air quality alerts
-- **Tìm đường tối ưu**: Thuật toán A* routing tránh vùng ô nhiễm cao
-- **Cổng dữ liệu mở**: OpenAPI 3.0 endpoints 
+  - **Real-time Data Collection**: Streaming data from physical sensors (ESP32) and open APIs (OpenWeather).
+  - **NGSI-LD Standardization**: ETL pipeline transforms raw data to NGSI-LD following FIWARE standards.
+  - **Entity Management**: CRUD operations for Platform, Device, WeatherObserved, AirQualityObserved.
+  - **Time Series Storage**: QuantumLeap + TimescaleDB optimized for historical data.
+  - **Visual Dashboard**: Real-time SSE streaming, interactive charts, air quality alerts.
+  - **Optimal Routing**: A\* routing algorithm to avoid high pollution zones.
+  - **Open Data Gateway**: OpenAPI 3.0 endpoints.
 
-## 💻 Yêu cầu hệ thống
+## 💻 System Requirements
 
-- Docker (>= 20.10)
-- Docker Compose (>= 2.0)
-- RAM: Tối thiểu 4GB (khuyến nghị 8GB)
-- Disk: Tối thiểu 10GB trống
-- OS: Linux, macOS, Windows với WSL2
+  - Docker (\>= 20.10)
+  - Docker Compose (\>= 2.0)
+  - RAM: Minimum 4GB (8GB recommended)
+  - Disk: Minimum 10GB free space
+  - OS: Linux, macOS, Windows with WSL2
 
-## 🚀 Cài đặt nhanh
+## 🚀 Quick Setup
 
-### 1. Clone repository
+### 1\. Clone repository
 
 ```bash
 git clone https://github.com/trungthanhcva2206/smart-air-ngsi-ld.git
@@ -134,169 +139,176 @@ cd smart-air-ngsi-ld
 git checkout develop
 ```
 
-### 2. Cấu hình environment
+### 2\. Configure environment
 
 ```bash
-# Copy file environment mẫu
+# Copy example environment file
 cp .env.example .env
 
-# Chỉnh sửa các biến môi trường nếu cần
+# Edit environment variables if needed
 nano .env
 ```
 
-### 3. Khởi động hệ thống
+### 3\. Start the system
 
 ```bash
-# Build và khởi động tất cả services
+# Build and start all services
 docker-compose up -d
 
-# Kiểm tra trạng thái
+# Check status
 docker-compose ps
 ```
 
-### 4. Truy cập ứng dụng
+### 4\. Access the application
 
-- **Frontend Dashboard**: http://localhost:3000
-- **Backend API**: http://localhost:8080
-- **NGSI-LD Broker**: http://localhost:1026
-- **Database Admin**: http://localhost:8081
+  - **Frontend Dashboard**: http://localhost:3000
+  - **Backend API**: http://localhost:8080
+  - **NGSI-LD Broker**: http://localhost:1026
+  - **Database Admin**: http://localhost:8081
 
-## 📖 Cài đặt chi tiết
+## 📖 Detailed Setup
 
-Mỗi component có hướng dẫn cài đặt chi tiết riêng:
+Each component has its own detailed installation guide:
 
 ### ETL Pipeline
-Hệ thống Extract-Transform-Load để xử lý dữ liệu cảm biến.
 
-👉 [Xem hướng dẫn cài đặt ETL](./etl/README.md)
+Extract-Transform-Load system for processing sensor data.
+
+👉 [View ETL Setup Guide](./etl/README.md)
 
 ### ByLink Integration
-Tích hợp với hệ thống ByLink để thu thập dữ liệu.
 
-👉 [Xem hướng dẫn cài đặt ByLink](./BlynkNotification/README.md)
+Integration with the ByLink system for data collection.
+
+👉 [View ByLink Setup Guide](./BlynkNotification/README.md)
 
 ### Backend API
-RESTful API server xử lý logic nghiệp vụ.
 
-👉 [Xem hướng dẫn cài đặt Backend](./backend/README.md)
+RESTful API server handling business logic.
+
+👉 [View Backend Setup Guide](./backend/README.md)
 
 ### Frontend Dashboard
-Giao diện web hiển thị và quản lý dữ liệu.
 
-👉 [Xem hướng dẫn cài đặt Frontend](./frontend/README.md)
+Web interface for data visualization and management.
+
+👉 [View Frontend Setup Guide](./frontend/README.md)
 
 ### Routefinding Service
-Dịch vụ tìm đường tối ưu dựa trên chất lượng không khí.
 
-👉 [Xem hướng dẫn cài đặt Routefinding](./route-finding/README.md)
+Optimal route finding service based on air quality.
 
-## 📝 Lịch sử thay đổi
+👉 [View Routefinding Setup Guide](./route-finding/README.md)
 
-### Xem các phiên bản và cập nhật
+## 📝 Changelog
 
-Để theo dõi các thay đổi, cập nhật và cải tiến trong từng phiên bản của dự án:
+### View versions and updates
 
-👉 **[Xem CHANGELOG.md](./CHANGELOG.md)**
+To track changes, updates, and improvements in each project version:
 
-CHANGELOG bao gồm:
-- ✨ Tính năng mới (New Features)
-- 🐛 Sửa lỗi (Bug Fixes)
-- 🔧 Cải tiến (Improvements)
-- 💥 Breaking Changes
-- 📚 Cập nhật tài liệu (Documentation)
-- 🔒 Bảo mật (Security)
+👉 **[View CHANGELOG.md](./CHANGELOG.md)**
 
-### Phiên bản hiện tại
+The CHANGELOG includes:
 
-Kiểm tra phiên bản hiện tại của hệ thống:
+  - ✨ New Features
+  - 🐛 Bug Fixes
+  - 🔧 Improvements
+  - 💥 Breaking Changes
+  - 📚 Documentation updates
+  - 🔒 Security updates
+
+### Current Version
+
+Check the current system version:
 
 ```bash
-# Xem phiên bản từ git tag
+# View version from git tag
 git describe --tags --abbrev=0
 
-# Hoặc kiểm tra từ package.json
+# Or check from package.json
 cat package.json | grep version
 ```
 
-### Cập nhật lên phiên bản mới
+### Update to new version
 
 ```bash
-# Pull code mới nhất
+# Pull latest code
 git pull origin main
 
-# Kiểm tra các thay đổi trong CHANGELOG
+# Check changes in CHANGELOG
 cat CHANGELOG.md
 
-# Rebuild và khởi động lại services
+# Rebuild and restart services
 docker-compose down
 docker-compose up -d --build
 ```
 
-### Theo dõi các bản phát hành
+### Track Releases
 
-- Xem tất cả [Releases](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/releases)
-- Theo dõi các [Tags](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/tags)
-- Subscribe để nhận thông báo về bản phát hành mới
+  - View all [Releases](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/releases)
+  - Follow [Tags](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/tags)
+  - Subscribe for new release notifications
 
-## 🤝 Đóng góp
+## 🤝 Contribution
 
-Chúng tôi luôn chào đón mọi đóng góp từ cộng đồng!
+We always welcome contributions from the community\!
 
-Vui lòng đọc [CONTRIBUTING.md](./CONTRIBUTING.md) để biết chi tiết về quy trình đóng góp, coding conventions và hướng dẫn phát triển.
+Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details on the contribution process, coding conventions, and development guidelines.
 
-## 📄 Giấy phép
+## 📄 License
 
 ### Code License
 
-Dự án này được phát hành dưới giấy phép **Apache License 2.0**.
+This project is released under the **Apache License 2.0**.
 
-Xem file [LICENSE](./LICENSE) để biết thêm chi tiết.
+See the [LICENSE](./LICENSE) file for more details.
 
 ### Data License
 
-Dữ liệu trong dự án này được phát hành dưới giấy phép **Open Data Commons – Open Database License (ODbL) v1.0**.
+Data in this project is released under the **Open Data Commons – Open Database License (ODbL) v1.0**.
 
-[![ODbL](https://img.shields.io/badge/License-ODbL%20v1.0-brightgreen.svg)](https://opendatacommons.org/licenses/odbl/1.0/)
+[](https://opendatacommons.org/licenses/odbl/1.0/)
 
-Điều này có nghĩa là bạn có quyền:
-- **Chia sẻ**: Sao chép và phân phối dữ liệu
-- **Tạo**: Tạo ra các tác phẩm từ dữ liệu
-- **Chỉnh sửa**: Điều chỉnh, biến đổi và xây dựng dựa trên dữ liệu
+This means you are free to:
 
-Với các điều kiện:
-- **Ghi công**: Bạn phải ghi công nguồn dữ liệu
-- **Chia sẻ tương tự**: Nếu bạn chỉnh sửa hoặc xây dựng dựa trên dữ liệu, bạn phải phân phối kết quả dưới cùng giấy phép
-- **Giữ nguyên**: Nếu bạn phân phối lại dữ liệu, bạn phải giữ nguyên giấy phép
+  - **Share**: To copy, distribute and use the database.
+  - **Create**: To produce works from the database.
+  - **Adapt**: To modify, transform and build upon the database.
 
-Xem [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) để biết chi tiết đầy đủ.
+Under the following conditions:
 
-## 📧 Liên hệ
+  - **Attribution**: You must attribute any public use of the database, or works produced from the database, in the manner specified in the ODbL.
+  - **Share-Alike**: If you publicly use any adapted version of this database, or works produced from an adapted database, you must also offer that adapted database under the ODbL.
+  - **Keep open**: If you redistribute the database, or an adapted version of it, then you may not use technical measures that restrict the work.
+
+See [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) for full details.
+
+## 📧 Contact
 
 ### Team Members
 
-- **Trung Thành**
-  - Email: [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
-  - GitHub: [@trungthanhcva2206](https://github.com/trungthanhcva2206)
+  - **Trung Thanh**
 
-- **Tankchoi** 
-  - Email: [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
+      - Email: [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
+      - GitHub: [@trungthanhcva2206](https://github.com/trungthanhcva2206)
 
-- **Panh**
-  - Email: [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
+  - **Tankchoi**
+      - Email: [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
+      - Github: [@tankchoi](https://github.com/tankchoi)
 
-### Báo lỗi và đề xuất
+  - **Panh**
 
-- Sử dụng [GitHub Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues) để báo lỗi
-- Tham gia [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions) để thảo luận
-- Để tìm hiểu sâu hơn về hệ thống, xem tài liệu đầy đủ trên Wiki: [Xem Wiki Documentation](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
+      - Email: [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
+      - Github: [@ntpa812](https://github.com/ntpa812)
 
----
+### Bug Reports and Suggestions
 
-<p align="center">
-  Made with ❤️ by Smart Air Team
-</p>
+  - Use [GitHub Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues) to report bugs.
+  - Join [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions) to chat.
+  - To learn more about the system, view the full documentation on Wiki: [View Wiki Documentation](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
 
-<p align="center">
-  <a href="#-mục-lục">Về đầu trang ↑</a>
-</p>
+-----
 
+Made with ❤️ by Air Track Team
+
+[Back to top ↑](#introduction)

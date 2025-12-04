@@ -1,33 +1,30 @@
-# 🌬️ Smart Air --- NGSI-LD Backend
+# 🌬️ Air Track --- NGSI-LD Backend
 
 **Orion-LD • Spring Boot • SSE • Open Data • Residents & Alerts**
 
-Backend xử lý dữ liệu thời gian thực dựa trên NGSI-LD, nhận
-notifications từ **Orion-LD**, stream qua **SSE**, cung cấp **Open Data
-API**, quản lý cư dân/residents và phát cảnh báo qua
-Email/Telegram/Blynk.
+Backend processing real-time data based on NGSI-LD, receiving notifications from **Orion-LD**, streaming via **SSE**, providing **Open Data API**, managing residents, and sending alerts via Email/Telegram/Blynk.
 
-------------------------------------------------------------------------
+-----
 
 ## ✨ Features
 
--   ✔️ Nhận & xử lý **NGSI-LD notifications** từ Orion-LD
--   ✔️ **Auto Subscriptions** vào Orion-LD khi khởi động
--   ✔️ **Public API**: platforms, weather history, air quality history
--   ✔️ **SSE streaming** cho dashboard thời gian thực
--   ✔️ **JWT Authentication & Authorization** (RESIDENT/ADMIN roles)
--   ✔️ **Resident Management**: profile, districts subscription
--   ✔️ **Email Alerts**: cảnh báo chất lượng không khí (poor/very poor)
--   ✔️ **Rate Limiting**: throttle alerts (mặc định 3 giờ/district)
+- ✔️ Receive & process **NGSI-LD notifications** from Orion-LD
+- ✔️ **Auto Subscriptions** to Orion-LD on startup
+- ✔️ **Public API**: platforms, weather history, air quality history
+- ✔️ **SSE streaming** for real-time dashboard
+- ✔️ **JWT Authentication & Authorization** (RESIDENT/ADMIN roles)
+- ✔️ **Resident Management**: profile, districts subscription
+-   ✔️ **Email Alerts**: air quality alert (poor/very poor)
+-   ✔️ **Rate Limiting**: throttle alerts (default 3 hours/district)
 -   ✔️ OpenAPI documentation, CORS config, error handling
--   ✔️ MySQL 8.0 (production) hoặc H2 (dev mode)
+-   ✔️ MySQL 8.0 (production) or H2 (dev mode)
 
 ------------------------------------------------------------------------
 
-## 🏗️ Kiến trúc
-
+## 🏗️ Architecture
+```
                        ┌──────────────────────────────────────┐
-                       │         Smart Air Backend            │
+                       │         Air Track Backend            │
                        │     (Spring Boot MVC + WebFlux)      │
                        └──────────────────────────────────────┘
                            ▲           ▲            ▲
@@ -52,72 +49,75 @@ Email/Telegram/Blynk.
                                   │   (Email Alerts)    │
                                   └─────────────────────┘
 
+
+```
 ------------------------------------------------------------------------
 
 ## ⚙️ Tech Stack
 
-  Layer           Technology
-  --------------- ---------------------------------
-  Framework       Spring Boot 3.5.7 (Java 21+)
-  API             Spring MVC (Blocking) + WebFlux (SSE)
-  Database        MySQL 8.0 / H2 (dev)
-  ORM             Spring Data JPA + Hibernate
-  Authentication  JWT (jjwt 0.12.6) + Spring Security
-  Authorization   Role-based (RESIDENT, ADMIN)
-  Realtime        Server-Sent Events (SSE/WebFlux)
-  NGSI-LD Client  Orion-LD, QuantumLeap (WebClient)
-  Email           JavaMailSender (SMTP)
-  Validation      Bean Validation (jakarta.validation)
+Layer          | Technology
+---------------| ---------------------------------
+Framework      | Spring Boot 3.5.7 (Java 21+)
+API            | Spring MVC (Blocking) + WebFlux (SSE)
+Database       | MySQL 8.0 / H2 (dev)
+ORM            | Spring Data JPA + Hibernate
+Authentication | JWT (jjwt 0.12.6) + Spring Security
+Authorization  | Role-based (RESIDENT, ADMIN)
+Realtime       | Server-Sent Events (SSE/WebFlux)
+NGSI-LD Client | Orion-LD, QuantumLeap (WebClient)
+Email          | JavaMailSender (SMTP)
+Validation     | Bean Validation (jakarta.validation)
 
-------------------------------------------------------------------------
+-----
 
-## 📁 Cấu trúc chính
+## 📁 Main Structure
+```
+    src/
+     ├─ api/
+     ├─ controller/
+     ├─ service/
+     │    ├─ NgsiTransformer
+     │    ├─ Notification
+     │    ├─ ResidentService
+     │    └─ OrionSubscriptionService
+     ├─ model/
+     ├─ config/
+     └─ repository/
+```
+-----
 
-    src/
-     ├─ api/
-     ├─ controller/
-     ├─ service/
-     │    ├─ NgsiTransformer
-     │    ├─ Notification
-     │    ├─ ResidentService
-     │    └─ OrionSubscriptionService
-     ├─ model/
-     ├─ config/
-     └─ repository/
+## 🔧 Installation
 
-------------------------------------------------------------------------
+### 1\. Clone repo
 
-## 🔧 Cài đặt
-
-### 1. Clone repo
-
-``` bash
-git clone https://github.com/trungthanhcva2206/smart-air-ngsi-ld.git
-cd smart-air-ngsi-ld
+```bash
+git clone https://github.com/trungthanhcva2206/air-track-ngsi-ld.git
+cd air-track-ngsi-ld
 ```
 
-### 2. Tạo file cấu hình
+### 2\. Create configuration file
 
-``` bash
-cp src/main/resources/application.example.properties    src/main/resources/application.properties
+```bash
+cp src/main/resources/application.example.properties
+src/main/resources/application.properties
 ```
 
-### 3. Build
+### 3\. Build
 
-``` bash
+```bash
 mvn clean package -DskipTests
 ```
 
-### 4. Chạy app
+### 4\. Run app
 
-``` bash
+```bash
 java -jar target/*.jar
 ```
 
-> Nếu dùng Docker: Orion-LD không thể truy cập `localhost`; dùng
+> If using Docker: Orion-LD cannot access `localhost`; use
 > `http://host.docker.internal:8081`.
 
-------------------------------------------------------------------------
+-----
 
 ## 🌐 API Endpoints
 
@@ -191,7 +191,7 @@ GET /api/subscriptions/list
 
 ------------------------------------------------------------------------
 
-## 🔄 Quy trình hoạt động
+## 🔄 Operational Workflow
 
 ### Data Flow (Realtime)
 ```
@@ -206,7 +206,6 @@ WeatherDataDTO / AirQualityDataDTO
             ↓
          EmailService → Send alerts to residents
 ```
-
 ### Authentication Flow
 ```
 1. User registers → POST /api/auth/register
@@ -227,56 +226,55 @@ WeatherDataDTO / AirQualityDataDTO
    - Check ownership (user can only edit own profile)
    - Process request
 ```
-
 ------------------------------------------------------------------------
 
 ## 🐞 Troubleshooting
 
 ### CORS Issues
-- **403 Forbidden from frontend**: Đảm bảo origin (`http://localhost:5173`) đã được thêm vào `CorsConfig.java`
-- **OPTIONS preflight failed**: Check `SecurityConfig.java` đã permit OPTIONS requests chưa
+- **403 Forbidden from frontend**: Ensure origin (`http://localhost:5173`) is added to `CorsConfig.java`.
+- **OPTIONS preflight failed**: Check if `SecurityConfig.java` permits OPTIONS requests.
 
 ### NGSI-LD Notifications
-- **Không nhận notifications**: Kiểm tra URL backend có accessible từ Orion-LD container không (dùng `host.docker.internal` nếu chạy Docker)
-- **Subscription không tạo được**: Verify Orion-LD URL và tenant name trong `application.properties`
+- **Not receiving notifications**: Check if the backend URL is accessible from the Orion-LD container (use `host.docker.internal` if running in Docker).
+- **Subscription creation failed**: Verify Orion-LD URL and tenant name in `application.properties`.
 
 ### SSE Streaming
-- **SSE không stream**: Kiểm tra CORS headers và WebFlux configuration
-- **Connection timeout**: Tăng `spring.webflux.timeout` trong config
+- **SSE not streaming**: Check CORS headers and WebFlux configuration.
+- **Connection timeout**: Increase `spring.webflux.timeout` in config.
 
 ### Authentication
-- **401 Unauthorized**: JWT token expired hoặc invalid, login lại
-- **403 Forbidden**: User không có quyền truy cập endpoint (check role)
-- **Email already exists**: Email đã được đăng ký bởi user khác
+- **401 Unauthorized**: JWT token expired or invalid, please login again.
+- **403 Forbidden**: User does not have permission to access the endpoint (check role).
+- **Email already exists**: The email has already been registered by another user.
 
 ### Email Alerts
-- **Không nhận email**: Kiểm tra SMTP config trong `application.properties`
-- **Email spam**: Check email provider settings, whitelist sender
-- **Throttle alerts**: Alerts chỉ gửi tối đa 1 lần / 3 giờ cho mỗi district
+- **Not receiving emails**: Check SMTP config in `application.properties`.
+- **Email spam**: Check email provider settings and whitelist the sender.
+- **Throttle alerts**: Alerts are sent at most once every 3 hours per district.
 
-------------------------------------------------------------------------
+-----
 
 ## 📜 License
 
-Apache 2.0 - xem file `LICENSE`
+Apache 2.0 --- view `LICENSE` file.
 
-------------------------------------------------------------------------
+-----
 
 ## 👥 Authors
 
--   **TT** - trungthanhcva2206@gmail.com
--   **Tankchoi** - tadzltv22082004@gmail.com  
--   **Panh** - panh812004.apn@gmail.com
+- **TT** --- trungthanhcva2206@gmail.com
+- **Tankchoi** --- tadzltv22082004@gmail.com
+- **Panh** --- panh812004.apn@gmail.com
 
-Copyright © 2025 CHK. All rights reserved.
+Copyright © 2025 TAA. All rights reserved.
 
-------------------------------------------------------------------------
+-----
 
 ## 💡 Support
 
-Nếu gặp vấn đề, vui lòng:
+If you encounter issues, please:
 
-1. Check [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-2. Đọc [Wiki Documentation](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
-3. Tham gia [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
-4. Liên hệ trực tiếp authors
+1.  Check [Issues](https://github.com/trungthanhcva2206/air-track-ngsi-ld/issues)
+2.  View [Documentation Wiki](https://github.com/trungthanhcva2206/air-track-ngsi-ld/wiki)
+3.  Discuss in [Discussions](https://github.com/trungthanhcva2206/air-track-ngsi-ld/discussions)
+4.  Contact authors

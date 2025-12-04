@@ -1,78 +1,85 @@
-# Smart Air Monitoring ETL Pipeline
+# Air Track Monitoring ETL Pipeline
 
-## Tổng quan dự án
+## Project Overview
 
-ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Smart City với kiến trúc FIWARE hoàn chỉnh:
+This ETL Pipeline is designed to meet Smart City standards with a complete FIWARE architecture:
 
-### 🎯 Các tiêu chí đạt được
+### 🎯 Achieved Criteria
 
-1. **✅ Mô hình hóa dữ liệu theo SOSA/SSN Ontology (W3C)**
-   - **Sensor**: Các thiết bị cảm biến (Weather Sensor, Air Quality Sensor)
-   - **Platform**: Nền tảng chứa sensors (Environment Monitoring Station)
-   - **ObservableProperty**: Các thuộc tính có thể quan sát (Temperature, CO, PM2.5, ...)
-   - **Observation**: Các quan sát thực tế (WeatherObserved, AirQualityObserved)
-   - Relationships: `observes`, `isHostedBy`, `hosts`, `refDevice`
-   - Tuân thủ chuẩn W3C SSN: https://www.w3.org/TR/vocab-ssn/
+1.  **✅ Data Modeling according to SOSA/SSN Ontology (W3C)**
 
-2. **✅ API và mô hình dữ liệu NGSI-LD (ETSI ISG CIM)**
-   - Entities theo chuẩn NGSI-LD với @context
-   - Properties, GeoProperties, và Relationships đúng chuẩn
-   - Tích hợp với Orion-LD Context Broker
+      * **Sensor**: Sensing devices (Weather Sensor, Air Quality Sensor)
+      * **Platform**: Platform hosting sensors (Environment Monitoring Station)
+      * **ObservableProperty**: Observable properties (Temperature, CO, PM2.5, ...)
+      * **Observation**: Actual observations (WeatherObserved, AirQualityObserved)
+      * Relationships: `observes`, `isHostedBy`, `hosts`, `refDevice`
+      * Compliant with W3C SSN standard: [https://www.w3.org/TR/vocab-ssn/](https://www.w3.org/TR/vocab-ssn/)
 
-3. **✅ Sử dụng Smart Data Models (FIWARE)**
-   - `WeatherObserved`: https://github.com/smart-data-models/dataModel.Environment/tree/master/WeatherObserved
-   - `AirQualityObserved`: https://github.com/smart-data-models/dataModel.Environment/tree/master/AirQualityObserved
-   - Tuân thủ schema và attributes từ smartdatamodels.org
+2.  **✅ NGSI-LD API and Data Model (ETSI ISG CIM)**
 
-4. **✅ Time Series Data Storage với QuantumLeap**
-   - Lưu trữ dữ liệu lịch sử tự động qua subscriptions
-   - Hỗ trợ truy vấn dữ liệu theo thời gian
-   - Tích hợp với TimescaleDB để lưu trữ hiệu quả
+      * NGSI-LD standard entities with `@context`
+      * Standardized Properties, GeoProperties, and Relationships
+      * Integration with Orion-LD Context Broker
 
-5. **✅ Real-time Notifications**
-   - Subscriptions tự động từ Orion-LD đến QuantumLeap
-   - Cập nhật entity theo fixed ID (không timestamp trong ID)
-   - Hỗ trợ SSE real-time updates cho frontend
+3.  **✅ Utilization of Smart Data Models (FIWARE)**
 
-6. **✅ Tạo dữ liệu mở từ nguồn thực tế**
-   - Tái sử dụng OpenWeather API (nguồn dữ liệu mở)
-   - Giả lập 126 trạm cảm biến tại các phường/xã Hà Nội
-   - Dữ liệu real-time cho demo sản phẩm
-## 🏗️ Kiến trúc hệ thống
+      * `WeatherObserved`: [https://github.com/smart-data-models/dataModel.Environment/tree/master/WeatherObserved](https://github.com/smart-data-models/dataModel.Environment/tree/master/WeatherObserved)
+      * `AirQualityObserved`: [https://github.com/smart-data-models/dataModel.Environment/tree/master/AirQualityObserved](https://github.com/smart-data-models/dataModel.Environment/tree/master/AirQualityObserved)
+      * Adheres to schemas and attributes from smartdatamodels.org
+
+4.  **✅ Time Series Data Storage with QuantumLeap**
+
+      * Automatic historical data storage via subscriptions
+      * Supports time-based data querying
+      * Integration with TimescaleDB for efficient storage
+
+5.  **✅ Real-time Notifications**
+
+      * Automatic subscriptions from Orion-LD to QuantumLeap
+      * Entity updates using fixed IDs (no timestamp in ID)
+      * Supports SSE real-time updates for frontend
+
+6.  **✅ Open Data Creation from Real Sources**
+
+      * Reusing OpenWeather API (open data source)
+      * Simulating 126 sensor stations at wards/communes in Hanoi
+      * Real-time data for product demos
+
+## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         FIWARE Platform                                     │
+│                          FIWARE Platform                                    │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌─────────────┐      ┌──────────────┐                                      │
-│  │   Orion-LD  │      │ QuantumLeap  │                                      │
-│  │   (1026)    │◄────►│   (8668)     │                                      │
-│  │  Context    │      │  Time Series │                                      │
-│  │   Broker    │      │   Service    │                                      │
-│  └──────▲──────┘      └──────────────┘                                      │
-│         │                    ▲                                              │
-│         │                    │                                              │
-│         │ ┌──────────────────┴─────┐                                        │
+│  ┌─────────────┐       ┌──────────────┐                                     │
+│  │  Orion-LD   │       │ QuantumLeap  │                                     │
+│  │  (1026)     │◄────► │   (8668)     │                                     │
+│  │ Context     │       │  Time Series │                                     │
+│  │  Broker     │       │   Service    │                                     │
+│  └──────▲──────┘       └──────────────┘                                     │
+│         │                   ▲                                               │
+│         │                   │                                               │
+│         │ ┌─────────────────┴──────┐                                        │
 │         │ │  subscription/notify   │                                        │
 │         │ └────────────────────────┘                                        │
 │         │                                                                   │
 │         │ NGSI-LD                                                           │
 │         │ Entities           ┌─────────────────┐                            │
-│         │                    │   IoT Agent     │                            │
-│         │                    │   JSON (4041)   │                            │
-│         │                    │   - Device Mgmt │                            │
-│         │◄───────────────────┤   - Transform   │                            │
-│         │                    │   - Provision   │                            │
+│         │                    │    IoT Agent    │                            │
+│         │                    │    JSON (4041)  │                            │
+│         │                    │    - Device Mgmt│                            │
+│         │◄───────────────────┤    - Transform  │                            │
+│         │                    │    - Provision  │                            │
 │         │                    └────────▲────────┘                            │
 │         │                             │                                     │
 │         │                             │ MQTT                                │
 │         │                             │ (Raw Data)                          │
 │         │                             │                                     │
 │         │                    ┌────────┴────────┐                            │
-│         │                    │   Mosquitto     │                            │
-│         │                    │   MQTT Broker   │                            │
-│         │                    │   (1883)        │                            │
+│         │                    │    Mosquitto    │                            │
+│         │                    │    MQTT Broker  │                            │
+│         │                    │    (1883)       │                            │
 │         │                    └────────▲────────┘                            │
 └─────────┼─────────────────────────────┼─────────────────────────────────────┘
           │                             │
@@ -83,7 +90,7 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
 │           ETL Pipeline (Python)               │
 │                                               │
 │  ┌──────────────────────────────────────┐     │
-│  │   Dual-Path Architecture             │     │
+│  │    Dual-Path Architecture            │     │
 │  │                                      │     │
 │  │  PATH 1: REST API → Orion-LD         │     │
 │  │  - Full NGSI-LD entities             │     │
@@ -108,13 +115,15 @@ ETL Pipeline này được thiết kế để đáp ứng các tiêu chuẩn Sma
        │  OpenWeather API   │
        │  - Weather Data    │
        │  - Air Quality     │
+       │  - Air Track       │
        └────────────────────┘
 ```
-## 📊 Luồng dữ liệu
 
-### 1. Dual-Path ETL Architecture
+## 📊 Data Flow
 
-Pipeline hỗ trợ 2 luồng dữ liệu song song hoặc độc lập:
+### 1\. Dual-Path ETL Architecture
+
+The pipeline supports 2 parallel or independent data streams:
 
 #### PATH 1: REST API → Orion-LD (Traditional)
 
@@ -175,7 +184,7 @@ NGSI-LD Entities
 Orion-LD Context Broker
 ```
 
-### 2. Subscription Flow (Real-time)
+### 2\. Subscription Flow (Real-time)
 
 ```
 Orion-LD
@@ -193,53 +202,53 @@ QuantumLeap
 TimescaleDB (Time Series)
 ```
 
-### 3. ETL Mode Configuration
+### 3\. ETL Mode Configuration
 
-Chọn chế độ ETL qua biến môi trường `ETL_MODE`:
+Select ETL mode via the `ETL_MODE` environment variable:
 
-- **`rest`**: Chỉ sử dụng REST API (PATH 1)
-  - ✅ Đầy đủ entity structure từ models.py
-  - ✅ GeoProperty và Relationships
-  - ⚠️ Không tuân thủ FIWARE IoT architecture
+  * **`rest`**: Use REST API only (PATH 1)
+      * ✅ Full entity structure from models.py
+      * ✅ GeoProperty and Relationships
+      * ⚠️ Does not adhere to FIWARE IoT architecture
+  * **`mqtt`**: Use MQTT → IoT Agent only (PATH 2)
+      * ✅ FIWARE compliant architecture
+      * ✅ Device provisioning and management
+      * ⚠️ No GeoProperty (location must be set via provisioning)
+  * **`dual`**: Both paths running in parallel (Default)
+      * ✅ REST creates the initial entity with GeoProperty
+      * ✅ MQTT updates measurements via IoT Agent
+      * ✅ Mutual backup
+      * ⚠️ REST must run first to create the structure
 
-- **`mqtt`**: Chỉ sử dụng MQTT → IoT Agent (PATH 2)
-  - ✅ FIWARE compliant architecture
-  - ✅ Device provisioning và management
-  - ⚠️ Không có GeoProperty (location phải set qua provisioning)
+## 📋 Requirements
 
-- **`dual`**: Cả 2 paths chạy song song (mặc định)
-  - ✅ REST tạo entity đầy tiên với GeoProperty
-  - ✅ MQTT update measurements qua IoT Agent
-  - ✅ Backup lẫn nhau
-  - ⚠️ REST phải chạy trước để tạo structure
-## 📋 Yêu cầu
+  * Python 3.8+
+  * OpenWeather API Key (Free 1000 requests/day)
+  * Orion-LD Context Broker (local or remote)
 
-- Python 3.8+
-- OpenWeather API Key (miễn phí 1000 requests/ngày)
-- Orion-LD Context Broker (chạy local hoặc remote)
+## 🚀 Installation
 
-## 🚀 Cài đặt
-
-### 1. Clone repository
+### 1\. Clone repository
 
 ```bash
-cd smart-air-ngsi-ld
+cd air-track-ngsi-ld
 ```
 
-### 2. Khởi động FIWARE Platform
+### 2\. Start FIWARE Platform
 
 ```bash
 docker-compose up -d
 ```
 
-Services được khởi động:
-- **Orion-LD**: `localhost:1026` - Context Broker
-- **QuantumLeap**: `localhost:8668` - Time Series Service
-- **TimescaleDB**: `localhost:5432` - PostgreSQL Time Series Database
-- **Mosquitto**: `localhost:1883` - MQTT Broker
-- **IoT Agent JSON**: `localhost:4041` - IoT Device Management
+Services started:
 
-Kiểm tra services:
+  * **Orion-LD**: `localhost:1026` - Context Broker
+  * **QuantumLeap**: `localhost:8668` - Time Series Service
+  * **TimescaleDB**: `localhost:5432` - PostgreSQL Time Series Database
+  * **Mosquitto**: `localhost:1883` - MQTT Broker
+  * **IoT Agent JSON**: `localhost:4041` - IoT Device Management
+
+Check services:
 
 ```bash
 # Orion-LD
@@ -256,22 +265,22 @@ curl http://localhost:8668/version
 curl http://localhost:4041/iot/about
 
 # MQTT Broker
-# Sử dụng MQTT client để test: mosquitto_sub -h localhost -p 1883 -t "#"
+# Use MQTT client to test: mosquitto_sub -h localhost -p 1883 -t "#"
 ```
 
-### 3. Cấu hình ETL Pipeline
+### 3\. Configure ETL Pipeline
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Tạo file `.env` từ `.env.example`:
+Create `.env` file from `.env.example`:
 
 ```bash
 copy .env.example .env
 ```
 
-Chỉnh sửa `.env`:
+Edit `.env`:
 
 ```env
 # OpenWeather API
@@ -302,59 +311,66 @@ ETL_MODE=dual
 ETL_INTERVAL_MINUTES=480
 
 # Data Source
-# Đường dẫn tới file GeoJSON chứa dữ liệu địa lý các xã/phường Hà Nội.
-# Mặc định: ./etl/ha_noi_with_latlon2.geojson
-# Bạn có thể đổi sang đường dẫn khác nếu dữ liệu nằm nơi khác.
+# Path to GeoJSON file containing Hanoi wards/communes geography.
+# Default: ./etl/ha_noi_with_latlon2.geojson
+# You can change to another path if data is located elsewhere.
 HANOI_GEOJSON_PATH=./etl/ha_noi_with_latlon2.geojson
 ```
 
-### 4. Provision IoT Agent Devices (Required for MQTT mode)
+### 4\. Provision IoT Agent Devices (Required for MQTT mode)
 
-Nếu sử dụng `ETL_MODE=mqtt` hoặc `ETL_MODE=dual`, cần provision devices trước:
+If using `ETL_MODE=mqtt` or `ETL_MODE=dual`, you need to provision devices first:
 
 #### Windows (PowerShell)
+
 ```powershell
 .\iot-agent-provisioning.ps1
 ```
 
 #### Linux/Mac (Bash)
+
 ```bash
 chmod +x iot-agent-provisioning.sh
 ./iot-agent-provisioning.sh
 ```
 
-Script sẽ tự động:
-- ✅ Provision service group với MQTT transport
-- ✅ Provision 252 devices (126 weather + 126 air quality)
-- ✅ Mapping attributes theo models.py
-- ✅ Static attributes (address, dataProvider, source)
+The script will automatically:
 
-**Lưu ý quan trọng:**
-- Chỉ cần chạy **1 lần** khi setup lần đầu
-- Nếu sửa attribute mapping → Chạy lại script để update
-- Device ID format: `weather-{district}`, `airquality-{district}` (lowercase, hyphens)
+  * ✅ Provision service group with MQTT transport
+  * ✅ Provision 252 devices (126 weather + 126 air quality)
+  * ✅ Map attributes according to models.py
+  * ✅ Set static attributes (address, dataProvider, source)
 
-### 5. Chạy ETL Pipeline
+**Important Note:**
+
+  * Only need to run **once** during initial setup.
+  * If attribute mapping changes → Run script again to update.
+  * Device ID format: `weather-{district}`, `airquality-{district}` (lowercase, hyphens).
+
+### 5\. Run ETL Pipeline
 
 ```bash
 python -m etl.Core_ETL.main
 ```
-**Pipeline sẽ tự động:**
-1. ✅ Khởi tạo SOSA/SSN infrastructure (ObservableProperty, Platform, Device)
-2. ✅ Tạo subscriptions từ Orion-LD đến QuantumLeap
-3. ✅ Chạy ETL cycle đầu tiên ngay lập tức
-4. ✅ Lên lịch chạy định kỳ theo chu kỳ cấu hình
-5. ✅ Publish MQTT messages (nếu mode = 'mqtt' hoặc 'dual')
 
-**Khuyến nghị:**
-- **Lần đầu tiên**: Dùng `ETL_MODE=dual` để tạo entities đầy đủ
-- **Lần sau**: Có thể chuyển sang `ETL_MODE=mqtt` để chỉ update qua IoT Agent
+**The pipeline will automatically:**
+
+1.  ✅ Initialize SOSA/SSN infrastructure (ObservableProperty, Platform, Device)
+2.  ✅ Create subscriptions from Orion-LD to QuantumLeap
+3.  ✅ Run the first ETL cycle immediately
+4.  ✅ Schedule periodic runs according to configuration
+5.  ✅ Publish MQTT messages (if mode = 'mqtt' or 'dual')
+
+**Recommendation:**
+
+  * **First time**: Use `ETL_MODE=dual` to create full entities.
+  * **Subsequent times**: Can switch to `ETL_MODE=mqtt` to update via IoT Agent only.
 
 ## 🔧 Subscription Manager
 
-Pipeline tự động tạo các subscriptions sau:
+The pipeline automatically creates the following subscriptions:
 
-### 1. WeatherObserved → QuantumLeap
+### 1\. WeatherObserved → QuantumLeap
 
 ```json
 {
@@ -369,7 +385,7 @@ Pipeline tự động tạo các subscriptions sau:
 }
 ```
 
-### 2. AirQualityObserved → QuantumLeap
+### 2\. AirQualityObserved → QuantumLeap
 
 ```json
 {
@@ -384,7 +400,7 @@ Pipeline tự động tạo các subscriptions sau:
 }
 ```
 
-### 3. Device → QuantumLeap
+### 3\. Device → QuantumLeap
 
 ```json
 {
@@ -398,7 +414,8 @@ Pipeline tự động tạo các subscriptions sau:
   }
 }
 ```
-### 4. Platform → QuantumLeap
+
+### 4\. Platform → QuantumLeap
 
 ```json
 {
@@ -412,7 +429,8 @@ Pipeline tự động tạo các subscriptions sau:
   }
 }
 ```
-## 🏗️ Kiến trúc SOSA/SSN
+
+## 🏗️ SOSA/SSN Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -428,198 +446,201 @@ Pipeline tự động tạo các subscriptions sau:
 │  └─ ...                                                                                                                    │
 │                                                                                                                            │
 │  Platform (N entities - unified per district)                                                                              │
-│  ├─ EnvironmentStation-PhuongBaDinh            isHostedBy   Sensor/Device (2N entities)                                    │
-│  │   ├─ hosts → WeatherSensor-PhuongBaDinh     ---------->  ├─ WeatherSensor-PhuongBaDinh ───────────> ObservableProperty  │      
-│  │   └─ hosts → AirQualitySensor-PhuongBaDinh               ├─ AirQualitySensor-PhuongBaDinh ────────> ObservableProperty  │ 
-│  └─ ...                                                     └─ ...                                                         │
-│                                                                                    │                                       │
-│                                                                                    │ refDevice (madeBySensor)              │
-│                                                                                    ▼                                       │
+│  ├─ EnvironmentStation-PhuongBaDinh             isHostedBy    Sensor/Device (2N entities)                                  │
+│  │   ├─ hosts → WeatherSensor-PhuongBaDinh      ---------->   ├─ WeatherSensor-PhuongBaDinh ───────────> ObservableProperty│      
+│  │   └─ hosts → AirQualitySensor-PhuongBaDinh                ├─ AirQualitySensor-PhuongBaDinh ────────> ObservableProperty│ 
+│  └─ ...                                                       └─ ...                                                       │
+│                                                                                                  │                         │
+│                                                                                                  │ refDevice (madeBySensor)│
+│                                                                                                  ▼                         │
 │────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────│
 │                                                      Observation Layer (Dynamic)                                           │
 │────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────│
 │                                                                                                                            │
-│                 WeatherObserved (N entities - updated each cycle)                                                          │                           ┌────────────────────────┐
-│                 ├─ ID: urn:ngsi-ld:WeatherObserved:Hanoi-{District}                                                        │                           │     QuantumLeap        │
-│                 └─ dateObserved updated each cycle                                                                         │   Notify via Subscription │- Time Series Storage   │
-│                                                                                                                            │   ---------------->       │- Historical Queries    │
-│                                                                                                                            │                           │- Aggregations          │   
-│                 AirQualityObserved (N entities - updated each cycle)                                                       │                           └────────────────────────┘
-│                 ├─ ID: urn:ngsi-ld:AirQualityObserved:Hanoi-{District}                                                     │                                                                         
-│                 └─ dateObserved updated each cycle                                                                         │ 
+│                  WeatherObserved (N entities - updated each cycle)                                                         │                            ┌────────────────────────┐
+│                  ├─ ID: urn:ngsi-ld:WeatherObserved:Hanoi-{District}                                                       │                            │      QuantumLeap       │
+│                  └─ dateObserved updated each cycle                                                                        │    Notify via Subscription │- Time Series Storage   │
+│                                                                                                                            │    ---------------->       │- Historical Queries    │
+│                                                                                                                            │                            │- Aggregations          │    
+│                  AirQualityObserved (N entities - updated each cycle)                                                      │                            └────────────────────────┘
+│                  ├─ ID: urn:ngsi-ld:AirQualityObserved:Hanoi-{District}                                                    │                                                    
+│                  └─ dateObserved updated each cycle                                                                        │ 
 │                                                                                                                            │ 
 │                                                                                                                            │ 
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                                                                            │ 
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                                                                                       │ 
 ```
-## 🗺️ Các phường/xã được giám sát
 
-Pipeline giả lập N trạm cảm biến tại **N phường/xã**
+## 🗺️ Monitored Wards/Communes
 
-**Lưu ý**: Danh sách đầy đủ 126 phường/xã (theo cơ cấu hành chính 2025 sau khi xóa bỏ cấp quận) với tọa độ GPS và địa chỉ các trạm được cấu hình trong file `ha_noi_with_latlon2.geojson`.
+The pipeline simulates N sensor stations at **N wards/communes**.
 
-## 📈 Quản lý Request Limit
+**Note**: The complete list of 126 wards/communes (according to the 2025 administrative structure after district consolidation) with GPS coordinates and station addresses is configured in the `ha_noi_with_latlon2.geojson` file.
 
-- **Giới hạn**: 1000 requests/ngày (OpenWeather Free Tier)
-- **Sử dụng**: 2 APIs × N phường/xã = 2 × N requests/chu kỳ
-- **Chu kỳ mặc định**: S = ⌊1000 / (2 × N)⌋
-- **Tổng requests/ngày**: ~S × (2 × N) requests/ngày, với S = số chu kỳ/ngày sao cho tổng requests < giới hạn ✅
+## 📈 Request Limit Management
 
-### Tùy chỉnh chu kỳ
-Để thay đổi tần suất cập nhật, chỉnh `ETL_INTERVAL_MINUTES` trong `.env`:
-#### Đối với dữ liệu hiện tại
-- **240 phút (4 giờ)**:  S = ~6 chu kỳ 
-- **360 phút (6 giờ)**:  S = ~4 chu kỳ 
-- **480 phút (8 giờ)**:  S = ~3 chu kỳ
-- **720 phút (12 giờ)**: S = ~2 chu kỳ
+  * **Limit**: 1000 requests/day (OpenWeather Free Tier)
+  * **Usage**: 2 APIs × N wards/communes = 2 × N requests/cycle
+  * **Default Cycle**: S = ⌊1000 / (2 × N)⌋
+  * **Total requests/day**: \~S × (2 × N) requests/day, where S = number of cycles/day such that total requests \< limit ✅
+
+### Customize Cycle
+
+To change the update frequency, adjust `ETL_INTERVAL_MINUTES` in `.env`:
+
+#### For current data
+
+  * **240 minutes (4 hours)**:  S = \~6 cycles
+  * **360 minutes (6 hours)**:  S = \~4 cycles
+  * **480 minutes (8 hours)**:  S = \~3 cycles
+  * **720 minutes (12 hours)**: S = \~2 cycles
 
 ## 📝 Logs
 
-Logs được ghi vào:
-- Console (stdout)
-- File: `etl.log`
+Logs are written to:
 
-## 🔍 Truy vấn dữ liệu từ Orion-LD
+  * Console (stdout)
+  * File: `etl.log`
 
-### 📖 Tài liệu API tham khảo
+## 🔍 Querying Data from Orion-LD
 
-Orion-LD cung cấp API đầy đủ theo chuẩn NGSI-LD để truy vấn, quản lý và đăng ký thông báo cho entities. Dưới đây là tài liệu chính thức để tham khảo:
+### 📖 Reference API Documentation
 
-#### Tài liệu chính thức
+Orion-LD provides a full API according to NGSI-LD standards for querying, managing, and registering notifications for entities. Below is official documentation for reference:
 
-- **NGSI-LD API Specification**: [ETSI GS CIM 009 V1.8.1](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_CIM009v010801p.pdf)
-  - Đặc tả đầy đủ về NGSI-LD API v1.8.1
-  - Định nghĩa các endpoints, parameters, và response formats
-  
-- **NGSI-LD Primer**: [Understanding NGSI-LD](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
-  - Hướng dẫn cơ bản về NGSI-LD
-  - Giải thích các khái niệm và use cases
+#### Official Documentation
 
-- **Orion-LD Developer Guide**: [GitHub Documentation](https://github.com/FIWARE/context.Orion-LD/blob/develop/doc/manuals-ld/developer-documentation.md)
-  - Tài liệu dành cho developers
-  - Hướng dẫn chi tiết về API và implementation
+  * **NGSI-LD API Specification**: [ETSI GS CIM 009 V1.8.1](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_CIM009v010801p.pdf)
+      * Full specification of NGSI-LD API v1.8.1
+      * Definitions of endpoints, parameters, and response formats
+  * **NGSI-LD Primer**: [Understanding NGSI-LD](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
+      * Basic guide to NGSI-LD
+      * Concepts and use cases explanation
+  * **Orion-LD Developer Guide**: [GitHub Documentation](https://github.com/FIWARE/context.Orion-LD/blob/develop/doc/manuals-ld/developer-documentation.md)
+      * Documentation for developers
+      * Detailed instructions on API and implementation
+  * **FIWARE NGSI-LD Tutorials**: [Step-by-Step Guide](https://fiware-tutorials.readthedocs.io/en/latest/)
+      * Step-by-step tutorial for NGSI-LD
+      * Demo examples and best practices
+  * **Orion-LD Operations**: [API Operations Manual](https://github.com/FIWARE/context.Orion-LD/blob/develop/doc/manuals-ld/orionld-operations.md)
+      * Orion-LD operations guide
+      * Operations and configuration
 
-- **FIWARE NGSI-LD Tutorials**: [Step-by-Step Guide](https://fiware-tutorials.readthedocs.io/en/latest/)
-  - Tutorial từng bước cho NGSI-LD
-  - Các ví dụ demo và best practices
+#### Main API Types
 
-- **Orion-LD Operations**: [API Operations Manual](https://github.com/FIWARE/context.Orion-LD/blob/develop/doc/manuals-ld/orionld-operations.md)
-  - Hướng dẫn vận hành Orion-LD
-  - Các operations và configuration
+1.  **Entity Operations** - Manage entities (CRUD)
+2.  **Query Operations** - Query data with filters, geo-queries, temporal queries
+3.  **Subscription Management** - Register for real-time notifications
+4.  **Batch Operations** - Bulk operations
+5.  **Temporal Operations** - Query data over time
+6.  **Registration Operations** - Register context sources
 
-#### Các loại API chính
+### 🎯 API used in this project
 
-1. **Entity Operations** - Quản lý entities (CRUD)
-2. **Query Operations** - Truy vấn dữ liệu với filters, geo-queries, temporal queries
-3. **Subscription Management** - Đăng ký nhận thông báo real-time
-4. **Batch Operations** - Thao tác hàng loạt
-5. **Temporal Operations** - Truy vấn dữ liệu theo thời gian
-6. **Registration Operations** - Đăng ký context sources
+**Note**: On Windows CMD, use double quotes `"` instead of `'` and write the command on a single line.
 
-### 🎯 API sử dụng trong dự án này
+#### Entities used
 
-**Lưu ý**: Trên Windows CMD, sử dụng dấu ngoặc kép `"` thay vì `'` và viết lệnh trên một dòng.
-
-<!-- TODO: Thêm các API examples cụ thể cho dự án -->
-
-#### Các entities được sử dụng
-- `ObservableProperty` - 17 thuộc tính quan sát được
-- `Platform` - N nền tảng
-- `Device` - N thiết bị cảm biến
-- `WeatherObserved` - Dữ liệu thời tiết (dynamic)
-- `AirQualityObserved` - Dữ liệu chất lượng không khí (dynamic)
+  * `ObservableProperty` - 17 observable properties
+  * `Platform` - N platforms
+  * `Device` - N sensor devices
+  * `WeatherObserved` - Weather data (dynamic)
+  * `AirQualityObserved` - Air quality data (dynamic)
 
 #### Tenant
-- **NGSILD-Tenant**: `hanoi`
 
-## 📚 Tài liệu tham khảo
+  * **NGSILD-Tenant**: `hanoi`
 
-- [NGSI-LD Primer](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
-- [SOSA/SSN Ontology](https://www.w3.org/TR/vocab-ssn/)
-- [Smart Data Models](https://smartdatamodels.org/)
-- [OpenWeather API](https://openweathermap.org/api)
-- [FIWARE QuantumLeap](https://github.com/FIWARE/quantum-leap)
-- [FIWARE Orion-LD](https://github.com/FIWARE/context.Orion-LD)
+## 📚 References
+
+  * [NGSI-LD Primer](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
+  * [SOSA/SSN Ontology](https://www.w3.org/TR/vocab-ssn/)
+  * [Smart Data Models](https://smartdatamodels.org/)
+  * [OpenWeather API](https://openweathermap.org/api)
+  * [FIWARE QuantumLeap](https://github.com/FIWARE/quantum-leap)
+  * [FIWARE Orion-LD](https://github.com/FIWARE/context.Orion-LD)
 
 ## 🛠️ Troubleshooting
 
-### 1. Lỗi kết nối Orion-LD
+### 1\. Orion-LD Connection Error
 
-Kiểm tra Orion-LD đang chạy:
+Check if Orion-LD is running:
 
 ```bash
 curl http://localhost:1026/version
 
-# Kiểm tra logs
+# Check logs
 docker logs fiware-orion-ld
 ```
-### 2. QuantumLeap không nhận dữ liệu
+
+### 2\. QuantumLeap not receiving data
 
 ```bash
-# Kiểm tra subscriptions
+# Check subscriptions
 curl -X GET "http://localhost:1026/ngsi-ld/v1/subscriptions" \
   -H "NGSILD-Tenant: hanoi"
 
-# Kiểm tra QuantumLeap logs
+# Check QuantumLeap logs
 docker logs fiware-quantumleap
 
-# Kiểm tra TimescaleDB
-# Kết nối qua psql
+# Check TimescaleDB
+# Connect via psql
 psql -h localhost -p 5432 -U postgres -d quantumleap
 ```
 
-### 3. Lỗi API Key không hợp lệ
+### 3\. Invalid API Key Error
 
-Kiểm tra API key tại: https://home.openweathermap.org/api_keys
+Check your API key at: [https://home.openweathermap.org/api\_keys](https://home.openweathermap.org/api_keys)
 
-### 4. IoT Agent không nhận MQTT messages
+### 4\. IoT Agent not receiving MQTT messages
 
 ```bash
-# Kiểm tra IoT Agent status
+# Check IoT Agent status
 curl http://localhost:4041/iot/about
 
-# Kiểm tra devices đã provision
+# Check provisioned devices
 curl http://localhost:4041/iot/devices -H "fiware-service: hanoi" -H "fiware-servicepath: /"
 
-# Kiểm tra MQTT broker
+# Check MQTT broker
 docker logs mosquitto
 
-# Kiểm tra IoT Agent logs
+# Check IoT Agent logs
 docker logs fiware-iot-agent --tail 100
 
 # Test MQTT publish
 mosquitto_pub -h localhost -p 1883 -t "/hanoi/weather-test/attrs" -m '{"temperature": 250}'
 ```
 
-### 5. Device ID mismatch
+### 5\. Device ID mismatch
 
-Nếu thấy lỗi "Device not found" trong IoT Agent logs:
-- Kiểm tra device_id format trong MQTT payload khớp với provisioning script
-- Device ID phải lowercase + hyphens + Vietnamese normalization
-- Ví dụ: "Phường Hoàn Kiếm" → "weather-phuong-hoan-kiem"
+If you see "Device not found" error in IoT Agent logs:
 
-### 6. Vượt quá giới hạn requests
+  * Check if device\_id format in MQTT payload matches the provisioning script.
+  * Device ID must be lowercase + hyphens + Vietnamese normalization.
+  * Example: "Phường Hoàn Kiếm" → "weather-phuong-hoan-kiem".
 
-Tăng `ETL_INTERVAL_MINUTES` hoặc nâng cấp OpenWeather plan.
+### 6\. Exceeding request limits
+
+Increase `ETL_INTERVAL_MINUTES` or upgrade OpenWeather plan.
 
 ## 📄 License
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 ## 👥 Contributors
 
-- **TT** - [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
-- **Tankchoi** - [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
-- **Panh** - [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
+  * **TT** - [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
+  * **Tankchoi** - [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
+  * **Panh** - [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
 
 ## 💡 Support
 
-Nếu gặp vấn đề, vui lòng:
+If you encounter issues, please:
 
-1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-2. Xem [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
-3. Trao đổi [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
-4. Liên hệ authors
+1.  Check [Issues](https://github.com/trungthanhcva2206/air-track-ngsi-ld/issues)
+2.  View [Documentation Wiki](https://github.com/trungthanhcva2206/air-track-ngsi-ld/wiki)
+3.  Discuss in [Discussions](https://github.com/trungthanhcva2206/air-track-ngsi-ld/discussions)
+4.  Contact authors
 
-**Copyright © 2025 CHK. All rights reserved.**
+**Copyright © 2025 TAA. All rights reserved.**
