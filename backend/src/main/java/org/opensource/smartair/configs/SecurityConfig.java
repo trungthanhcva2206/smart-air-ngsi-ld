@@ -65,6 +65,8 @@ public class SecurityConfig {
                         // Allow CORS preflight requests (OPTIONS)
                         .requestMatchers(request -> "OPTIONS".equals(request.getMethod())).permitAll()
 
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+
                         // Public endpoints
                         .requestMatchers("/api/auth/**", "/api/open/**", "/api/notify/**", "/api/sse/**",
                                 "/api/platforms/**", "/api/weather/**", "/api/airquality/**",

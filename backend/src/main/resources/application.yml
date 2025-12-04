@@ -227,4 +227,8 @@ quantumleap:
 orion:
   url: ${ORION_LD_URL:http://orion:1026}
   tenant: ${ORION_LD_TENANT:hanoi}
+<<<<<<< HEAD
   service-path: ${ORION_SERVICE_PATH:/}
+=======
+  service-path: ${ORION_SERVICE_PATH:/}
+>>>>>>> 67cdd5d (Docs: Update Dockerfile)

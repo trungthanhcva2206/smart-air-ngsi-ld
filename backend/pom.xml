@@ -90,7 +90,10 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
-
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
