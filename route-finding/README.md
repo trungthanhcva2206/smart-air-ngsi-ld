@@ -1,74 +1,74 @@
-# Route Finding Service - Dịch vụ Tìm đường
+# Route Finding Service
 
-Dịch vụ tìm đường tối ưu dựa trên chất lượng không khí thời gian thực cho Hà Nội.
+Optimal route finding service based on real-time air quality for Hanoi.
 
-## 📋 Mục lục
+## 📋 Table of Contents
 
-- Tổng quan dự án
-- Yêu cầu
-- Cài đặt
-- Chạy dịch vụ
-- API Documentation
-- Cấu trúc dữ liệu
-- Kiến trúc
-- Quản lý Request
-- Logs
-- Tài liệu tham khảo
-- Troubleshooting
-- License
+- [Project Overview](#project-overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Running the Service](#running-the-service)
+- [API Documentation](#api-documentation)
+- [Data Structure](#data-structure)
+- [Architecture](#architecture)
+- [Request Management](#request-management)
+- [Logs](#logs)
+- [References](#references)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-## 🎯 Tổng quan dự án
+## 🎯 Project Overview
 
-Route Finding Service là một service Python tìm đường đi tối ưu giữa hai điểm ở Hà Nội, được thiết kế để đáp ứng các tiêu chuẩn Smart City:
+**Route Finding Service** is a Python service that finds the optimal path between two points in Hanoi, designed to meet Smart City standards:
 
-### ✅ Các tiêu chí đạt được
+### ✅ Achieved Criteria
 
-1. **✅ Tích hợp dữ liệu NGSI-LD thời gian thực**
-   - Kết nối SSE với Backend Java (port 8123)
-   - Nhận cập nhật chất lượng không khí real-time
-   - Cập nhật trọng số đồ thị động dựa trên PM2.5, AQI
+1. **✅ Real-time NGSI-LD Data Integration**
+   - Connects to Java Backend via SSE (port 8123)
+   - Receives real-time air quality updates
+   - Updates dynamic graph weights based on PM2.5, AQI
 
-2. **✅ Thuật toán tối ưu đa tiêu chí**
-   - Dijkstra's algorithm với trọng số tùy chỉnh
-   - 2 chế độ: Clean (sạch), Balanced (cân bằng)
-   - Tính toán khoảng cách và mức độ ô nhiễm trung bình
+2. **✅ Multi-criteria Optimization Algorithm**
+   - Dijkstra's algorithm with custom weights
+   - 2 modes: Clean, Balanced
+   - Calculates distance and average pollution levels
 
-3. **✅ Dữ liệu mở và chuẩn địa lý**
-   - Mạng lưới đường bộ từ OpenStreetMap
-   - NetworkX graph với ~50,000 nodes
-   - GeoJSON format cho input/output
+3. **✅ Open Data and Geospatial Standards**
+   - Road network from OpenStreetMap
+   - NetworkX graph with ~50,000 nodes
+   - GeoJSON format for input/output
 
-4. **✅ RESTful API đơn giản**
-   - Endpoint tìm đường với GeoJSON response
-   - Geocoding địa chỉ tiếng Việt
-   - Health check và monitoring
+4. **✅ Simple RESTful API**
+   - Route finding endpoint with GeoJSON response
+   - Geocoding for Vietnamese addresses
+   - Health check and monitoring
 
-## 📦 Yêu cầu
+## 📦 Requirements
 
 - Python 3.8+
-- pip (trình quản lý gói Python)
-- Backend Java service chạy trên port 8123
-- RAM: ~300MB cho đồ thị
+- pip (Python package manager)
+- Java Backend service running on port 8123
+- RAM: ~300MB for the graph
 
-## 🚀 Cài đặt
+## 🚀 Installation
 
-### Bước 1: Cài đặt thư viện
+### Step 1: Install Libraries
 
 ```bash
 cd smart-air-ngsi-ld
 
 pip install -r requirements.txt
-```
+````
 
-### Bước 2: Cấu hình environment
+### Step 2: Configure Environment
 
-Tạo file `.env` từ `.env.example`:
+Create a `.env` file from `.env.example`:
 
 ```bash
 copy .env.example .env
 ```
 
-Chỉnh sửa `.env`:
+Edit `.env`:
 
 ```env
 # Flask configuration
@@ -88,42 +88,45 @@ GEOJSON_FILE=ha_noi_with_latlon2.geojson
 LOG_LEVEL=INFO
 ```
 
-### Bước 3: Xây dựng đồ thị mạng lưới đường bộ
+### Step 3: Build Road Network Graph
 
-Trước khi chạy API server, bạn cần xây dựng đồ thị mạng lưới đường bộ:
+Before running the API server, you need to build the road network graph:
 
 ```bash
 python build_road_graph.py
 ```
 
-Lệnh này sẽ:
-- Tải mạng lưới đường bộ Hà Nội từ OpenStreetMap
-- Tạo đồ thị NetworkX với ~50,000 nodes và ~100,000 edges
-- Lưu lại dưới dạng `hanoi_road_network.graphml`
+This command will:
 
-**Lưu ý**: Bước này chỉ cần thực hiện **một lần**, trừ khi bạn muốn cập nhật mạng lưới đường bộ.
+  - Download the Hanoi road network from OpenStreetMap
+  - Create a NetworkX graph with \~50,000 nodes and \~100,000 edges
+  - Save it as `hanoi_road_network.graphml`
 
-## 🏃 Chạy dịch vụ
+**Note**: This step only needs to be done **once**, unless you want to update the road network.
 
-### Khởi động Flask API server
+## 🏃 Running the Service
+
+### Start Flask API Server
 
 ```bash
 python api_server.py
 ```
 
-**Dịch vụ sẽ tự động:**
-1. ✅ Tải đồ thị mạng lưới đường bộ
-2. ✅ Kết nối đến Backend SSE endpoint
-3. ✅ Bắt đầu nhận cập nhật chất lượng không khí
-4. ✅ Cung cấp REST API trên `http://localhost:5000`
+**The service will automatically:**
 
-### Kiểm tra dịch vụ đang chạy
+1.  ✅ Load the road network graph
+2.  ✅ Connect to the Backend SSE endpoint
+3.  ✅ Start receiving air quality updates
+4.  ✅ Provide REST API on `http://localhost:5000`
+
+### Check Service Status
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-Kết quả mong đợi:
+Expected result:
+
 ```json
 {
   "status": "healthy",
@@ -135,21 +138,22 @@ Kết quả mong đợi:
 
 ## 📚 API Documentation
 
-### 📖 Tài liệu API tham khảo
+### 📖 API Reference
 
-Dịch vụ cung cấp RESTful API đơn giản cho route finding và geocoding. Tất cả endpoints trả về JSON format.
+The service provides a simple RESTful API for route finding and geocoding. All endpoints return JSON format.
 
 **Base URL**: `http://localhost:5000`
 
----
+-----
 
-### 1. Health Check
+### 1\. Health Check
 
-Kiểm tra trạng thái dịch vụ và thống kê.
+Checks service status and statistics.
 
 **Endpoint**: `GET /health`
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -160,26 +164,29 @@ Kiểm tra trạng thái dịch vụ và thống kê.
 ```
 
 **Status Codes**:
-- `200 OK`: Dịch vụ hoạt động bình thường
-- `503 Service Unavailable`: Dịch vụ gặp vấn đề
 
----
+  - `200 OK`: Service is operating normally
+  - `503 Service Unavailable`: Service is encountering issues
 
-### 2. Find Route (Tìm đường)
+-----
 
-Tìm đường tối ưu giữa hai điểm dựa trên chế độ được chọn.
+### 2\. Find Route
+
+Finds the optimal route between two points based on the selected mode.
 
 **Endpoint**: `POST /find-route`
 
 **Request Headers**:
+
 ```
 Content-Type: application/json
 ```
 
 **Request Body**:
+
 ```json
 {
-  "start": [105.8342, 21.0278],  // [kinh độ, vĩ độ]
+  "start": [105.8342, 21.0278],  // [longitude, latitude]
   "end": [105.8412, 21.0245],
   "mode": "clean"                 // "clean" | "balanced"
 }
@@ -187,17 +194,19 @@ Content-Type: application/json
 
 **Parameters**:
 
-| Tham số | Kiểu | Bắt buộc | Mô tả |
-|---------|------|----------|-------|
-| `start` | Array[Float] | Có | Tọa độ điểm xuất phát [longitude, latitude] |
-| `end` | Array[Float] | Có | Tọa độ điểm đích [longitude, latitude] |
-| `mode` | String | Không | Chế độ tối ưu: `"clean"`, `"balanced"` (mặc định: `"balanced"`) |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `start` | Array[Float] | Yes | Start point coordinates [longitude, latitude] |
+| `end` | Array[Float] | Yes | End point coordinates [longitude, latitude] |
+| `mode` | String | No | Optimization mode: `"clean"`, `"balanced"` (default: `"balanced"`) |
 
-**Các chế độ (mode)**:
-- `clean`: Ưu tiên đường đi có chất lượng không khí tốt nhất
-- `balanced`: Cân bằng giữa sạch và nhanh
+**Modes**:
+
+  - `clean`: Prioritizes routes with the best air quality
+  - `balanced`: Balances between clean air and speed
 
 **Response Success (200 OK)**:
+
 ```json
 {
   "route": {
@@ -211,20 +220,20 @@ Content-Type: application/json
       ]
     },
     "properties": {
-      "distance": 1250.5,        // Khoảng cách (mét)
-      "avg_pm25": 28.3,          // PM2.5 trung bình (μg/m³)
-      "avg_aqi": 65,             // AQI trung bình
-      "duration_minutes": 15     // Thời gian ước tính (phút)
+      "distance": 1250.5,        // Distance (meters)
+      "avg_pm25": 28.3,          // Average PM2.5 (μg/m³)
+      "avg_aqi": 65,             // Average AQI
+      "duration_minutes": 15     // Estimated duration (minutes)
     }
   },
   "directions": [
     {
-      "instruction": "Đi thẳng trên Đường Láng",
+      "instruction": "Go straight on Lang Street",
       "distance": 450,
       "duration": 5
     },
     {
-      "instruction": "Rẽ phải vào Phố Huế",
+      "instruction": "Turn right into Pho Hue",
       "distance": 800,
       "duration": 10
     }
@@ -233,6 +242,7 @@ Content-Type: application/json
 ```
 
 **Response Error (400 Bad Request)**:
+
 ```json
 {
   "error": "Invalid coordinates",
@@ -241,6 +251,7 @@ Content-Type: application/json
 ```
 
 **Response Error (404 Not Found)**:
+
 ```json
 {
   "error": "No path found",
@@ -249,12 +260,14 @@ Content-Type: application/json
 ```
 
 **Status Codes**:
-- `200 OK`: Tìm thấy đường
-- `400 Bad Request`: Tham số không hợp lệ
-- `404 Not Found`: Không tìm thấy đường
-- `500 Internal Server Error`: Lỗi server
+
+  - `200 OK`: Route found
+  - `400 Bad Request`: Invalid parameters
+  - `404 Not Found`: Route not found
+  - `500 Internal Server Error`: Server error
 
 **Example Request (cURL)**:
+
 ```bash
 curl -X POST http://localhost:5000/find-route \
   -H "Content-Type: application/json" \
@@ -266,6 +279,7 @@ curl -X POST http://localhost:5000/find-route \
 ```
 
 **Example Request (JavaScript)**:
+
 ```javascript
 const response = await fetch('http://localhost:5000/find-route', {
   method: 'POST',
@@ -280,20 +294,22 @@ const response = await fetch('http://localhost:5000/find-route', {
 const { route, directions } = await response.json();
 ```
 
----
+-----
 
-### 3. Geocode Address (Chuyển đổi địa chỉ)
+### 3\. Geocode Address
 
-Chuyển đổi địa chỉ tiếng Việt thành tọa độ GPS.
+Converts a Vietnamese address into GPS coordinates.
 
 **Endpoint**: `POST /geocode`
 
 **Request Headers**:
+
 ```
 Content-Type: application/json
 ```
 
 **Request Body**:
+
 ```json
 {
   "address": "Hồ Hoàn Kiếm, Hà Nội"
@@ -302,11 +318,12 @@ Content-Type: application/json
 
 **Parameters**:
 
-| Tham số | Kiểu | Bắt buộc | Mô tả |
-|---------|------|----------|-------|
-| `address` | String | Có | Địa chỉ cần geocoding (tiếng Việt) |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `address` | String | Yes | Address to geocode (Vietnamese) |
 
 **Response Success (200 OK)**:
+
 ```json
 {
   "location": [105.8524, 21.0285],
@@ -316,6 +333,7 @@ Content-Type: application/json
 ```
 
 **Response Error (404 Not Found)**:
+
 ```json
 {
   "error": "Address not found",
@@ -324,12 +342,14 @@ Content-Type: application/json
 ```
 
 **Status Codes**:
-- `200 OK`: Tìm thấy địa chỉ
-- `400 Bad Request`: Thiếu tham số address
-- `404 Not Found`: Không tìm thấy địa chỉ
-- `500 Internal Server Error`: Lỗi server
+
+  - `200 OK`: Address found
+  - `400 Bad Request`: Missing address parameter
+  - `404 Not Found`: Address not found
+  - `500 Internal Server Error`: Server error
 
 **Example Request (cURL)**:
+
 ```bash
 curl -X POST http://localhost:5000/geocode \
   -H "Content-Type: application/json" \
@@ -337,6 +357,7 @@ curl -X POST http://localhost:5000/geocode \
 ```
 
 **Example Request (JavaScript)**:
+
 ```javascript
 const response = await fetch('http://localhost:5000/geocode', {
   method: 'POST',
@@ -349,16 +370,16 @@ const response = await fetch('http://localhost:5000/geocode', {
 const { location, display_name } = await response.json();
 ```
 
----
+-----
 
-### 🎯 API sử dụng trong Frontend
+### 🎯 Frontend API Integration
 
-Frontend (React) tích hợp với dịch vụ qua các API calls:
+The Frontend (React) integrates with the service via the following API calls:
 
 ```javascript
 // frontend/src/components/Client/Map/Map.jsx
 
-// Tìm đường
+// Find Route
 const findRoute = async (start, end, mode) => {
   const response = await fetch('http://localhost:5000/find-route', {
     method: 'POST',
@@ -368,7 +389,7 @@ const findRoute = async (start, end, mode) => {
   return await response.json();
 };
 
-// Geocode địa chỉ
+// Geocode Address
 const geocodeAddress = async (address) => {
   const response = await fetch('http://localhost:5000/geocode', {
     method: 'POST',
@@ -379,9 +400,9 @@ const geocodeAddress = async (address) => {
 };
 ```
 
-## 📊 Cấu trúc dữ liệu
+## 📊 Data Structure
 
-### 1. Road Network Graph (Đồ thị đường bộ)
+### 1\. Road Network Graph
 
 File: `hanoi_road_network.graphml`
 
@@ -390,14 +411,14 @@ File: `hanoi_road_network.graphml`
 {
   "nodes": {
     "node_id": {
-      "x": 105.8342,  # Kinh độ
-      "y": 21.0278,   # Vĩ độ
+      "x": 105.8342,  # Longitude
+      "y": 21.0278,   # Latitude
       "street_count": 3
     }
   },
   "edges": {
     ("node1", "node2"): {
-      "length": 450.5,      # Khoảng cách (m)
+      "length": 450.5,      # Distance (m)
       "highway": "primary",
       "name": "Đường Láng",
       "oneway": False,
@@ -408,7 +429,7 @@ File: `hanoi_road_network.graphml`
 }
 ```
 
-### 2. GeoJSON Districts (Dữ liệu quận/phường)
+### 2\. GeoJSON Districts
 
 File: `ha_noi_with_latlon2.geojson`
 
@@ -438,9 +459,9 @@ File: `ha_noi_with_latlon2.geojson`
 }
 ```
 
-### 3. SSE Event (Cập nhật real-time)
+### 3\. SSE Event (Real-time update)
 
-Backend gửi qua SSE endpoint:
+Backend sends via SSE endpoint:
 
 ```json
 {
@@ -454,7 +475,7 @@ Backend gửi qua SSE endpoint:
 }
 ```
 
-### 4. Route Response (Kết quả tìm đường)
+### 4\. Route Response
 
 ```json
 {
@@ -473,7 +494,7 @@ Backend gửi qua SSE endpoint:
   },
   "directions": [
     {
-      "instruction": "Đi thẳng 450m",
+      "instruction": "Go straight 450m",
       "distance": 450,
       "duration": 5
     }
@@ -481,58 +502,61 @@ Backend gửi qua SSE endpoint:
 }
 ```
 
-## 🏗️ Kiến trúc
+## 🏗️ Architecture
 
-### Luồng dữ liệu
+### Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Data Flow Architecture                  │
+│                      Data Flow Architecture                 │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  ┌──────────┐       ┌──────────┐       ┌──────────────┐     │
-│  │ Orion-LD │─────▶│ Backend  │ ────▶ │Python Service│     │
-│  │          │       │  (Java)  │  SSE  │   (Flask)    │     │
-│  └──────────┘       └──────────┘       └───────┬──────┘     │
+│  ┌──────────┐        ┌──────────┐        ┌──────────────┐   │
+│  │ Orion-LD │─────▶│ Backend  │ ────▶ │Python Service│   │
+│  │          │        │  (Java)  │  SSE  │   (Flask)    │   │
+│  └──────────┘        └──────────┘        └───────┬──────┘   │
 │                                                 │           │
 │                                                 ▼           │
 │                                      ┌──────────────────┐   │
 │                                      │ Update Weights   │   │
 │                                      │ in Road Graph    │   │
 │                                      └────────┬─────────┘   │
-│                                               │             │
-│                                               ▼             │
+│                                                 │           │
+│                                                 ▼           │
 │                                      ┌──────────────────┐   │
 │                                      │ Route Finding    │   │
 │                                      │ (Dijkstra)       │   │
 │                                      └────────┬─────────┘   │
-│                                               │             │
-│                                               ▼             │
-│  ┌──────────┐                       ┌──────────────────┐    │
-│  │ Frontend │◀─────────────────────│ GeoJSON Response  │    │
-│  │ (React)  │                       └──────────────────┘    │
+│                                                 │           │
+│                                                 ▼           │
+│  ┌──────────┐                        ┌──────────────────┐   │
+│  │ Frontend │◀─────────────────────│ GeoJSON Response │   │
+│  │ (React)  │                        └──────────────────┘   │
 │  └──────────┘                                               │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Cấu trúc thư mục
+### Folder Structure
 
 ```
 route-finding/
 ├── api_server.py                    # Flask API server + SSE client
-├── build_road_graph.py              # Script xây dựng đồ thị từ OSM
-├── hanoi_road_network.graphml       # Đồ thị đường bộ (NetworkX)
-├── ha_noi_with_latlon2.geojson      # Dữ liệu GeoJSON 30 quận/phường
+├── build_road_graph.py              # Script to build graph from OSM
+├── hanoi_road_network.graphml       # Road network graph (NetworkX)
+├── ha_noi_with_latlon2.geojson      # GeoJSON data for 30 districts
 ├── requirements.txt                 # Python dependencies
-├── .env                             # Config (không commit)
+├── .env                             # Config (do not commit)
 ├── .env.example                     # Template config
-└── README.md                        # File này
+└── README.md                        # This file
 ```
 
-### Thuật toán Route Finding
+### Route Finding Algorithm
 
-#### 1. Nhận request
+[Image of Dijkstra algorithm logic]
+
+#### 1\. Receive request
+
 ```python
 {
   "start": [105.8342, 21.0278],
@@ -541,39 +565,45 @@ route-finding/
 }
 ```
 
-#### 2. Tìm nearest nodes
+#### 2\. Find nearest nodes
+
 ```python
 start_node = ox.distance.nearest_nodes(G, start[0], start[1])
 end_node = ox.distance.nearest_nodes(G, end[0], end[1])
 ```
 
-#### 3. Tính trọng số cạnh
+#### 3\. Calculate edge weights
 
-**Chế độ "clean"**:
+**"Clean" mode**:
+
 ```python
 weight = distance * (1 + pm25_factor)
 # pm25_factor = (pm25_current - pm25_min) / (pm25_max - pm25_min)
-# PM2.5 thấp → factor nhỏ → trọng số thấp → ưu tiên cao
+# Low PM2.5 → small factor → low weight → high priority
 ```
 
-**Chế độ "fast"**:
+**"Fast" mode**:
+
 ```python
 weight = distance
-# Chỉ tính khoảng cách, bỏ qua chất lượng không khí
+# Only calculate distance, ignore air quality
 ```
 
-**Chế độ "balanced"**:
+**"Balanced" mode**:
+
 ```python
 weight = distance * (1 + 0.5 * pm25_factor)
-# Cân bằng 50-50 giữa khoảng cách và chất lượng không khí
+# 50-50 balance between distance and air quality
 ```
 
-#### 4. Dijkstra's Algorithm
+#### 4\. Dijkstra's Algorithm
+
 ```python
 path = nx.shortest_path(G, start_node, end_node, weight='weight')
 ```
 
-#### 5. Trả về GeoJSON
+#### 5\. Return GeoJSON
+
 ```python
 route_coords = [(G.nodes[node]['x'], G.nodes[node]['y']) for node in path]
 geojson = {
@@ -582,7 +612,7 @@ geojson = {
 }
 ```
 
-### Cập nhật trọng số real-time
+### Real-time Weight Updates
 
 ```python
 # SSE Event Handler
@@ -591,24 +621,24 @@ def on_environment_update(event):
     pm25 = event['pm25']
     aqi = event['aqi']
     
-    # Tìm tất cả edges trong district
+    # Find all edges in district
     edges = find_edges_in_district(district)
     
-    # Cập nhật trọng số
+    # Update weights
     for edge in edges:
         G[edge[0]][edge[1]]['pm25'] = pm25
         G[edge[0]][edge[1]]['aqi'] = aqi
         G[edge[0]][edge[1]]['weight'] = calculate_weight(edge, pm25)
 ```
 
-## ⚙️ Quản lý Request
+## ⚙️ Request Management
 
-### Giới hạn và tối ưu
+### Limits and Optimization
 
-- **Graph Loading**: Một lần khi khởi động (~2-3 giây)
-- **SSE Connection**: Persistent connection, không có request limit
-- **Route Calculation**: ~100-500ms per request
-- **Memory Usage**: ~200-300MB cho đồ thị loaded
+  - **Graph Loading**: Once at startup (\~2-3 seconds)
+  - **SSE Connection**: Persistent connection, no request limit
+  - **Route Calculation**: \~100-500ms per request
+  - **Memory Usage**: \~200-300MB for loaded graph
 
 ### Performance Optimization
 
@@ -625,24 +655,25 @@ G = ox.load_graphml('hanoi_road_network.graphml')
 spatial_index = create_spatial_index(G)
 ```
 
-### Cân nhắc Scale
+### Scale Considerations
 
-- **Horizontal scaling**: Chạy nhiều instances với load balancer
-- **Caching**: Redis cho frequently requested routes
-- **Database**: PostgreSQL/PostGIS cho persistent storage
-- **Message Queue**: RabbitMQ cho async processing
+  - **Horizontal scaling**: Run multiple instances with load balancer
+  - **Caching**: Redis for frequently requested routes
+  - **Database**: PostgreSQL/PostGIS for persistent storage
+  - **Message Queue**: RabbitMQ for async processing
 
 ## 📝 Logs
 
-Logs được ghi vào:
-- **Console** (stdout)
+Logs are written to:
+
+  - **Console** (stdout)
 
 ### Log Levels
 
 ```env
-LOG_LEVEL=DEBUG  # Logs chi tiết (development)
-LOG_LEVEL=INFO   # Hoạt động bình thường (production)
-LOG_LEVEL=WARNING # Chỉ cảnh báo/lỗi
+LOG_LEVEL=DEBUG   # Detailed logs (development)
+LOG_LEVEL=INFO    # Normal operation (production)
+LOG_LEVEL=WARNING # Warnings/Errors only
 ```
 
 ### Log Format
@@ -654,183 +685,216 @@ LOG_LEVEL=WARNING # Chỉ cảnh báo/lỗi
 [2025-11-12 10:30:25] ERROR: No path found between points
 ```
 
-## 📚 Tài liệu tham khảo
+## 📚 References
 
-### Thư viện và công nghệ
+### Libraries and Technologies
 
-- **Flask**: https://flask.palletsprojects.com/
-- **NetworkX**: https://networkx.org/documentation/stable/
-- **OSMnx**: https://osmnx.readthedocs.io/
-- **SSE (Server-Sent Events)**: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
+  - **Flask**: https://flask.palletsprojects.com/
+  - **NetworkX**: https://networkx.org/documentation/stable/
+  - **OSMnx**: https://osmnx.readthedocs.io/
+  - **SSE (Server-Sent Events)**: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent\_events
 
-### Standards và Ontologies
+### Standards and Ontologies
 
-- **NGSI-LD**: https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.08.01_60/gs_CIM009v010801p.pdf
-- **FIWARE**: https://www.fiware.org/
-- **Smart Data Models**: https://smartdatamodels.org/
+  - **NGSI-LD**: https://www.etsi.org/deliver/etsi\_gs/CIM/001\_099/009/01.08.01\_60/gs\_CIM009v010801p.pdf
+  - **FIWARE**: https://www.fiware.org/
+  - **Smart Data Models**: https://smartdatamodels.org/
 
 ### Algorithms
 
-- **Dijkstra's Algorithm**: https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
-- **A* Search**: https://en.wikipedia.org/wiki/A*_search_algorithm
-- **OpenStreetMap**: https://www.openstreetmap.org/
+  - **Dijkstra's Algorithm**: https://en.wikipedia.org/wiki/Dijkstra%27s\_algorithm
+  - **A* Search*\*: https://en.wikipedia.org/wiki/A\*\_search\_algorithm
+  - **OpenStreetMap**: https://www.openstreetmap.org/
 
 ## 🛠️ Troubleshooting
 
-### Lỗi: SSE không kết nối được
+### Error: SSE cannot connect
 
 ```
 ❌ Cannot connect to backend SSE endpoint
 ```
 
-**Nguyên nhân**:
-- Backend Java chưa chạy
-- Sai URL trong `.env`
-- Firewall chặn port 8123
+**Cause**:
 
-**Giải pháp**:
-1. Kiểm tra backend đang chạy:
+  - Java Backend is not running
+  - Wrong URL in `.env`
+  - Firewall blocking port 8123
+
+**Solution**:
+
+1.  Check if backend is running:
+
+<!-- end list -->
+
 ```bash
 curl http://localhost:8123/health
 ```
 
-2. Kiểm tra cấu hình `.env`:
+2.  Check `.env` configuration:
+
+<!-- end list -->
+
 ```env
 BACKEND_URL=http://localhost:8123
 ```
 
-3. Tắt firewall tạm thời hoặc mở port 8123
+3.  Temporarily disable firewall or open port 8123
 
----
+-----
 
-### Lỗi: Không tìm thấy file graph
+### Error: Graph file not found
 
 ```
 ❌ Road network graph not found: hanoi_road_network.graphml
 ```
 
-**Nguyên nhân**:
-- Chưa chạy `build_road_graph.py`
-- File bị xóa hoặc di chuyển
+**Cause**:
 
-**Giải pháp**:
+  - `build_road_graph.py` has not been run
+  - File deleted or moved
+
+**Solution**:
+
 ```bash
 python build_road_graph.py
 ```
 
----
+-----
 
-### Lỗi: Không tìm thấy đường đi
+### Error: No path found
 
 ```
 ❌ No path found between points
 ```
 
-**Nguyên nhân**:
-- Tọa độ ngoài phạm vi Hà Nội
-- Điểm xuất phát/đích quá xa đường
-- Khu vực không có đường nối
+**Cause**:
 
-**Giải pháp**:
-1. Kiểm tra tọa độ trong phạm vi Hà Nội:
-   - Vĩ độ: 20.9 - 21.1°N
-   - Kinh độ: 105.7 - 105.9°E
+  - Coordinates outside Hanoi range
+  - Start/End points too far from any road
+  - Area not connected by roads
 
-2. Thử điểm khác gần đường hơn
+**Solution**:
 
-3. Kiểm tra log để xem nearest nodes:
+1.  Check coordinates within Hanoi range:
+
+      - Latitude: 20.9 - 21.1°N
+      - Longitude: 105.7 - 105.9°E
+
+2.  Try points closer to roads
+
+3.  Check log to see nearest nodes:
+
+<!-- end list -->
+
 ```bash
 tail -f route_finding.log
 ```
 
----
+-----
 
-### Lỗi: ModuleNotFoundError
+### Error: ModuleNotFoundError
 
 ```
 ❌ ModuleNotFoundError: No module named 'flask'
 ```
 
-**Nguyên nhân**:
-- Chưa cài đặt dependencies
-- Môi trường ảo chưa được kích hoạt
+**Cause**:
 
-**Giải pháp**:
+  - Dependencies not installed
+  - Virtual environment not activated
+
+**Solution**:
+
 ```bash
-# Kích hoạt môi trường ảo
-venv\Scripts\activate  # Windows
+# Activate virtual environment
+venv\Scripts\activate   # Windows
 source venv/bin/activate  # Linux/Mac
 
-# Cài đặt lại dependencies
+# Reinstall dependencies
 pip install -r requirements.txt
 ```
 
----
+-----
 
-### Lỗi: Memory Error khi load graph
+### Error: Memory Error when loading graph
 
 ```
 ❌ MemoryError: Unable to allocate array
 ```
 
-**Nguyên nhân**:
-- RAM không đủ (< 1GB available)
-- Graph quá lớn
+**Cause**:
 
-**Giải pháp**:
-1. Tăng RAM cho process
-2. Simplify graph:
+  - Insufficient RAM (\< 1GB available)
+  - Graph too large
+
+**Solution**:
+
+1.  Increase RAM for the process
+2.  Simplify graph:
+
+<!-- end list -->
+
 ```python
-# Trong build_road_graph.py
+# In build_road_graph.py
 G = ox.graph_from_place(
     "Hanoi, Vietnam",
     network_type='drive',
-    simplify=True,  # Thêm dòng này
+    simplify=True,  # Add this line
     truncate_by_edge=True
 )
 ```
 
----
+-----
 
-### Lỗi: SSE connection timeout
+### Error: SSE connection timeout
 
 ```
 ❌ SSE connection timeout after 30s
 ```
 
-**Nguyên nhân**:
-- Backend SSE endpoint không response
-- Network latency cao
+**Cause**:
 
-**Giải pháp**:
-1. Tăng timeout trong `api_server.py`:
+  - Backend SSE endpoint not responding
+  - High network latency
+
+**Solution**:
+
+1.  Increase timeout in `api_server.py`:
+
+<!-- end list -->
+
 ```python
-# Tăng timeout từ 30s lên 60s
+# Increase timeout from 30s to 60s
 sse_client = SSEClient(url, timeout=60)
 ```
 
-2. Kiểm tra network:
+2.  Check network:
+
+<!-- end list -->
+
 ```bash
 ping localhost
 ```
 
----
+-----
 
-### Lỗi: Invalid GeoJSON response
+### Error: Invalid GeoJSON response
 
 ```
 ❌ Invalid GeoJSON: coordinates must be [longitude, latitude]
 ```
 
-**Nguyên nhân**:
-- Đảo ngược lat/lon
-- Tọa độ không hợp lệ
+**Cause**:
 
-**Giải pháp**:
-- Đảm bảo format: `[longitude, latitude]`
-- Kinh độ trước, vĩ độ sau
-- Ví dụ: `[105.8342, 21.0278]` ✅
-- SAI: `[21.0278, 105.8342]` ❌
+  - Inverted lat/lon
+  - Invalid coordinates
+
+**Solution**:
+
+  - Ensure format: `[longitude, latitude]`
+  - Longitude first, Latitude second
+  - Example: `[105.8342, 21.0278]` ✅
+  - WRONG: `[21.0278, 105.8342]` ❌
 
 ## 📄 License
 
@@ -840,17 +904,17 @@ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2
 
 ## 👥 Contributors
 
-- **TT** - [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
-- **Tankchoi** - [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
-- **Panh** - [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
+  - **TT** - [trungthanhcva2206@gmail.com](mailto:trungthanhcva2206@gmail.com)
+  - **Tankchoi** - [tadzltv22082004@gmail.com](mailto:tadzltv22082004@gmail.com)
+  - **Panh** - [panh812004.apn@gmail.com](mailto:panh812004.apn@gmail.com)
 
 ## 💡 Support
 
-Nếu gặp vấn đề, vui lòng:
+If you encounter issues, please:
 
-1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-2. Xem [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
-3. Trao đổi [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
-4. Liên hệ authors
+1.  Check [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
+2.  Read [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
+3.  Join [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
+4.  Contact authors
 
-**Copyright © 2025 CHK. All rights reserved.**
+**Copyright © 2025 TAA. All rights reserved.**
