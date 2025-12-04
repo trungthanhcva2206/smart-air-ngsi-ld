@@ -98,7 +98,6 @@ Data is modeled according to the **SOSA/SSN** (Sensor, Observation, Sample, and 
       - Integration with QuantumLeap for time-series data
 
 ### Frontend
-
 - **React 19**: UI framework with Hooks
 - **Vite 7**: Build tool and dev server
 - **React Router v7**: Client-side routing
@@ -312,3 +311,4 @@ See [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) for ful
 Made with ❤️ by Air Track Team
 
 [Back to top ↑](#introduction)
+
