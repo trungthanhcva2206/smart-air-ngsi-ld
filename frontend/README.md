@@ -1,17 +1,17 @@
 # 🌤️ Smart Air — AirTrack Frontend
 
-**Smart Air AirTrack** là frontend cho hệ thống quan trắc chất lượng không khí thời gian thực.  
-Ứng dụng hiển thị bản đồ trạm quan trắc, dashboard tổng quan, biểu đồ SSE realtime, trang admin quản lý thiết bị & tài khoản.
+**Smart Air AirTrack** is the frontend for a real-time air quality monitoring system.
+The application displays a monitoring station map, an overview dashboard, real-time SSE charts, and an admin page for managing devices and accounts.
 
-Giao diện được xây dựng bằng **React + Vite**, sử dụng **GeoJSON**, **SSE**, và **RESTful API** để kết nối với backend.
+The interface is built using **React + Vite**, utilizing **GeoJSON**, **SSE**, and **RESTful APIs** to connect with the backend.
 
 ## Preview
-- Bản đồ tương tác (Leaflet + MapLibre GL)
-- Chart realtime/history với Recharts
-- Dashboard tổng quan với dữ liệu SSE
-- Hệ thống xác thực (Login/Register/Profile)
-- Trang Admin quản lý trạm – thiết bị – tài khoản
-- Tích hợp OpenAPI docs (iframe)
+- Interactive Map (Leaflet + MapLibre GL)
+- Real-time/Historical charts with Recharts
+- Overview Dashboard with SSE data
+- Authentication System (Login/Register/Profile)
+- Admin Page for managing stations – devices – accounts
+- OpenAPI docs integration (iframe)
 
 ## Tech Stack
 - React 19 + Vite 7
@@ -26,36 +26,41 @@ Giao diện được xây dựng bằng **React + Vite**, sử dụng **GeoJSON*
 - React Toastify (Notifications)
 - Docker (optional)
 
-## Yêu cầu
+## Requirements
 - Node.js 18+
-- npm 8+ hoặc Yarn
-- Backend chạy tại http://localhost:8081
+- npm 8+ or Yarn
+- Backend running at http://localhost:8081
 
-## Cấu hình môi trường
-Tạo file `.env` (copy từ `.env.example`):
+## Environment Configuration
+Create a `.env` file (copy from `.env.example`):
 
 ```env
 VITE_API_URL=http://localhost:8081
-```
+````
 
-## Cài đặt & Chạy Dev
-Install:
-```
+## Installation & Development
+
+Install dependencies:
+
+```bash
 npm install
 ```
 
-Run dev:
-```
+Start development server:
+
+```bash
 npm run dev
 ```
 
-Build:
-```
+Build for production:
+
+```bash
 npm run build
 npm run preview
 ```
 
-## Cấu trúc thư mục
+## Folder Structure
+
 ```
 /src
   assets/
@@ -82,34 +87,39 @@ npm run preview
 ```
 
 ## SSE Hooks
-- `usePlatformSSE` - Real-time platform/station updates
-- `useDistrictSSE` - Weather + Air quality for specific district
-- `useHistoricalSSE` - Historical weather/air quality data
-- `useAnalysisHistorySSE` - Analytics historical data
-- `useAirQualityMonitor` - Air quality monitoring
+
+  - `usePlatformSSE` - Real-time platform/station updates
+  - `useDistrictSSE` - Weather + Air quality for specific district
+  - `useHistoricalSSE` - Historical weather/air quality data
+  - `useAnalysisHistorySSE` - Analytics historical data
+  - `useAirQualityMonitor` - Air quality monitoring
 
 ## API Services
-- `authService` - Login, Register, Update Profile
-- `platformService` - Get platforms/stations
+
+  - `authService` - Login, Register, Update Profile
+  - `platformService` - Get platforms/stations
 
 ## Troubleshooting
-- Kiểm tra event-stream 200 khi SSE lỗi
-- GeoJSON không được comment
-- CORS phải bật đúng
+
+  - Check for `event-stream` 200 status if SSE fails.
+  - GeoJSON files must not contain comments.
+  - CORS must be enabled correctly on the backend.
 
 ## License
+
 Apache License 2.0
 
 ## Authors
-- TT — trungthanhcva2206@gmail.com
-- Tankchoi — tadzltv22082004@gmail.com
-- Panh — panh812004.apn@gmail.com
+
+  - TT — trungthanhcva2206@gmail.com
+  - Tankchoi — tadzltv22082004@gmail.com
+  - Panh — panh812004.apn@gmail.com
 
 ## Support
 
-Nếu gặp vấn đề, vui lòng:
+If you encounter any issues, please:
 
-1. Xem [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
-2. Xem [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
-3. Trao đổi [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
-4. Liên hệ authors
+1.  Check [Issues](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/issues)
+2.  Read the [Documentation Wiki](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/wiki)
+3.  Join [Discussions](https://github.com/trungthanhcva2206/smart-air-ngsi-ld/discussions)
+4.  Contact the authors
