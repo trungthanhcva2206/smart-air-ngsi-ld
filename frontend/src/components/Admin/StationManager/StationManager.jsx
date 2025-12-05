@@ -28,9 +28,15 @@ import {
     BsThreeDotsVertical,
     BsPencilSquare,
     BsTrash,
-    BsGeoAlt
+    BsGeoAlt,
+    BsXLg,
+    BsThermometerHalf,
+    BsWind,
+    BsDroplet,
+    BsSpeedometer
 } from 'react-icons/bs';
 import { usePlatformsSSE } from '../../../hooks/usePlatformSSE';
+import { getDevicesByPlatform } from '../../../services/deviceService';
 import './StationManager.scss';
 
 const StationManager = () => {
@@ -38,6 +44,12 @@ const StationManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+
+    const [showModal, setShowModal] = useState(false);
+    const [selectedStation, setSelectedStation] = useState(null);
+    const [stationDevices, setStationDevices] = useState([]);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+
     const itemsPerPage = 10;
 
     const filteredPlatforms = platforms.filter(station => {
@@ -55,6 +67,38 @@ const StationManager = () => {
         setCurrentPage(page);
     };
 
+    const handleViewDetail = async (station) => {
+        setSelectedStation(station);
+        setShowModal(true);
+        setLoadingDetails(true);
+        setStationDevices([]);
+
+        const res = await getDevicesByPlatform(station.entityId);
+        if (res && res.EC === 0) {
+            setStationDevices(res.DT);
+        }
+        setLoadingDetails(false);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedStation(null);
+    };
+
+    const handleToggleDevice = (deviceId) => {
+        setStationDevices(prev => prev.map(dev => {
+            if (dev.id === deviceId || dev._id === deviceId) {
+                return { ...dev, deviceState: dev.deviceState === 'active' ? 'inactive' : 'active' };
+            }
+            return dev;
+        }));
+    };
+
+    const getAttributeValue = (station, key) => {
+        if (!station || !station[key]) return '--';
+        return typeof station[key] === 'object' ? station[key].value : station[key];
+    };
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center h-100">
@@ -66,7 +110,7 @@ const StationManager = () => {
     }
 
     return (
-        <div className="station-manager container-fluid">
+        <div className="station-manager container-fluid position-relative">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 className="fw-bold mb-1">Quản lý Trạm Quan Trắc</h2>
@@ -159,11 +203,12 @@ const StationManager = () => {
                                         </td>
                                         <td className="text-end pe-4">
                                             <div className="btn-group">
-                                                <button className="btn btn-sm btn-light text-primary me-1" title="Chỉnh sửa">
-                                                    <BsPencilSquare />
-                                                </button>
-                                                <button className="btn btn-sm btn-light text-danger me-1" title="Xóa">
-                                                    <BsTrash />
+                                                <button
+                                                    className="btn btn-sm btn-light text-primary me-1"
+                                                    title="Chi tiết"
+                                                    onClick={() => handleViewDetail(station)}
+                                                >
+                                                    Xem chi tiết
                                                 </button>
                                                 <button className="btn btn-sm btn-light text-secondary" data-bs-toggle="dropdown">
                                                     <BsThreeDotsVertical />
@@ -208,6 +253,141 @@ const StationManager = () => {
                     </div>
                 )}
             </div>
+
+            {showModal && selectedStation && (
+                <div className="modal-backdrop-custom">
+                    <div className="modal-content-custom bg-white rounded-3 shadow-lg">
+                        <div className="modal-header p-4 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 className="fw-bold mb-1">{selectedStation.name}</h4>
+                                <span className="text-muted small font-monospace">{selectedStation.entityId}</span>
+                            </div>
+                            <button className="btn btn-link text-dark p-0" onClick={handleCloseModal}>
+                                <BsXLg size={20} />
+                            </button>
+                        </div>
+
+                        <div className="modal-body p-4 overflow-auto" style={{ maxHeight: '75vh' }}>
+                            <h6 className="fw-bold text-uppercase text-muted mb-3 small">Chỉ số hiện tại</h6>
+                            <div className="row g-3 mb-4">
+                                <div className="col-6 col-md-3">
+                                    <div className="metric-card p-3 rounded-3 bg-light border">
+                                        <div className="d-flex align-items-center mb-2">
+                                            <BsWind className="text-primary me-2" />
+                                            <span className="small text-muted">PM2.5</span>
+                                        </div>
+                                        <h4 className="fw-bold mb-0 text-dark">
+                                            {getAttributeValue(selectedStation, 'pm25') !== '--'
+                                                ? parseFloat(getAttributeValue(selectedStation, 'pm25')).toFixed(1)
+                                                : '--'}
+                                        </h4>
+                                        <small className="text-muted" style={{ fontSize: '10px' }}>µg/m³</small>
+                                    </div>
+                                </div>
+                                <div className="col-6 col-md-3">
+                                    <div className="metric-card p-3 rounded-3 bg-light border">
+                                        <div className="d-flex align-items-center mb-2">
+                                            <BsThermometerHalf className="text-danger me-2" />
+                                            <span className="small text-muted">Nhiệt độ</span>
+                                        </div>
+                                        <h4 className="fw-bold mb-0 text-dark">
+                                            {getAttributeValue(selectedStation, 'temperature')}
+                                        </h4>
+                                        <small className="text-muted" style={{ fontSize: '10px' }}>°C</small>
+                                    </div>
+                                </div>
+                                <div className="col-6 col-md-3">
+                                    <div className="metric-card p-3 rounded-3 bg-light border">
+                                        <div className="d-flex align-items-center mb-2">
+                                            <BsDroplet className="text-info me-2" />
+                                            <span className="small text-muted">Độ ẩm</span>
+                                        </div>
+                                        <h4 className="fw-bold mb-0 text-dark">
+                                            {getAttributeValue(selectedStation, 'humidity')}
+                                        </h4>
+                                        <small className="text-muted" style={{ fontSize: '10px' }}>%</small>
+                                    </div>
+                                </div>
+                                <div className="col-6 col-md-3">
+                                    <div className="metric-card p-3 rounded-3 bg-light border">
+                                        <div className="d-flex align-items-center mb-2">
+                                            <BsSpeedometer className="text-warning me-2" />
+                                            <span className="small text-muted">AQI</span>
+                                        </div>
+                                        <h4 className="fw-bold mb-0 text-dark">
+                                            {getAttributeValue(selectedStation, 'aqi')}
+                                        </h4>
+                                        <small className="text-muted" style={{ fontSize: '10px' }}>Index</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 className="fw-bold text-uppercase text-muted mb-3 small d-flex justify-content-between align-items-center">
+                                <span>Danh sách thiết bị ({stationDevices.length})</span>
+                                {loadingDetails && <span className="spinner-border spinner-border-sm text-primary"></span>}
+                            </h6>
+
+                            <div className="table-responsive border rounded-3">
+                                <table className="table table-hover mb-0">
+                                    <thead className="table-light">
+                                        <tr>
+                                            <th className="small text-muted fw-bold ps-3">Tên thiết bị</th>
+                                            <th className="small text-muted fw-bold">Loại</th>
+                                            <th className="small text-muted fw-bold">Trạng thái</th>
+                                            <th className="small text-muted fw-bold text-end pe-3">Bật/Tắt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stationDevices.length > 0 ? (
+                                            stationDevices.map(device => (
+                                                <tr key={device.id || device._id}>
+                                                    <td className="ps-3">
+                                                        <div className="fw-bold small">{device.name}</div>
+                                                        <div className="text-muted" style={{ fontSize: '10px' }}>{device.serialNumber}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span className="badge border fw-normal text-secondary bg-light">
+                                                            {device.sensorType}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`badge rounded-pill ${device.deviceState === 'active'
+                                                            ? 'bg-success bg-opacity-10 text-success'
+                                                            : 'bg-secondary bg-opacity-10 text-secondary'
+                                                            }`}>
+                                                            {device.deviceState === 'active' ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-end pe-3">
+                                                        <div className="form-check form-switch d-flex justify-content-end">
+                                                            <input
+                                                                className="form-check-input cursor-pointer"
+                                                                type="checkbox"
+                                                                checked={device.deviceState === 'active'}
+                                                                onChange={() => handleToggleDevice(device.id || device._id)}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="4" className="text-center py-4 small text-muted">
+                                                    {loadingDetails ? 'Đang tải thiết bị...' : 'Không có thiết bị nào.'}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer p-3 border-top bg-light rounded-bottom-3 d-flex justify-content-end">
+                            <button className="btn btn-secondary btn-sm" onClick={handleCloseModal}>Đóng</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

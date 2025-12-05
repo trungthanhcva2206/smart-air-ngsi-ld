@@ -99,4 +99,64 @@
             background-color: transparent;
         }
     }
+
+    // Modal Custom Styles
+    .modal-backdrop-custom {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        animation: fadeIn 0.2s ease-out;
+
+        .modal-content-custom {
+            width: 90%;
+            max-width: 700px;
+            animation: slideIn 0.3s ease-out;
+            border: none;
+
+            .metric-card {
+                transition: transform 0.2s;
+
+                &:hover {
+                    transform: translateY(-2px);
+                    background-color: #fff !important;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+                }
+            }
+
+            .form-check-input {
+                width: 2.5em;
+                height: 1.25em;
+                cursor: pointer;
+            }
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
 }
