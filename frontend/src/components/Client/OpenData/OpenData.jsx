@@ -29,9 +29,8 @@ const OpenData = () => {
                 src={`${apiUrl}/swagger-ui/index.html`}
                 style={{
                     width: "100%",
-                    height: "calc(100% + 70px)",
-                    border: "none",
-                    marginTop: "-70px"
+                    height: "100%",
+                    border: "none"
                 }}
                 title="API Documentation"
             />

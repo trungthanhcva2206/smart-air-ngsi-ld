@@ -33,21 +33,21 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * OpenAPI 3.0 Configuration for Smart Air API Documentation
+ * OpenAPI 3.0 Configuration for AirTrack API Documentation
  * Access Swagger UI at: http://localhost:8081/swagger-ui.html
  * Access OpenAPI JSON at: http://localhost:8081/v3/api-docs
  */
 @Configuration
 public class OpenApiConfig {
 
-        @Value("${spring.application.name:Smart Air NGSI-LD Backend}")
+        @Value("${spring.application.name:AirTrack NGSI-LD Backend}")
         private String applicationName;
 
         @Bean
         public OpenAPI smartAirOpenAPI() {
                 return new OpenAPI()
                                 .info(new Info()
-                                                .title("Smart Air - Open Environmental Data API")
+                                                .title("AirTrack - Open Environmental Data API")
                                                 .description(
                                                                 """
                                                                                 ## 🌍 Open API for Environmental Monitoring - Hanoi City
@@ -73,7 +73,7 @@ public class OpenApiConfig {
                                                                                 - **Required Attribution**: "Weather data provided by OpenWeatherMap (https://openweathermap.org/)"
 
                                                                                 **API Code License:**
-                                                                                - API implementation © 2025 Smart Air Development Team
+                                                                                - API implementation © 2025 AirTrack Development Team
                                                                                 - Licensed under [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 
                                                                                 **Usage Terms (ODbL):**
@@ -104,7 +104,7 @@ public class OpenApiConfig {
                                                                                 """)
                                                 .version("1.0.0")
                                                 .contact(new Contact()
-                                                                .name("Smart Air Development Team")
+                                                                .name("AirTrack Development Team")
                                                                 .email("trungthanhcva2206@gmail.com")
                                                                 .url("https://github.com/trungthanhcva2206/smart-air-ngsi-ld"))
                                                 .license(new License()
@@ -115,7 +115,7 @@ public class OpenApiConfig {
                                                                 .url("http://localhost:8081")
                                                                 .description("Development Server"),
                                                 new Server()
-                                                                .url("https://api.smartair.hanoi.vn")
+                                                                .url("https://api.airtrack.hanoi.vn")
                                                                 .description("Production Server (if deployed)")));
         }
 }
