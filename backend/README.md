@@ -98,8 +98,8 @@ cd air-track-ngsi-ld
 ### 2\. Create configuration file
 
 ```bash
-cp src/main/resources/application.example.properties
-src/main/resources/application.properties
+cp src/main/resources/application.example.yml
+src/main/resources/application.yml
 ```
 
 ### 3\. Build

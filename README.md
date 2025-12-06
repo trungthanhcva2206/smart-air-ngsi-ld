@@ -135,7 +135,6 @@ Data is modeled according to the **SOSA/SSN** (Sensor, Observation, Sample, and 
 ```bash
 git clone https://github.com/trungthanhcva2206/smart-air-ngsi-ld.git
 cd smart-air-ngsi-ld
-git checkout develop
 ```
 
 ### 2\. Configure environment
