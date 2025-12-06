@@ -22,8 +22,8 @@
 # @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 set -e
 
-IOTA_URL="http://localhost:4041"
-ORION_URL="http://localhost:1026"
+IOTA_URL="http://iot-agent:4041"
+ORION_URL="http://orion:1026"
 FIWARE_SERVICE="hanoi"
 API_KEY="hanoi"
 
@@ -358,3 +358,5 @@ echo "  - Total Devices: 252"
 echo ""
 echo "To verify, run: curl http://localhost:4041/iot/devices -H 'fiware-service: hanoi' -H 'fiware-servicepath: /'"
 echo ""
+
+

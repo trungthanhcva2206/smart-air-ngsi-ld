@@ -48,7 +48,7 @@ public class OrionSubscriptionService {
     @Value("${orion.tenant:hanoi}")
     private String tenant;
 
-    @Value("${backend.url:http://backend:8081}")
+    @Value("${backend.url:http://backend:8123}")
     private String backendUrl;
 
     public OrionSubscriptionService(
