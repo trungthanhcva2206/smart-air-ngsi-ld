@@ -59,8 +59,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-		.headers(headers -> headers
-    			.frameOptions(frameOptions -> frameOptions.disable()))
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable()))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -72,7 +72,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**", "/api/open/**", "/api/notify/**", "/api/sse/**",
                                 "/api/platforms/**", "/api/weather/**", "/api/airquality/**",
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/partner/**")
                         .permitAll()
 
                         // Protected endpoints
