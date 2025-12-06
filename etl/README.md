@@ -237,7 +237,7 @@ cd air-track-ngsi-ld
 ### 2\. Start FIWARE Platform
 
 ```bash
-docker-compose up -d
+docker compose -f .\docker-compose-core.yml --env-file .\.env up -d
 ```
 
 Services started:

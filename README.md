@@ -152,7 +152,7 @@ nano .env
 
 ```bash
 # Build and start all services
-docker-compose up -d
+docker-compose up -d --build
 
 # Check status
 docker-compose ps
@@ -160,10 +160,21 @@ docker-compose ps
 
 ### 4\. Access the application
 
-  - **Frontend Dashboard**: http://localhost:3000
-  - **Backend API**: http://localhost:8080
-  - **NGSI-LD Broker**: http://localhost:1026
-  - **Database Admin**: http://localhost:8081
+| Service | Purpose | Host URL / Conn. (host:container) |
+|---|---:|---|
+| Frontend (production) | Nginx serving built SPA (Docker) | http://localhost (80:80) |
+| Frontend (dev / local) | Vite dev server (if running locally) | http://localhost:5137 (dev:5137) |
+| Backend API (Spring Boot) | REST API / SSE | http://localhost:8123 (8123:8123) |
+| NGSI‑LD Broker (Orion‑LD) | Context Broker | http://localhost:1026 (1026:1026) |
+| Route‑Finding service (Flask) | Routing & env-aware routes | http://localhost:5000 (5000:5000) |
+| QuantumLeap | Time-series API | http://localhost:8668 (8668:8668) |
+| Grafana | Dashboards | http://localhost:3000 (3000:3000) |
+| MongoDB (Orion / IoT Agent) | Document DB | mongodb://localhost:27017 (27017:27017) |
+| MySQL (Backend) | Relational DB | mysql://localhost:3306 (3306:3306) |
+| TimescaleDB (Postgres) | Time-series storage | postgres://localhost:5432 (5432:5432) |
+| Redis (QuantumLeap cache) | Cache | redis://localhost:6379 (6379:6379) |
+| MQTT Broker (Mosquitto) | MQTT (devices) | mqtt://localhost:1883 (1883:1883) |
+| MQTT WebSocket | MQTT over WS (web) | ws://localhost:9001 (9001:9001) |
 
 ## 📖 Detailed Setup
 
