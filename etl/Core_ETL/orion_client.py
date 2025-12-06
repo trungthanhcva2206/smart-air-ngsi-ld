@@ -103,8 +103,13 @@ class OrionLDClient:
         """
         entity_id = entity['id']
         
-        # Remove id and type from update payload
-        update_payload = {k: v for k, v in entity.items() if k not in ['id', 'type']}
+        # Remove id, type, and Relationships from update payload
+        # Orion-LD doesn't allow updating Relationships via PATCH /attrs
+        update_payload = {
+            k: v for k, v in entity.items() 
+            if k not in ['id', 'type'] and 
+            (not isinstance(v, dict) or v.get('type') != 'Relationship')
+        }
         update_payload['@context'] = NGSI_LD_CONTEXT
         
         try:
