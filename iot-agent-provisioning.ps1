@@ -18,7 +18,7 @@
  *    - TT (trungthanhcva2206@gmail.com)
  *    - Tankchoi (tadzltv22082004@gmail.com)
  *    - Panh (panh812004.apn@gmail.com)
- * @Copyright (C) 2025 CHK. All rights reserved
+ * @Copyright (C) 2025 TAA. All rights reserved
  * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 #>
 $IOTA_URL = "http://localhost:4041"

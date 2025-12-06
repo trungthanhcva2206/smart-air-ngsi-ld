@@ -71,11 +71,6 @@ services:
       - IOTA_DEFAULT_RESOURCE=/iot/json
       - IOTA_JSON_LD_CONTEXT=https://raw.githubusercontent.com/smart-data-models/dataModel.Environment/master/context.jsonld
       - IOTA_FALLBACK_TENANT=hanoi
-    healthcheck:
-      test: curl --fail -s http://localhost:4041/iot/about || exit 1
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Orion-LD Context Broker
   orion:
@@ -221,8 +216,6 @@ services:
         condition: service_healthy
       quantumleap:
         condition: service_healthy
-      iot-agent:
-        condition: service_healthy
     environment:
       # OpenWeather API
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
@@ -265,6 +258,7 @@ services:
     ports:
       - "5000:5000"
     environment:
+      - TZ=Asia/Ho_Chi_Minh
       # Flask Configuration
       - FLASK_HOST=0.0.0.0
       - FLASK_PORT=5000
@@ -285,6 +279,9 @@ services:
       - CACHE_ENABLED=True
       - CACHE_TTL=3600
     volumes:
+      - ./route-finding:/app
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       # Mount cache directory to persist graph data
       - route-finding-cache:/app/cache
       # Mount graph file if pre-built
@@ -359,6 +356,7 @@ services:
       
       # Security
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400000}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       
       # Frontend URL
@@ -377,7 +375,12 @@ services:
     
     volumes:
       - backend-logs:/app/logs
-
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8123/actuator/health"]
       interval: 30s
@@ -480,8 +483,8 @@ services:
       route-finding:
         condition: service_healthy
     ports:
-      - "8080:80"  
-      - "8443:443"   # ✅ HTTP (để Let's Encrypt verify)
+      - "80:80"  
+      - "443:443"   # ✅ HTTP (để Let's Encrypt verify)
     environment:
       - NGINX_HOST=${DOMAIN:-airtrack.pro.vn}
       - NGINX_PORT=80

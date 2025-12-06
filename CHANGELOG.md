@@ -18,6 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Webhook notifications for third-party integrations
 
 ---
+## [1.1.0] - 2025-12-06
+
+### 🛠 Updated
+
+#### Docker & Deployment
+- 🔧 Updated all Dockerfiles across backend, frontend, and AI service
+- 🔧 Optimized image size using multi-stage builds (Java, Node, Python)
+- 🔧 Improved caching layers for faster rebuild times
+- 🔧 Upgraded base images to latest stable versions (2025 editions)
+- 🔧 Enhanced Docker Compose with:
+  - Health checks for all services
+  - Restart policies (`on-failure`, `always`)
+  - Improved `.env` variable mapping
+  - Named volumes for persistence
 
 ## [1.0.0] - 2025-12-02
 
