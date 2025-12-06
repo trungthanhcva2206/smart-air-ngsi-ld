@@ -7,17 +7,17 @@ Air quality data monitoring and management system based on NGSI-LD and Linked Da
 
 ## 📋 Table of Contents
 
-- [Introduction](#introduction)
-- [System Architecture](#system-architecture)
-- [Features](#features)
-- [System Requirements](#system-requirements)
-- [Quick Setup](#quick-setup)
-- [Detailed Setup](#detailed-setup)
-- [Technologies Used](#technologies-used)
-- [Changelog](#changelog)
-- [Contribution](#contribution)
-- [License](#license)
-- [Contact](#contact)
+- [Introduction](#-introduction)
+- [System Architecture](#-system-architecture)
+- [Features](#-features)
+- [System Requirements](#-system-requirements)
+- [Quick Setup](#-quick-setup)
+- [Detailed Setup](#-detailed-setup)
+- [Technologies Used](#-technologies-used)
+- [Changelog](#-changelog)
+- [Contribution](#-contribution)
+- [License](#-license)
+- [Contact](#-contact)
 
 ## 🌟 Introduction
 
@@ -310,5 +310,5 @@ See [ODbL-1.0 Full Text](https://opendatacommons.org/licenses/odbl/1.0/) for ful
 
 Made with ❤️ by Air Track Team
 
-[Back to top ↑](#introduction)
+[Back to top ↑](#-introduction)
 
