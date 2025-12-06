@@ -113,6 +113,27 @@ springdoc:
       description: Local Development
       
 # ========================================
+# Swagger/OpenAPI Configuration
+# ========================================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /v3/api-docs
+    disable-swagger-default-url: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  servers:
+    - url: https://airtrack.pro.vn
+      description: Production Server
+    - url: https://api.airtrack.pro.vn
+      description: API Server
+    - url: http://localhost:8123
+      description: Local Development
+      
+# ========================================
 # Server Configuration
 # ========================================
 server:
@@ -227,8 +248,4 @@ quantumleap:
 orion:
   url: ${ORION_LD_URL:http://orion:1026}
   tenant: ${ORION_LD_TENANT:hanoi}
-<<<<<<< HEAD
   service-path: ${ORION_SERVICE_PATH:/}
-=======
-  service-path: ${ORION_SERVICE_PATH:/}
->>>>>>> 67cdd5d (Docs: Update Dockerfile)

@@ -21,7 +21,7 @@
 */
 
 const OpenData = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+    const apiUrl = import.meta.env.VITE_API_URL;
 
     return (
         <div className="open-data-page" style={{ width: "100%", height: "100vh", overflow: "hidden" }}>
