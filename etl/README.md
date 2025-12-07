@@ -86,37 +86,41 @@ This ETL Pipeline is designed to meet Smart City standards with a complete FIWAR
           │ REST API                    │ MQTT Publish
           │ (NGSI-LD)                   │ (JSON)
           │                             │
-┌─────────┴─────────────────────────────┴───────┐
-│           ETL Pipeline (Python)               │
-│                                               │
-│  ┌──────────────────────────────────────┐     │
-│  │    Dual-Path Architecture            │     │
-│  │                                      │     │
-│  │  PATH 1: REST API → Orion-LD         │     │
-│  │  - Full NGSI-LD entities             │     │
-│  │  - GeoProperty (location)            │     │  
-│  │  - Relationships (refDevice)         │     │
-│  │                                      │     │
-│  │  PATH 2: MQTT → IoT Agent → Orion-LD │     │
-│  │  - Raw measurements                  │     │
-│  │  - Device provisioning               │     │
-│  │  - FIWARE compliant                  │     │
-│  └──────────────────────────────────────┘     │
-│                                               │
-│  Mode: ETL_MODE environment variable          │
-│  - 'rest': REST API only                      │
-│  - 'mqtt': MQTT → IoT Agent only              │
-│  - 'dual': Both paths (default)               │
-└───────────────┬───────────────────────────────┘
-                │
-                │ Extract (HTTP GET)
-                ▼
-       ┌────────────────────┐
-       │  OpenWeather API   │
-       │  - Weather Data    │
-       │  - Air Quality     │
-       │  - Air Track       │
-       └────────────────────┘
+┌─────────┴─────────────────────────────┴────────────────────────────┐
+│           ETL Pipeline (Python) - 3-Phase Architecture             │
+│                                                                    │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │  PHASE 1: OpenWeather Baseline (126 districts)             │    │
+│  │  - Full NGSI-LD entities via REST API                      │    │
+│  │  - Weather + Air Quality data                              │    │
+│  │                                                            │    │
+│  │  PHASE 2: Smart Air Override (2 stations)                  │    │
+│  │  - PATCH pollutant attributes from TLU-SKTT1 sensors       │    │
+│  │  - PM2.5, PM10, CO, NO2, O3, SO2, Temp, Humidity           │    │
+│  │  - Stations: Nguyễn Văn Cừ, Ocean Park                     │    │
+│  │                                                            │    │
+│  │  PHASE 3: ESP32 Real Sensors (MQTT → IoT Agent)            │    │
+│  │  - Final override with highest priority                    │    │
+│  │  - Raw measurements via MQTT                               │    │
+│  │  - Districts: Ha Dong, Hoang Mai                           │    │
+│  └────────────────────────────────────────────────────────────┘    │
+│                                                                    │
+│  Data Priority: OpenWeather (lowest) → Smart Air → ESP32 (highest) │
+│                                                                    │
+│  Mode: ETL_MODE environment variable                               │
+│  - 'rest': REST API only                                           │
+│  - 'mqtt': MQTT → IoT Agent only                                   │
+│  - 'dual': rest + mqtt                                             │
+└───────────────┬─────────────────────┬──────────────────────────────┘
+                │                     │
+                │ Extract             │ Extract (HTTPS GET)
+                ▼                     ▼
+       ┌────────────────────┐  ┌──────────────────────────┐
+       │  OpenWeather API   │  │ Smart Air API (TLU-SKTT1)│
+       │  - Weather Data    │  │ opendata.quanglv.com     │
+       │  - Air Quality     │  │ - Real-time Sensors      │
+       └────────────────────┘  │ - NGSI-LD format         │
+                               └──────────────────────────┘
 ```
 
 ## 📊 Data Flow

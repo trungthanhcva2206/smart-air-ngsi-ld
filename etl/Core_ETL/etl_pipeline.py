@@ -23,7 +23,11 @@
 """
 
 """
-ETL Pipeline for OpenWeather to Orion-LD
+ETL Pipeline for multi-source air quality data:
+1. OpenWeather API (baseline/fallback)
+2. Smart Air stations (override OpenWeather)
+3. ESP32 real sensors via MQTT/IoT Agent (final override)
+
 Dual-path architecture:
 1. Direct REST API to Orion-LD (existing path)
 2. MQTT to IoT Agent to Orion-LD (new FIWARE compliant path)
@@ -33,6 +37,7 @@ import time
 import os
 from typing import Dict
 from .openweather_client import OpenWeatherClient
+from .smart_air_client import SmartAirClient
 from .orion_client import OrionLDClient
 from .models import WeatherObservedEntity, AirQualityObservedEntity
 from .mqtt_publisher import MQTTPublisher
@@ -58,6 +63,7 @@ class ETLPipeline:
         """
         self.mode = mode or ETL_MODE
         self.weather_client = OpenWeatherClient()
+        self.smart_air_client = SmartAirClient()
         self.orion_client = OrionLDClient()
         self.request_count = 0
         self.success_count = 0
@@ -86,6 +92,101 @@ class ETLPipeline:
                 self.mqtt_enabled = False
         
         logger.info(f"ETL Pipeline initialized in '{self.mode}' mode")
+    
+    
+    def process_smart_air_override(self, district_name: str) -> bool:
+        """
+        Override AirQualityObserved entity with Smart Air data if available
+        
+        This runs AFTER OpenWeather to override pollutant values with more
+        accurate Smart Air station data when available.
+        
+        Args:
+            district_name: Name of the district (e.g., "Phuong Hoan Kiem")
+        
+        Returns:
+            True if Smart Air data was applied, False otherwise
+        """
+        # Check if this district has a Smart Air station
+        station_id = None
+        for sid, mapped_district in self.smart_air_client.STATION_MAPPING.items():
+            if mapped_district == district_name:
+                station_id = sid
+                break
+        
+        if not station_id:
+            # logger.debug(f"No Smart Air station for {district_name}, skipping override")
+            return False
+        
+        # Fetch Smart Air data
+        logger.info(f"Applying Smart Air override for {district_name} (station: {station_id})")
+        smart_air_data = self.smart_air_client.get_station_data(station_id)
+        
+        if not smart_air_data:
+            logger.warning(f"Failed to fetch Smart Air data for {station_id}")
+            return False
+        
+        # Extract pollutants from Smart Air response
+        pollutants = self.smart_air_client.extract_pollutants(smart_air_data)
+        
+        if not pollutants:
+            logger.warning(f"No pollutant data in Smart Air response for {station_id}")
+            return False
+        
+        # Build NGSI-LD PATCH payload to update only pollutant attributes
+        from .models import NGSILDEntity
+        safe_name = NGSILDEntity._slugify_ascii(district_name)
+        entity_id = f"urn:ngsi-ld:AirQualityObserved:Hanoi-{safe_name}"
+        
+        # Map Smart Air field names to NGSI-LD attribute names
+        # EXCLUDE airQualityIndex because Smart Air uses different reference scale
+        # EXCLUDE pm1 and um003 because they don't exist in standard FIWARE models
+        field_mapping = {
+            # Particulate Matter (standard fields only)
+            # 'pm1': 'pm1',  # Not in Smart Data Models - excluded
+            'pm25': 'pm2_5',
+            'pm2_5': 'pm2_5',
+            'pm10': 'pm10',
+            # Gases
+            'co': 'CO',
+            'no2': 'NO2',
+            'o3': 'O3',
+            'so2': 'SO2',
+            # Weather (override OpenWeather if available)
+            'temperature': 'temperature',
+            'relativehumidity': 'relativeHumidity',
+            'humidity': 'relativeHumidity',
+            # Ultrafine particles
+            # 'um003': 'um003',  # Not in Smart Data Models - excluded
+            # 'airqualityindex': 'airQualityIndex',  # Excluded - different scale than OpenWeather
+            # 'aqi': 'airQualityIndex'  # Excluded - different scale than OpenWeather
+        }
+        
+        update_payload = {}
+        observed_at = smart_air_data.get('dateObserved', {}).get('value')
+        
+        for smart_field, value in pollutants.items():
+            ngsi_field = field_mapping.get(smart_field)
+            if ngsi_field:
+                update_payload[ngsi_field] = NGSILDEntity.create_property(
+                    value, 
+                    observed_at=observed_at
+                )
+        
+        if not update_payload:
+            logger.warning(f"No mappable pollutants from Smart Air for {station_id}")
+            return False
+        
+        # Update entity in Orion-LD (PATCH operation)
+        success = self.orion_client.patch_entity_attributes(entity_id, update_payload)
+        
+        if success:
+            logger.info(f"Smart Air override applied: {len(update_payload)} attributes updated")
+            logger.debug(f"   Updated fields: {list(update_payload.keys())}")
+            return True
+        else:
+            logger.error(f"Failed to apply Smart Air override for {entity_id}")
+            return False
     
     
     def process_district(self, district_name: str, location: Dict) -> bool:
@@ -185,7 +286,12 @@ class ETLPipeline:
     
     
     def run_etl_cycle(self):
-        """Run one complete ETL cycle for all districts"""
+        """
+        Run one complete ETL cycle with data priority:
+        1. OpenWeather (baseline for all districts)
+        2. Smart Air (override for districts with stations)
+        3. ESP32 Sensors (final override via MQTT/IoT Agent)
+        """
         logger.info("=" * 60)
         logger.info("Starting ETL cycle for all Hanoi districts")
         logger.info(f"Mode: {self.mode.upper()}")
@@ -196,7 +302,10 @@ class ETLPipeline:
         logger.info("=" * 60)
         
         start_time = time.time()
+        smart_air_success = 0
         
+        # PHASE 1: Process all districts with OpenWeather (baseline)
+        logger.info("\nPHASE 1: OpenWeather baseline data")
         for district_name, location in HANOI_DISTRICTS.items():
             try:
                 self.process_district(district_name, location)
@@ -206,12 +315,36 @@ class ETLPipeline:
                 logger.error(f"Unexpected error processing {district_name}: {e}")
                 self.error_count += 1
         
+        # PHASE 2: Override with Smart Air data (for districts with stations)
+        logger.info("=" * 60)
+        logger.info("PHASE 2: Smart Air data override")
+        logger.info("=" * 60)
+        logger.info(f"Checking {len(self.smart_air_client.STATION_MAPPING)} Smart Air stations...")
+        for district_name in HANOI_DISTRICTS.keys():
+            try:
+                if self.process_smart_air_override(district_name):
+                    smart_air_success += 1
+                time.sleep(0.5)
+            except Exception as e:
+                logger.error(f"Smart Air override error for {district_name}: {e}")
+        
+        if smart_air_success == 0:
+            logger.info("No Smart Air overrides applied (no matching districts or data unavailable)")
+        
+        # PHASE 3: ESP32 sensors override happens automatically via MQTT/IoT Agent
+        # (no action needed here, sensors publish independently)
+        logger.info("=" * 60)
+        logger.info("PHASE 3: ESP32 real sensors (via MQTT/IoT Agent)")
+        logger.info("=" * 60)
+        logger.info("Real sensors will override automatically when they publish")
+        
         elapsed_time = time.time() - start_time
         
         logger.info("=" * 60)
         logger.info("ETL cycle completed")
         logger.info(f"Total requests: {self.request_count}")
-        logger.info(f"Successful districts: {self.success_count}")
+        logger.info(f"OpenWeather districts: {self.success_count}")
+        logger.info(f"Smart Air overrides: {smart_air_success}")
         logger.info(f"Failed districts: {self.error_count}")
         logger.info(f"Elapsed time: {elapsed_time:.2f} seconds")
         logger.info("=" * 60)

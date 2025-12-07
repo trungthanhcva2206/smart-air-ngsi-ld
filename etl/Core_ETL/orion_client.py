@@ -135,6 +135,50 @@ class OrionLDClient:
             logger.error(f"Error updating entity {entity_id}: {e}")
             return False
     
+    def patch_entity_attributes(self, entity_id: str, attributes: Dict) -> bool:
+        """
+        Patch specific attributes of an entity in Orion-LD
+        
+        This is used to override specific pollutant values without affecting
+        other attributes (e.g., Smart Air overriding OpenWeather pollutants)
+        
+        Args:
+            entity_id: Entity ID to update
+            attributes: Dict of attributes to update (NGSI-LD Property format)
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if not attributes:
+            logger.warning(f"No attributes to patch for {entity_id}")
+            return False
+        
+        # Add @context for NGSI-LD
+        payload = {**attributes, '@context': NGSI_LD_CONTEXT}
+        
+        try:
+            url = f"{self.base_url}/ngsi-ld/v1/entities/{entity_id}/attrs"
+            response = requests.patch(
+                url,
+                json=payload,
+                headers=self.headers,
+                timeout=10
+            )
+            
+            if response.status_code == 204:
+                logger.debug(f"Successfully patched {len(attributes)} attributes in {entity_id}")
+                return True
+            else:
+                logger.error(
+                    f"Error patching entity {entity_id}: "
+                    f"{response.status_code} - {response.text}"
+                )
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error patching entity {entity_id}: {e}")
+            return False
+    
     def get_entity(self, entity_id: str) -> Optional[Dict]:
         """
         Retrieve an entity from Orion-LD
