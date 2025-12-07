@@ -232,14 +232,14 @@ class WeatherObservedEntity(NGSILDEntity):
         # Optional: Precipitation (mm as float), force minimum 0.001
         if 'rain' in weather_data and '1h' in weather_data['rain']:
             entity["precipitation"] = NGSILDEntity.create_property(
-                round(max(weather_data['rain']['1h'], 0.001), 2),
+                max(round(weather_data['rain']['1h'], 2), 0.001),
                 observed_at,
                 "MMT"  # Millimeter
             )
         elif 'rain' in weather_data and '3h' in weather_data['rain']:
             # Convert 3h to 1h average
             entity["precipitation"] = NGSILDEntity.create_property(
-                round(max(weather_data['rain']['3h'] / 3, 0.001), 2),
+                max(round(weather_data['rain']['3h'] / 3, 2), 0.001),
                 observed_at,
                 "MMT"
             )
@@ -370,59 +370,59 @@ class AirQualityObservedEntity(NGSILDEntity):
             # Pollutants (concentrations in μg/m³) - force 0.001 minimum to ensure double precision
             # Carbon Monoxide
             "CO": NGSILDEntity.create_property(
-                round(max(components.get('co', 0.001), 0.001), 2),
+                max(round(components.get('co', 0.001), 2), 0.001),
                 observed_at,
                 "GP"  # Micrograms per cubic meter
             ),
             
             # Nitrogen Oxides
             "NO": NGSILDEntity.create_property(
-                round(max(components.get('no', 0.001), 0.001), 2),
+                max(round(components.get('no', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"  # Micrograms per cubic meter
             ),
             "NO2": NGSILDEntity.create_property(
-                round(max(components.get('no2', 0.001), 0.001), 2),
+                max(round(components.get('no2', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
             
             # Calculate NOx (NO + NO2)
             "NOx": NGSILDEntity.create_property(
-                round(max(components.get('no', 0.001), 0.001) + max(components.get('no2', 0.001), 0.001), 2),
+                max(round(components.get('no', 0.001) + components.get('no2', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
             
             # Ozone
             "O3": NGSILDEntity.create_property(
-                round(max(components.get('o3', 0.001), 0.001), 2),
+                max(round(components.get('o3', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
             
             # Sulfur Dioxide
             "SO2": NGSILDEntity.create_property(
-                round(max(components.get('so2', 0.001), 0.001), 2),
+                max(round(components.get('so2', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
             
             # Particulate Matter
             "pm2_5": NGSILDEntity.create_property(
-                round(max(components.get('pm2_5', 0.001), 0.001), 2),
+                max(round(components.get('pm2_5', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
             "pm10": NGSILDEntity.create_property(
-                round(max(components.get('pm10', 0.001), 0.001), 2),
+                max(round(components.get('pm10', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
             
             # Ammonia
             "NH3": NGSILDEntity.create_property(
-                round(max(components.get('nh3', 0.001), 0.001), 2),
+                max(round(components.get('nh3', 0.001), 2), 0.001),
                 observed_at,
                 "GQ"
             ),
@@ -473,13 +473,13 @@ class AirQualityObservedEntity(NGSILDEntity):
             # Precipitation - Keep as float, force minimum 0.001
             if 'rain' in weather_data and '1h' in weather_data['rain']:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    round(max(weather_data['rain']['1h'], 0.001), 2),
+                    max(round(weather_data['rain']['1h'], 2), 0.001),
                     observed_at,
                     "MMT"
                 )
             elif 'rain' in weather_data and '3h' in weather_data['rain']:
                 entity["precipitation"] = NGSILDEntity.create_property(
-                    round(max(weather_data['rain']['3h'] / 3, 0.001), 2),
+                    max(round(weather_data['rain']['3h'] / 3, 2), 0.001),
                     observed_at,
                     "MMT"
                 )

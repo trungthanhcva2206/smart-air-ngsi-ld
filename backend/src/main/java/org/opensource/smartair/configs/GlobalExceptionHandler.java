@@ -21,8 +21,10 @@
  */
 package org.opensource.smartair.configs;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.opensource.smartair.dtos.ApiResponseDTO;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -65,18 +67,38 @@ public class GlobalExceptionHandler {
 
     /**
      * Handle các runtime exceptions khác
+     * CRITICAL: Skip SSE endpoints to prevent HttpMessageNotWritableException
      */
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponseDTO<Object>> handleRuntimeException(RuntimeException ex) {
+    public ResponseEntity<ApiResponseDTO<Object>> handleRuntimeException(
+            RuntimeException ex, HttpServletRequest request) {
+
+        // Check if this is an SSE request
+        String acceptHeader = request.getHeader("Accept");
+        if (acceptHeader != null && acceptHeader.contains(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            // Re-throw to let Spring handle SSE errors naturally
+            throw ex;
+        }
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponseDTO.error(ex.getMessage(), null));
     }
 
     /**
      * Handle generic exceptions
+     * CRITICAL: Skip SSE endpoints to prevent HttpMessageNotWritableException
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponseDTO<Object>> handleGenericException(Exception ex) {
+    public ResponseEntity<ApiResponseDTO<Object>> handleGenericException(
+            Exception ex, HttpServletRequest request) {
+
+        // Check if this is an SSE request (Accept: text/event-stream)
+        String acceptHeader = request.getHeader("Accept");
+        if (acceptHeader != null && acceptHeader.contains(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            // Don't handle SSE exceptions - let Spring handle them naturally
+            throw new RuntimeException(ex);
+        }
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponseDTO.error("An unexpected error occurred: " + ex.getMessage(), null));
     }
