@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @Project smart-air-ngsi-ld
+ * @Project Air Track NGSI-LD
  * @Authors 
  *    - TT (trungthanhcva2206@gmail.com)
  *    - Tankchoi (tadzltv22082004@gmail.com)

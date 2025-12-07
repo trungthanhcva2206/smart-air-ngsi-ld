@@ -18,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Webhook notifications for third-party integrations
 
 ---
+## [1.2.0] - 2025-12-08
+
+### Security & Data
+
+#### Security
+- ✅ Closed unnecessary and exposed ports; hardened network exposure and container network policies.
+- ✅ Enabled authentication for all services and endpoints (service-to-service and user-facing).
+- ✅ Removed default/anonymous access and rotated credentials where applicable.
+
+#### Data Ingestion
+- ✅ ETL/ingestion prioritized for real devices with JSON Schema validation and replay protection.
+
 ## [1.1.0] - 2025-12-06
 
 ### 🛠 Updated

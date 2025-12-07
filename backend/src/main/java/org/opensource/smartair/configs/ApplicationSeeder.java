@@ -11,12 +11,12 @@
 // * See the License for the specific language governing permissions and
 // * limitations under the License.
 // *
-// * @Project smart-air-ngsi-ld
+// * @Project AirTrack - Smart Air Quality Monitoring System
 // * @Authors
 // * - TT (trungthanhcva2206@gmail.com)
 // * - Tankchoi (tadzltv22082004@gmail.com)
 // * - Panh (panh812004.apn@gmail.com)
-// * @Copyright (C) 2024 CHK. All rights reserved
+// * @Copyright (C) 2025 TAA. All rights reserved
 // * @GitHub https://github.com/trungthanhcva2206/smart-air-ngsi-ld
 // */
 // package org.opensource.smartair.configs;
