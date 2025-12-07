@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Data Ingestion
 - ✅ ETL/ingestion prioritized for real devices with JSON Schema validation and replay protection.
+- ✅ Integrated additional data source from the Smart Air project (TLU‑SKTT1).
 
 ## [1.1.0] - 2025-12-06
 
