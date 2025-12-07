@@ -53,9 +53,20 @@ services:
       - sh
       - -c
       - |
-        # Dùng $$ để escape biến trong docker-compose, trỏ tới biến môi trường bên trong container
-        mosquitto_passwd -c -b /mosquitto/config/passwd "$$MQTT_USER" "$$MQTT_PASS"
-        echo "Starting Mosquitto with auto-generated password for user: $$MQTT_USER"
+        # 1. Tạo file mật khẩu (nếu biến môi trường có giá trị)
+        if [ -n "$$MQTT_USER" ] && [ -n "$$MQTT_PASS" ]; then
+          mosquitto_passwd -c -b /mosquitto/config/passwd "$$MQTT_USER" "$$MQTT_PASS"
+        else
+          # Fallback nếu không có biến môi trường (dùng cứng)
+          mosquitto_passwd -c -b /mosquitto/config/passwd smartair_device DevicePass123!
+        fi
+        
+        # 2. QUAN TRỌNG: Cấp quyền cho user 'mosquitto' đọc được file này
+        chmod 0777 /mosquitto/config/passwd
+        chown mosquitto:mosquitto /mosquitto/config/passwd
+        
+        # 3. Khởi động Mosquitto
+        echo "Starting Mosquitto with fixed permissions..."
         /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
 
     healthcheck:
@@ -84,12 +95,11 @@ services:
       - IOTA_CB_NGSI_VERSION=ld
       - IOTA_NORTH_PORT=4041
       - IOTA_REGISTRY_TYPE=mongodb
-      - IOTA_MONGO_HOST=mongo-db
+      - IOTA_MONGO_HOST=${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo-db
+      
       - IOTA_MONGO_PORT=27017
-      - IOTA_MONGO_DB=iotagent
-      # Auth Mongo từ .env
-      - IOTA_MONGO_USER=${MONGO_INITDB_ROOT_USERNAME}
-      - IOTA_MONGO_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - IOTA_MONGO_DB=iotagent?authSource=admin
+      - IOTA_MONGO_AUTH_SOURCE=admin
       - IOTA_HTTP_PORT=${IOT_AGENT_HTTP_PORT:-7896}
       - IOTA_PROVIDER_URL=http://iot-agent:4041
       - IOTA_MQTT_HOST=mosquitto
@@ -126,7 +136,7 @@ services:
       - ORIONLD_MULTI_SERVICE=TRUE
       - ORIONLD_DISABLE_FILE_LOG=TRUE
       - ORIONLD_LOG_LEVEL=INFO
-    command: -dbhost mongo-db -logLevel INFO -forwarding
+    command: -dbhost mongo-db -dbuser ${MONGO_INITDB_ROOT_USERNAME} -dbpwd ${MONGO_INITDB_ROOT_PASSWORD} -logLevel INFO -forwarding
     healthcheck:
       test: curl --fail -s http://localhost:1026/version || exit 1
       interval: 30s

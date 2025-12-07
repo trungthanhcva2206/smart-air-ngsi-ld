@@ -31,6 +31,7 @@ import json
 import logging
 from typing import Dict, Optional
 import paho.mqtt.client as mqtt
+import os
 from datetime import datetime
 from .config import ORION_LD_TENANT
 from .models import NGSILDEntity
@@ -56,6 +57,12 @@ class MQTTPublisher:
         self.client = mqtt.Client(client_id=f"etl_publisher_{datetime.utcnow().timestamp()}")
         self.connected = False
         
+        mqtt_user = os.getenv('MQTT_USERNAME')
+        mqtt_pass = os.getenv('MQTT_PASSWORD')
+        
+        if mqtt_user and mqtt_pass:
+            self.client.username_pw_set(mqtt_user, mqtt_pass)
+            logger.info(f"Configured MQTT Auth for user: {mqtt_user}")
         # Set callbacks
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
