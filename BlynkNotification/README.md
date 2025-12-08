@@ -359,7 +359,7 @@ curl "https://blynk.cloud/external/api/get?token=YOUR_TOKEN&pin=V1"
 
 ```
 Licensed under the Apache License, Version 2.0
-Copyright (C) 2025 CHK. All rights reserved
+Copyright (C) 2025 TAA. All rights reserved
 ```
 
 -----
